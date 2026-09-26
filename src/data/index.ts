@@ -4,14 +4,21 @@ import type { GameData } from "../engine/defs";
 import { bgm } from "./bgm";
 import { cast } from "./cast";
 import { apart } from "./maps/apart";
+import { danchi } from "./maps/danchi";
 import { debug, debugStart } from "./maps/debug";
+import { ekimae } from "./maps/ekimae";
 import { hub } from "./maps/hub";
 import { kakolog2 } from "./maps/kakolog2";
+import { kawara } from "./maps/kawara";
 import { kisaragi } from "./maps/kisaragi";
+import { kokudo } from "./maps/kokudo";
 import { kura } from "./maps/kura";
 import { room } from "./maps/room";
 import { street } from "./maps/street";
+import { sumire } from "./maps/sumire";
+import { suupaa } from "./maps/suupaa";
 import { terminus } from "./maps/terminus";
+import { tonarimachi } from "./maps/tonarimachi";
 import { train } from "./maps/train";
 import { tunnel } from "./maps/tunnel";
 import { village } from "./maps/village";
@@ -21,12 +28,20 @@ import { items, records } from "./records";
 import { sfx } from "./sfx";
 
 export const data: GameData = {
-	title: "蓄音キリコと\nきさらぎ回線",
-	subtitle: "おんJ発 ネットロア・ウォーキングシミュレーター",
+	title: "蓄音キリコと\nよふかしのまち",
+	subtitle: "おんJ発 ウォーキングシミュレーター",
 	maps: {
 		room,
 		apart,
 		street,
+		// 日常の町 拡張（座標凍結v3。content-briefs「日常の町 拡張」）
+		sumire,
+		kawara,
+		danchi,
+		kokudo,
+		ekimae,
+		suupaa,
+		tonarimachi,
 		hub,
 		yellow,
 		village,
@@ -57,7 +72,7 @@ export const data: GameData = {
 	},
 	debug: debugStart,
 	credits: [
-		"# 蓄音キリコと　きさらぎ回線",
+		"# 蓄音キリコと　よふかしのまち",
 		"",
 		"# 登場キャラクター",
 		"蓄音キリコ",

@@ -12,6 +12,8 @@
 //
 // 座標凍結v2: (2,9)→apart(10,5)／apart 階段→(2,10)／東端の駅入口 (28,10)→hub(10,12)
 // （深夜のみ）／hub 南口→(27,10)。開始位置は (24,10) 西向き（data/index.ts）。
+// 座標凍結v3（日常の町 拡張）: うらどおり西端 (2,19)→sumire(37,3)／うらどおり (21,19)→
+// kawara(37,8)／大どおり西 (0,11)→kokudo(38,10)。もどりの着地は (3,19)/(20,19)/(1,11)。
 //
 // 環境音は seLoop でなくワンショットの重ね掛けで作る（Story API に seLoop が無いため）。
 // onEnter で一波 ＋ 道の途中の見えない帯（wave）で歩くたびに遠近を変えて鳴らす。
@@ -382,6 +384,10 @@ export const street: MapDef = {
 			{ map: "apart", x: 10, y: 5, dir: "left" },
 			{ se: "door" },
 		),
+		// ── 出入り口（座標凍結v3: 日常の町 拡張。二重ループの町） ──
+		warp("to_sumire", 2, 19, { map: "sumire", x: 37, y: 3, dir: "left" }),
+		warp("to_kawara", 21, 19, { map: "kawara", x: 37, y: 8, dir: "left" }),
+		warp("to_kokudo", 0, 11, { map: "kokudo", x: 38, y: 10, dir: "left" }),
 		// 深夜だけ、囲いのあった場所が駅の入口（→ hub）
 		{
 			id: "sta_in",
@@ -893,6 +899,31 @@ export const street: MapDef = {
 				await s.narrate("バスてい。さいしゅうは\n19:20だ。");
 				await s.narrate("すみに、らくがき。\n――『2じ』");
 				await s.say("kiriko", "……おこさまンゴ");
+			},
+		},
+		// ── ポスト（脇道の怪異 post。深夜だけ、中でかすかに紙の音。朝は普通） ──
+		{
+			id: "post_ev",
+			x: 21,
+			y: 12,
+			sprite: base(4, 519, 1, 2),
+			trigger: "talk",
+			fixedDir: true,
+			run: async (s) => {
+				const t = s.flag("tod");
+				if (t === "shinya") {
+					await s.narrate("ゆうびんポスト。");
+					await s.wait(500);
+					await s.narrate("……中で、かさ、と\n紙の音がした。");
+					await s.narrate("あつめは、夕方で\nおわっているはずだ。");
+					await s.note("post");
+					return;
+				}
+				if (t === "asa") {
+					await s.narrate("ゆうびんポスト。けさの\nあつめは、9時からだ。");
+					return;
+				}
+				await s.narrate("ゆうびんポスト。きょうの\nあつめは、もう　おわった。");
 			},
 		},
 		{

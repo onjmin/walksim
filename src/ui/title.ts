@@ -1,9 +1,14 @@
-// タイトル画面 —「深夜の駅名標」（docs/content-briefs.md タイトル画面 節）。
-// ほぼ黒の画面に白い駅名標プレートが浮かび、蛍光灯風にときどき明滅する。
-// ごく稀に1文字だけ化けてすぐ戻る。画面下は暗い線路の暗示で、
-// キリコのシルエットが数十秒に一度ゆっくり横切る。
-// クリア済み（hasClearMark）なら朝：明滅も化けも止まり、時計が 7:00 になり、
-// プレートのひらがなが一行だけ優しい内容に変わる（周回差分）。
+// タイトル画面 —「夕方の日常」v2（docs/content-briefs.md タイトル画面 v2）。
+// v1「深夜の駅名標」は作者却下（怪異を掲げるのは「怪異は日常との差分」の思想に矛盾し、
+// 「深夜に駅が現れる」反転のネタバレでもある）。
+//
+// 夕焼けのグラデーションの空＋電柱と電線のシルエット（商店街の夕方＝原風景）。
+// タイトルは控えめな白の文字だけ（プレートなし・発光なし）。画面隅に小さく 17:03。
+// 怪異は差分でチラ見せだけ：数十秒に一度、半秒だけ空が深夜色に反転して戻る
+// （電線のシルエットはそのまま＝同じ町の別の時間が一瞬さしこむ）。
+// ごく稀に題字が1字だけ化けて戻る。それ以外のホラー演出は置かない。
+// キリコのシルエットが数十秒に一度ゆっくり横切る（日常の描写として続投）。
+// クリア済み（hasClearMark）なら朝：時計 7:00・空が朝の金色・反転も化けも止まる。
 
 import type { GameState } from "../engine/defs";
 import type { Game } from "../engine/game";
@@ -12,18 +17,39 @@ import { drawWalk, stepFrame } from "../engine/sprite";
 import { el } from "./dom";
 import { listWindow, settingsMenu } from "./menu";
 
-/** 駅名標の大きなひらがな。 */
-const SIGN_BIG = "きさらぎかいせん";
-
-/** 1文字化けの置換表（似た字・濁点の増減だけ。派手にしない）。 */
+/** 1文字化けの置換表（似た字・濁点の増減・かなの混入だけ。派手にしない）。 */
 const GLITCH: Record<string, string> = {
-	き: "ぎ",
-	さ: "ち",
-	ら: "ろ",
-	ぎ: "き",
 	か: "が",
-	い: "ぃ",
-	せ: "ぜ",
+	し: "じ",
+	ち: "ぢ",
+	と: "ど",
+	キ: "ギ",
+	コ: "ゴ",
+	リ: "り",
+};
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/** 電線のシルエット（たわんだ線を数本。太さは vector-effect で画面幅に依らず一定）。 */
+const wiresSvg = (): SVGSVGElement => {
+	const svg = document.createElementNS(SVG_NS, "svg");
+	svg.setAttribute("class", "title-wires");
+	svg.setAttribute("viewBox", "0 0 100 60");
+	svg.setAttribute("preserveAspectRatio", "none");
+	svg.setAttribute("aria-hidden", "true");
+	const sags = [
+		"M -2 11 Q 30 17 60 12 T 102 15",
+		"M -2 15 Q 28 22 58 16 T 102 20",
+		"M -2 19 Q 32 26 62 21 T 102 25",
+		"M -2 32 Q 50 38 102 24",
+	];
+	for (const d of sags) {
+		const p = document.createElementNS(SVG_NS, "path");
+		p.setAttribute("d", d);
+		p.setAttribute("vector-effect", "non-scaling-stroke");
+		svg.appendChild(p);
+	}
+	return svg;
 };
 
 /** タイトルを出し、「はじめから／つづきから」で選ばれた状態を返す。 */
@@ -34,41 +60,43 @@ export const showTitle = (game: Game): Promise<GameState> =>
 		document.title = data.title.replace(/\n/g, " ");
 
 		const cleared = hasClearMark();
-		// 動きを減らす設定の端末では、化け・シルエット横断も出さない（CSS 側で明滅等も止まる）
+		// 動きを減らす設定の端末では、化け・空の反転・シルエット横断を出さない
 		const calm =
 			window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-		// ── 駅名標プレート ──
-		const bigText = cleared ? "おかえりなさい" : SIGN_BIG;
-		const big = el("div", { class: "title-sign-big", text: bigText });
-		const sign = el("div", { class: "title-sign" }, [
-			big,
-			el("div", {
-				class: "title-sign-name",
-				text: data.title.replace(/\n/g, "　"),
-			}),
-			el("div", { class: "title-sign-romaji", text: "KISARAGI KAISEN" }),
-			// 隣駅表示は両側とも空白（どこから来て どこへ行くのかは書かない）
-			el("div", { class: "title-sign-band" }, [
-				el("span", { text: "←　　　　" }),
-				el("span", { text: "　　　　→" }),
-			]),
-		]);
-
-		// ── 線路の暗示＋横切るシルエット（kiriko.png を黒く塗って使う） ──
+		// ── 背景（空・電柱・電線・歩道）。すべてシルエットの書き割り ──
+		const skyNight = el("div", { class: "title-sky-night" });
 		const walker = el("canvas", { class: "title-walker" });
 		walker.width = 16;
 		walker.height = 16;
-		const rail = el("div", { class: "title-rail" }, [walker]);
+		const scape = el("div", { class: "title-scape" });
+		scape.appendChild(el("div", { class: "title-sky" }));
+		scape.appendChild(skyNight);
+		scape.appendChild(wiresSvg());
+		scape.appendChild(el("div", { class: "title-pole p1" }));
+		scape.appendChild(el("div", { class: "title-pole p2" }));
+		scape.appendChild(el("div", { class: "title-pole p3" }));
+		scape.appendChild(el("div", { class: "title-street" }));
+		scape.appendChild(walker);
 
-		const root = el("div", { class: `title${cleared ? " cleared" : ""}` }, [
+		// ── 題字（プレート廃止。控えめな白の DotGothic16 の2行だけ） ──
+		const lineEls = data.title
+			.split("\n")
+			.map((s) => el("div", { class: "title-name-line", text: s }));
+		const name = el("div", { class: "title-name" }, lineEls);
+
+		const root = el("div", { class: `title${cleared ? " cleared" : ""}` });
+		root.appendChild(scape);
+		root.appendChild(
 			el("div", {
 				class: "title-clock",
-				html: `${cleared ? "7" : "2"}<span>:</span>00`,
+				html: cleared ? "7<span>:</span>00" : "17<span>:</span>03",
 			}),
-			sign,
+		);
+		root.appendChild(name);
+		root.appendChild(
 			el("div", { class: "title-sub", text: data.subtitle ?? "" }),
-		]);
+		);
 		const buttons = el("div", { class: "title-buttons" });
 		root.appendChild(buttons);
 		root.appendChild(
@@ -77,38 +105,65 @@ export const showTitle = (game: Game): Promise<GameState> =>
 				text: "BGM・効果音は右上の🔊で切り替え",
 			}),
 		);
-		root.appendChild(rail);
 		game.ui.appendChild(root);
 
-		// ── 演出ループ（1文字化け・シルエット横断） ──
+		// ── 演出ループ（空の一瞬の反転・1文字化け・シルエット横断・ヒグラシ1波） ──
+		let busy = false; // メニュー決定後は SE を足さない（下のメニュー処理と共有）
 		const walkRef = data.cast.kiriko?.walk ?? "pub:sprites/kiriko.png";
 		const walkerCtx = walker.getContext("2d");
+		// 化けられる字の位置（行・字番号）を先に拾っておく
+		const spots = lineEls.flatMap((lineEl, li) => {
+			const base = data.title.split("\n")[li];
+			return [...base].flatMap((ch, i) =>
+				GLITCH[ch] ? [{ lineEl, base, i }] : [],
+			);
+		});
 		let nextGlitch = 0; // 次に化ける時刻
 		let glitchUntil = 0; // 化けている間は戻す時刻
+		let glitched: { lineEl: HTMLElement; base: string } | null = null;
+		let nextNight = 0; // 次に空が深夜色になる時刻
+		let nightUntil = 0; // 反転している間は戻す時刻
 		let nextCross = 0; // 次にシルエットが現れる時刻
 		let cross: { start: number; dur: number; dir: 1 | -1 } | null = null;
+		let seDone = false; // ヒグラシ（朝はスズメ）を1波だけ
 		let raf = 0;
 		const anim = (t: number) => {
 			if (!root.isConnected) return;
 			if (!nextGlitch) {
 				// 初回フレームで時刻を初期化
-				nextGlitch = t + 15_000 + Math.random() * 25_000;
+				nextGlitch = t + 45_000 + Math.random() * 45_000;
+				nextNight = t + 18_000 + Math.random() * 22_000;
 				nextCross = t + 8_000 + Math.random() * 14_000;
 			}
-			// 1文字化け（数十秒に一度・0.4〜0.9秒で戻る）。朝は化けない
+			// ヒグラシの1波（音が出せるようになった最初のフレームで。BGM title の前奏として）
+			if (!seDone && !busy && game.audio.unlocked) {
+				seDone = true;
+				game.audio.se(cleared ? "suzume" : "higurashi", { volume: 0.6 });
+			}
+			// 空の反転（数十秒に一度・半秒だけ深夜色→戻る）。朝は起きない
 			if (!cleared && !calm) {
+				if (nightUntil && t >= nightUntil) {
+					root.classList.remove("night");
+					nightUntil = 0;
+					nextNight = t + 40_000 + Math.random() * 20_000;
+				} else if (!nightUntil && t >= nextNight) {
+					root.classList.add("night");
+					nightUntil = t + 500;
+				}
+			}
+			// 1文字化け（ごく稀に・0.4〜0.7秒で戻る）。朝は化けない
+			if (!cleared && !calm && spots.length) {
 				if (glitchUntil && t >= glitchUntil) {
-					big.textContent = SIGN_BIG;
+					if (glitched) glitched.lineEl.textContent = glitched.base;
+					glitched = null;
 					glitchUntil = 0;
-					nextGlitch = t + 20_000 + Math.random() * 30_000;
+					nextGlitch = t + 50_000 + Math.random() * 40_000;
 				} else if (!glitchUntil && t >= nextGlitch) {
-					const idxs = [...SIGN_BIG]
-						.map((ch, i) => (GLITCH[ch] ? i : -1))
-						.filter((i) => i >= 0);
-					const i = idxs[Math.floor(Math.random() * idxs.length)];
-					big.textContent =
-						SIGN_BIG.slice(0, i) + GLITCH[SIGN_BIG[i]] + SIGN_BIG.slice(i + 1);
-					glitchUntil = t + 400 + Math.random() * 500;
+					const s = spots[Math.floor(Math.random() * spots.length)];
+					s.lineEl.textContent =
+						s.base.slice(0, s.i) + GLITCH[s.base[s.i]] + s.base.slice(s.i + 1);
+					glitched = s;
+					glitchUntil = t + 400 + Math.random() * 300;
 				}
 			}
 			// シルエット横断（数十秒に一度・十数秒かけてゆっくり）
@@ -179,7 +234,6 @@ export const showTitle = (game: Game): Promise<GameState> =>
 			});
 		};
 		render();
-		let busy = false;
 		const pop = game.input.push((k) => {
 			if (busy) return;
 			const list = items();
