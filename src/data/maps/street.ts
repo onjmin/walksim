@@ -1,4 +1,4 @@
-// まちのどおり（日常レイヤーの主舞台）。DESIGN §4 時間帯システム・docs/style-everyday.md・
+﻿// まちのどおり（日常レイヤーの主舞台）。DESIGN §4 時間帯システム・docs/style-everyday.md・
 // docs/content-briefs.md「日常レイヤー」。30×20・outdoor（TOD_PRESETS が tint/outside を乗せる）・
 // BGM null（ヒグラシ・チャイム・電車などの生活音が音楽のかわり）。
 //
@@ -305,20 +305,20 @@ export const street: MapDef = {
 	// 光源（docs/night-fx.md §2）。街灯・自販機・コンビニは深夜のみ（夕方は「まだついていない」）、
 	// 民家・商店の窓明かりは夕方のみ（深夜の民家は消えている＝無人の記号）
 	lights: [
-		{ x: 1, y: 12, r: 3, color: "#ffdf9e", only: "shinya" },
-		{ x: 11, y: 12, r: 3, color: "#ffdf9e", only: "shinya" },
-		{ x: 25, y: 12, r: 3, color: "#ffdf9e", only: "shinya" },
-		{ x: 19, y: 12, r: 1.5, color: "#eef4ff", only: "shinya" },
-		{ x: 19, y: 9, r: 4, color: "#cfe4ff", only: "shinya" },
-		{ x: 21, y: 9, r: 2, color: "#cfe4ff", only: "shinya" },
-		{ x: 7, y: 8, r: 2, only: "yu" },
-		{ x: 13, y: 9, r: 2, color: "#cfe4ff", only: "yu" },
-		{ x: 25, y: 8, r: 2, only: "yu" },
-		{ x: 1, y: 8, r: 2, only: "yu" },
-		{ x: 3, y: 8, r: 2, only: "yu" },
-		{ x: 19, y: 9, r: 3, color: "#cfe4ff", only: "yu" },
-		{ x: 8, y: 18, r: 2, only: "yu" },
-		{ x: 16, y: 18, r: 2, only: "yu" },
+		{ x: 1, y: 12, r: 3, color: "#ffdf9e", only: "yoru,shinya" },
+		{ x: 11, y: 12, r: 3, color: "#ffdf9e", only: "yoru,shinya" },
+		{ x: 25, y: 12, r: 3, color: "#ffdf9e", only: "yoru,shinya" },
+		{ x: 19, y: 12, r: 1.5, color: "#eef4ff", only: "yoru,shinya" },
+		{ x: 19, y: 9, r: 4, color: "#cfe4ff", only: "yoru,shinya" },
+		{ x: 21, y: 9, r: 2, color: "#cfe4ff", only: "yoru,shinya" },
+		{ x: 7, y: 8, r: 2, only: "yu,yoru" },
+		{ x: 13, y: 9, r: 2, color: "#cfe4ff", only: "yu,yoru" },
+		{ x: 25, y: 8, r: 2, only: "yu,yoru" },
+		{ x: 1, y: 8, r: 2, only: "yu,yoru" },
+		{ x: 3, y: 8, r: 2, only: "yu,yoru" },
+		{ x: 19, y: 9, r: 3, color: "#cfe4ff", only: "yu,yoru" },
+		{ x: 8, y: 18, r: 2, only: "yu,yoru" },
+		{ x: 16, y: 18, r: 2, only: "yu,yoru" },
 	],
 	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。深夜は無音のまま）
 	onEnter: async (s) => {

@@ -50,6 +50,15 @@ const TOD_PRESETS: Record<string, { passes?: TintPass[]; outside?: string }> = {
 		passes: [{ color: "rgba(235,130,50,0.75)", blend: "overlay" }],
 		outside: "#1c0d12",
 	},
+	// 夜（宵）＝夕と深夜のあいだ。帰宅後に外へ出直しても時間が飛んで見えないように
+	yoru: {
+		passes: [
+			{ color: "rgba(85,100,195,0.65)", blend: "multiply" },
+			{ color: "rgba(128,128,128,0.30)", blend: "saturation" },
+			{ color: "rgba(12,16,48,0.16)" },
+		],
+		outside: "#070810",
+	},
 	// 深夜＝ツクールの夜 (-68,-68,0,68) と同じ設計（青を最後まで残す・彩度を落とす・純黒にしない。docs/night-fx.md）
 	shinya: {
 		passes: [
@@ -75,8 +84,8 @@ const VIGNETTE_BY_TOD: Record<string, number> = {
 	yu: 0.12,
 	asa: 0.08,
 };
-/** 光源（MapDef.lights）の点灯強度。深夜=全灯、夕=営業中の窓あかり。 */
-const LIGHTS_BY_TOD: Record<string, number> = { shinya: 1, yu: 0.4 };
+/** 光源（MapDef.lights）の点灯強度。深夜=全灯、夜=宵、夕=営業中の窓あかり。 */
+const LIGHTS_BY_TOD: Record<string, number> = { shinya: 1, yoru: 0.9, yu: 0.4 };
 /** 深夜にプレイヤーの足元へ常駐させる月明かり（可読性の守り。ランタンに見せない青白）。 */
 const MOON_GLOW = { r: 1.75, color: "#9db4e8", alpha: 0.25 };
 
@@ -788,7 +797,7 @@ export class Game {
 		ctx.globalCompositeOperation = "lighter";
 		for (let i = 0; i < lights.length; i++) {
 			const l = lights[i];
-			if (l.only && l.only !== tod) continue;
+			if (l.only && !l.only.split(",").includes(tod)) continue;
 			const stamp = this.glowFor(l.r, l.color ?? "#ffcc88");
 			if (!stamp) continue;
 			const px = (l.x + 0.5) * TILE - this.camX;

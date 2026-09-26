@@ -93,7 +93,7 @@ export type MapDef = {
 		y: number;
 		r: number;
 		color?: string;
-		/** この時間帯だけ点く（省略時は点灯強度のある全時間帯）。窓=夕のみ・街灯=深夜のみ等。 */
+		/** 点く時間帯（"," 区切りで複数可。省略時は点灯強度のある全時間帯）。例: 窓 "yu,yoru"・街灯 "yoru,shinya"。 */
 		only?: string;
 	}[];
 };
