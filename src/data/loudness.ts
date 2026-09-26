@@ -90,6 +90,15 @@ export const VOICE_LUFS: Record<string, number> = {
 	roze: -14.5,
 	teto: -16.1,
 	rei: -16.9,
+	// ── ここから下は未測定の仮値（4人の中くらい）。鳴らして録れたら測って直す ──
+	rino121: -16.5,
+	shiyo: -16.5,
+	hibika_aru: -16.5,
+	ruko_male: -16.5,
+	ruko_female: -16.5,
+	mgroid: -16.5,
+	motroid: -16.5,
+	nynroid: -16.5,
 };
 
 /** 測っていない声は、4人の中くらいとみなす。 */

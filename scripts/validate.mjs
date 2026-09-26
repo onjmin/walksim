@@ -2,7 +2,9 @@
 //
 // Vite の SSR で src/data/index.ts を読み込み、次を調べる。
 // - マップ: 行の長さがそろっているか、未定義のタイル文字、イベントの座標・重複、BGM 名
-// - レコード（data/records.ts）: 声の音源・日付・本文の長さ、items への登録
+// - レコード（data/records.ts）: 声の音源（voice / trueVoice）・日付・本文の長さ、items への登録
+// - かいいノート（data/notes.ts）: 本文の行数・長さ。s.note(id) の id が notes に有るか。
+//   どこからも呼ばれていないノートは警告（1つにまとめて出す）
 // - イベントのスクリプトを「何もしない Story」で実際に走らせ、呼ばれた命令を調べる
 //   （話し手・道具・BGM・効果音・ワープ先・レコード・セリフの長さ）
 //   フラグ2通り（空・すべて立っている）× 選び方（pick 0〜4）で走らせ、
@@ -25,8 +27,23 @@ const MAX_FLIPS = 48; // 1本のスクリプトで反転させて走らせ直す
 const MAX_PATHS = 48; // 選び方の組み合わせをたどる本数（フラグ1組あたり）
 const TYPED = 4; // 2周目（set された値を入れる）のフラグの組の数
 const MENU_REPEAT = 12; // 同じ選択肢がこれ以上出たら、やめる側（cancel か最後）を選ぶ
-// 読み上げの音源（engine/audio.ts の prepareSpeech と合わせる）
-const VOICE_MODELS = ["uc", "roze", "rei", "tsukuyomi"];
+// 読み上げの音源（engine/audio.ts の CORE_VOICE_MODELS + CAMEO_VOICE_MODELS と合わせる。
+// 春音リノの現行版キーワードは rino121。カメオ5音源は終盤専用＝records の trueVoice 等）
+const VOICE_MODELS = [
+	"uc",
+	"roze",
+	"rei",
+	"tsukuyomi",
+	"rino121",
+	"teto",
+	"shiyo",
+	"hibika_aru",
+	"ruko_male",
+	"ruko_female",
+	"mgroid",
+	"motroid",
+	"nynroid",
+];
 // フラグの約束（DESIGN §7）。スクリプトが set するフラグは、この形に収める。
 // done:/hide: はエンジン、seen_ は目撃、got_ は入手、rule_/note_/found_ はワールドの発見。
 const FLAG_OK =
@@ -190,6 +207,10 @@ try {
 			err(
 				`record ${id}: 声の音源 "${r.voice.model}" が prepareSpeech（${VOICE_MODELS.join("・")}）に無い`,
 			);
+		if (r.trueVoice && !VOICE_MODELS.includes(r.trueVoice.model))
+			err(
+				`record ${id}: 本人の声 "${r.trueVoice.model}" が prepareSpeech（${VOICE_MODELS.join("・")}）に無い`,
+			);
 		if (typeof r.date !== "string" || !r.date)
 			err(`record ${id}: 日付（date）が無い`);
 		if (!Array.isArray(r.lines) || !r.lines.length)
@@ -205,9 +226,35 @@ try {
 		checkText(`item ${id} desc`, it.desc);
 	}
 
+	// ── かいいノート（data/notes.ts。DESIGN §6.5：1行 全角22字・2〜4行） ──
+	for (const [id, nd] of Object.entries(data.notes ?? {})) {
+		if (nd.id !== id) err(`note ${id}: id が "${nd.id}" になっている`);
+		if (!Array.isArray(nd.lines) || !nd.lines.length)
+			err(`note ${id}: 本文（lines）が空`);
+		if ((nd.lines ?? []).length > 4)
+			warn(`note ${id}: 本文が ${nd.lines.length} 行（4 行まで）`);
+		for (const l of nd.lines ?? []) {
+			if (typeof l !== "string") {
+				err(`note ${id}: 行が文字列でない: ${String(l)}`);
+				continue;
+			}
+			if (l.includes("\n"))
+				warn(`note ${id}: 行に改行がある（1要素 = 1行）: ${oneLine(l)}`);
+			if (width(l) > MAX_COLS)
+				warn(`note ${id}: 1行が長い（${width(l)}字）: ${l}`);
+			checkValue(`note ${id}`, l);
+		}
+		if (width(nd.title) > MAX_COLS)
+			warn(`note ${id}: 見出しが長い（${width(nd.title)}字）: ${nd.title}`);
+		if (nd.hint !== undefined && width(nd.hint) > MAX_COLS)
+			warn(`note ${id}: ヒントが長い（${width(nd.hint)}字）: ${nd.hint}`);
+	}
+
 	// ── スクリプトを走らせる ──
 	/** スクリプトの set で立ったフラグ（名前 → 値の集合）。フラグの約束の検査に使う。 */
 	const setFlags = new Map();
+	/** s.note() で書き留められたノート id（呼ばれていないノートの警告に使う）。 */
+	const usedNotes = new Set();
 	/** 2周目で入れる値（フラグ名 → 1周目にスクリプトが set した文字列・数）。 */
 	const typedDomain = new Map();
 	/** 2周目の組 i で、フラグ k に入れる値（set されたことのない真偽のフラグは true）。 */
@@ -333,6 +380,14 @@ try {
 				tick();
 				if (!data.records[id])
 					err(`${where}: レコード "${id}" が records に無い`, note);
+			},
+			note: async (id) => {
+				tick();
+				usedNotes.add(id);
+				if (!data.notes[id])
+					err(`${where}: ノート "${id}" が notes に無い`, note);
+				// 本物と同じくフラグ note_<id> を立てる（when・考察会話の分岐に効く）
+				flags[`note_${id}`] = true;
 			},
 			flag: (name) => flags[name],
 			set: (name, value = true) => {
@@ -548,6 +603,15 @@ try {
 	}
 	for (const [where, fn, mapId] of jobs)
 		for (let i = 0; i < TYPED; i++) await runBase(where, fn, mapId, i);
+
+	// ── どこからも s.note() されていないノート（未実装の呼び出し箇所。警告のみ） ──
+	const unusedNotes = Object.keys(data.notes ?? {}).filter(
+		(id) => !usedNotes.has(id),
+	);
+	if (unusedNotes.length)
+		warn(
+			`ノート: どこからも s.note() されていない: ${unusedNotes.join("・")}`,
+		);
 
 	// ── フラグの約束（DESIGN §7）：スクリプトが set するフラグの形 ──
 	for (const k of setFlags.keys())

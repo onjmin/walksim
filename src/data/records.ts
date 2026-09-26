@@ -2,6 +2,8 @@
 // 中身は実在スレの引用ではなく創作。他愛ない日常の言葉が、途中で終わる感じにする
 // （悲惨・不吉にしすぎない。最後のレコードだけ今夜の日付で、キリコの声）。
 // rec_a〜c の朗読はレイの機械音声（rei）。1要素＝メッセージ窓1枚・全角22字×2行まで。
+// trueVoice は終点・供養スレ駅の一斉再生（Story.record の opt.trueVoice）でだけ流れる
+// 「本人の声」（rec_last はもともとキリコ＝uc の声なので trueVoice は持たない）。
 
 import type { ItemDef, RecordDef } from "../engine/defs";
 
@@ -12,6 +14,7 @@ export const records: Record<string, RecordDef> = {
 		id: "rec_a",
 		title: "深夜のスレ",
 		voice: rei,
+		trueVoice: { model: "ruko_male" },
 		date: "2021/03/15(月) 03:04",
 		lines: [
 			"だれか　おるか？\n眠れんくて　スレ立てたわ",
@@ -24,6 +27,7 @@ export const records: Record<string, RecordDef> = {
 		id: "rec_b",
 		title: "祭りのあと",
 		voice: rei,
+		trueVoice: { model: "ruko_female" },
 		date: "2021/03/15(月) 03:09",
 		lines: [
 			"今日の実況　たのしかったわ。\nはらいたい",
@@ -35,6 +39,7 @@ export const records: Record<string, RecordDef> = {
 		id: "rec_c",
 		title: "おやすみ",
 		voice: rei,
+		trueVoice: { model: "teto" },
 		date: "2021/03/15(月) 03:15",
 		lines: [
 			"みんな　まだ起きてて草",

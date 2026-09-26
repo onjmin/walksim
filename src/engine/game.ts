@@ -320,9 +320,13 @@ export class Game {
 		this.last = t;
 		this.time += dt;
 		this.state.playMs += dt;
-		this.update(dt);
-		this.render();
-		this.rafId = requestAnimationFrame((tt) => this.frame(tt));
+		// 描画が一度失敗してもループを止めない（タブ非表示中のキャンバス0サイズ等）
+		try {
+			this.update(dt);
+			this.render();
+		} finally {
+			this.rafId = requestAnimationFrame((tt) => this.frame(tt));
+		}
 	}
 
 	private get idle(): boolean {
@@ -650,6 +654,8 @@ export class Game {
 	 */
 	private drawDark(ctx: CanvasRenderingContext2D, dark: number): void {
 		const { width, height } = this.screen;
+		// タブ非表示・リサイズ中は画面が0サイズになることがある（0サイズの drawImage は例外）
+		if (width <= 0 || height <= 0) return;
 		let buf = this.darkCanvas;
 		if (!buf || buf.width !== width || buf.height !== height) {
 			buf = document.createElement("canvas");
@@ -801,18 +807,20 @@ export class Game {
 	 * 本文を1枚ずつメッセージ窓で読む（レコードの声で。ボイス OFF なら文字だけ）。
 	 * 名前欄には日付を出す。読み終えたらノイズを止めて針の上がる音
 	 * （data/sfx.ts に "record"＝回転ノイズ・"needle"＝針の音 を用意しておく）。
+	 * opt.trueVoice は終点の一斉再生専用：レコードに trueVoice があれば
+	 * 「本人の声」で読む（無いレコードはふつうの voice のまま。DESIGN §6）。
 	 */
-	async playRecord(id: string): Promise<void> {
+	async playRecord(id: string, opt?: { trueVoice?: boolean }): Promise<void> {
 		const rec = this.data.records[id];
 		if (!rec) {
 			console.warn(`[record] レコード ${id} がありません`);
 			return;
 		}
+		const voice = (opt?.trueVoice ? rec.trueVoice : undefined) ?? rec.voice;
 		this.msg.close();
 		const stopNoise = this.audio.seLoop("record");
 		try {
 			for (const line of rec.lines) {
-				const voice = rec.voice;
 				await this.msg.show({
 					name: rec.date,
 					text: line,
@@ -860,7 +868,19 @@ export class Game {
 			fadeIn: (ms) => this.fadeIn(ms),
 			bgm: (name) => this.audio.bgm(name),
 			se: (name, opt) => this.audio.se(name, opt),
-			record: (id) => this.playRecord(id),
+			record: (id, opt) => this.playRecord(id, opt),
+			note: async (id) => {
+				const def = this.data.notes[id];
+				if (!def) {
+					console.warn(`[note] ノート ${id} がありません`);
+					return;
+				}
+				const key = `note_${id}`;
+				if (this.state.flags[key]) return; // 二度目からは何もしない
+				this.state.flags[key] = true;
+				// メッセージ窓でなく、地名と同じ小さなトーストで知らせる（DESIGN §6.5）
+				this.toast(`ノートに　書きとめた──『${def.title}』`);
+			},
 			flag: (name) => this.state.flags[name],
 			set: (name, value = true) => {
 				this.state.flags[name] = value;
@@ -981,7 +1001,35 @@ export class Game {
 					);
 				}
 			},
-			ending: (opt) => this.scenes.ending(this, opt),
+			ending: (opt) => {
+				// かいいノートの収集率をまとめカードへ自動で足す（DESIGN §6.5「ノート　x/y」）。
+				// まとめの中身はシナリオ側のデータなので、すでに「ノート」の行があれば足さない
+				let o = opt;
+				const noteIds = Object.keys(this.data.notes);
+				if (opt?.summary?.sections.length && noteIds.length) {
+					const has = opt.summary.sections.some((sec) =>
+						sec.lines.some((l) => l.includes("ノート")),
+					);
+					if (!has) {
+						const found = noteIds.filter(
+							(id) => this.state.flags[`note_${id}`],
+						).length;
+						o = {
+							...opt,
+							summary: {
+								sections: [
+									...opt.summary.sections,
+									{
+										title: "かいいノート",
+										lines: [`ノート　${found}/${noteIds.length}`],
+									},
+								],
+							},
+						};
+					}
+				}
+				return this.scenes.ending(this, o);
+			},
 		};
 	}
 }

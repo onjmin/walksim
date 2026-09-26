@@ -1,8 +1,10 @@
 // 登場人物（DESIGN §5）。歩行グラは RPGEN 形式（16x16・2コマ×4方向）。
-// 新キャラ（ネムリン・ミャウミャウ・つくよみちゃん・八尺様）は scripts/make-sprites.mjs で作った仮グラ。
+// 新キャラ（ネムリン・ミャウミャウ・つくよみちゃん・八尺様・リノ・シヨ・アル・ゼロ・アイ・うしろ）は
+// scripts/make-sprites.mjs で作った仮グラ。
 // 立ち絵（portrait.src）は public/portraits/ に透過 PNG を置けば表示される。無ければダミー表示。
 // 立ち絵は右向きで描けば、右側に立つときは自動で左右反転する（ui/message.ts）。
-// 声（voice）は uc / roze / rei / tsukuyomi の4つだけ（engine/audio.ts の prepareSpeech と合わせる）。
+// 声（voice）はコア8音源 uc / roze / rei / tsukuyomi / rino121 / teto / shiyo / hibika_aru
+// （engine/audio.ts の CORE_VOICE_MODELS と合わせる。春音リノの現行版キーワードは rino121）。
 
 import type { CharDef } from "../engine/defs";
 
@@ -99,5 +101,74 @@ export const cast: Record<string, CharDef> = {
 		name: "片足の老人",
 		walk: "pub:assets/rpgen/char/03-elderly-a.png",
 		color: "#9a9a90",
+	}),
+	/**
+	 * 黄色い部屋の「先客」。事務椅子の主。「べ、別に」型の照れ隠し。
+	 * 31年ここにいる気がする、等（歩行グラ・立ち絵・色は rpg と同じ）。
+	 */
+	teto: c({
+		id: "teto",
+		name: "テト",
+		walk: "sa:3xUW5Y",
+		color: "#e2455b",
+		voice: { model: "teto" },
+		portrait: { src: "portraits/teto.png", side: "right" },
+	}),
+	/** 過去ログの地層の小さな食堂の女将。45歳・伊勢出身。生活感のある落ち着き。 */
+	rino: c({
+		id: "rino",
+		name: "リノ",
+		walk: "pub:sprites/rino.png",
+		color: "#c88a5a",
+		voice: { model: "rino121" },
+	}),
+	/**
+	 * hub の壊れた自販機に小銭を入れ続けている。16歳・ツンデレ・一人称「あたす」。
+	 * 照れ・動揺の瞬間だけ津軽弁が一瞬漏れる。
+	 */
+	shiyo: c({
+		id: "shiyo",
+		name: "シヨ",
+		walk: "pub:sprites/shiyo.png",
+		color: "#cfa236",
+		voice: { model: "shiyo" },
+	}),
+	/** hub の開かないエレベーターを調べている科学部の18歳。計測はするが説明はしない。 */
+	aru: c({
+		id: "aru",
+		name: "アル",
+		walk: "pub:sprites/aru.png",
+		color: "#7ab8d4",
+		voice: { model: "hibika_aru" },
+	}),
+	/**
+	 * 筆談アンドロイド（声のないUTAU・史実）。セリフは全て
+	 * 「（スケッチブックを見せている）」形式＋地の文なので voice は持たない。
+	 */
+	zero: c({
+		id: "zero",
+		name: "ゼロ",
+		walk: "pub:sprites/zero.png",
+		color: "#8ab0e8",
+	}),
+	/**
+	 * 2日で消えた3番目の企画（史実）。お絵かき掲示板の「描きかけの絵」の正体。
+	 * 台詞は遺構の2行だけ。声は無い。
+	 */
+	ai: c({
+		id: "ai",
+		name: "アイ",
+		walk: "pub:sprites/ai.png",
+		color: "#c8ccd8",
+	}),
+	/**
+	 * 「君の、うしろ」。きさらぎ駅ホームの柱の陰。話しかけると消え、
+	 * 直後に自分の真後ろに立っている。無害。声は無い（音源はあるが koe 未収録）。
+	 */
+	ushiro: c({
+		id: "ushiro",
+		name: "うしろ",
+		walk: "pub:sprites/ushiro.png",
+		color: "#b04a86",
 	}),
 };

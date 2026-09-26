@@ -14,6 +14,7 @@ import { train } from "./maps/train";
 import { tunnel } from "./maps/tunnel";
 import { village } from "./maps/village";
 import { yellow } from "./maps/yellow";
+import { notes } from "./notes";
 import { items, records } from "./records";
 import { sfx } from "./sfx";
 
@@ -36,6 +37,7 @@ export const data: GameData = {
 	cast,
 	items,
 	records,
+	notes,
 	bgm,
 	sfx,
 	titleBgm: "title",

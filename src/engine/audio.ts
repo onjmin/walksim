@@ -72,14 +72,51 @@ const SING_GAIN = 10 ** (15.6 / 20);
 const hasIntro = (mml: string): boolean =>
 	/@0\s*t\d+\s*v\d+\s*o\d\s*r1r1r1r1/.test(mml);
 
+/**
+ * コア音源（ボイスON時に prepareSpeech。DESIGN §5「声の音源」）。
+ * キーワードは dtm の lyrics.ts（KOE_VOICEBANKS）のもの。
+ * 春音リノは現行版 = rino121（rino は旧 ver0.3）。
+ */
+const CORE_VOICE_MODELS = [
+	"uc",
+	"roze",
+	"rei",
+	"tsukuyomi",
+	"rino121",
+	"teto",
+	"shiyo",
+	"hibika_aru",
+] as const;
+
+/**
+ * カメオ音源（終盤専用。DESIGN §5）。コアと同時に落とすと重いので、
+ * 改札が開いた時点（gate_open）でハブ側の演出が prepareCameoVoices を呼ぶ。
+ * 用途は ①終点の一斉再生の「本人の声」（rec_a/b/c）②朝のスレの住民の一言。
+ */
+const CAMEO_VOICE_MODELS = [
+	"ruko_male",
+	"ruko_female",
+	"mgroid",
+	"motroid",
+	"nynroid",
+] as const;
+
+/**
+ * 効果音が MML か（data/sfx.ts の値。MML は `#volume=` ヘッダから始める約束にして
+ * `rpgen:<id>`・URL と見分ける）。MML の効果音は dtm の内蔵シンセで鳴らす。
+ */
+const isMmlSe = (ref: string): boolean => ref.startsWith("#");
+
 /** 固有名詞の読み（OpenJTalk が誤読するもの）。長いものから置き換える。 */
 const READINGS: ReadonlyArray<readonly [string, string]> = [
 	["蓄音キリコ", "ちくねキリコ"],
 	["束音ロゼ", "たばねロゼ"],
 	["重音テト", "かさねテト"],
+	["革命シヨ", "かくめいしよ"],
 	["蓄音", "ちくね"],
 	["束音", "たばね"],
 	["重音", "かさね"],
+	["春音", "はるね"],
 	["吾輩", "わがはい"],
 	["おーぷん2ちゃんねる", "おーぷんにちゃんねる"],
 	["おんJ", "おんジェイ"],
@@ -175,6 +212,8 @@ export class GameAudio {
 	private seCache = new Map<string, Promise<AudioBuffer | null>>();
 	/** ループで鳴らしている効果音（seLoop。ミュートされたら止める）。 */
 	private seLoops = new Set<AudioBufferSourceNode>();
+	/** ループで鳴らしている MML の効果音（レコードの回転ノイズなど）。 */
+	private mmlSeLoops = new Set<MmlPlayback>();
 	/** 長い効果音が鳴り終わる時刻（AudioContext の時計。重ね鳴らし防止）。 */
 	private seEnds = new Map<string, number>();
 	/** 区切り待ちが終わる時刻（performance.now の時計）。 */
@@ -185,6 +224,7 @@ export class GameAudio {
 	 */
 	private sePending = new Set<{ until: number }>();
 	private voiceReady: Promise<void> | null = null;
+	private cameoReady: Promise<void> | null = null;
 	private speaking: {
 		abort: AbortController;
 		handle: SpeechHandle | null;
@@ -469,7 +509,12 @@ export class GameAudio {
 
 	/** 効果音をあらかじめ読み込む（最初の1回の遅れを無くす）。 */
 	preloadSe(names: string[]): void {
-		for (const n of names) void this.buffer(n);
+		for (const n of names) {
+			const ref = this.sfxData[n];
+			// MML の効果音はファイルが無い。かわりに dtm を先に読んでおく
+			if (ref && isMmlSe(ref)) void loadDtm();
+			else void this.buffer(n);
+		}
 	}
 
 	/** 効果音が聞こえる設定か（ミュート・音量 0 のときは鳴らさず、区切りも待たない）。 */
@@ -485,6 +530,11 @@ export class GameAudio {
 		if (!this.seAudible() || !this.ctx || !this.seGain) return;
 		const ctx = this.ctx;
 		const gain = this.seGain;
+		const ref = this.sfxData[name];
+		if (ref && isMmlSe(ref)) {
+			this.playMmlSe(ref, opt, false);
+			return;
+		}
 		const p = this.buffer(name);
 		if (!p) return;
 		const t0 = performance.now();
@@ -532,6 +582,8 @@ export class GameAudio {
 		if (!this.seAudible() || !this.ctx || !this.seGain) return () => {};
 		const ctx = this.ctx;
 		const gain = this.seGain;
+		const ref = this.sfxData[name];
+		if (ref && isMmlSe(ref)) return this.playMmlSe(ref, undefined, true);
 		const p = this.buffer(name);
 		if (!p) return () => {};
 		let src: AudioBufferSourceNode | null = null;
@@ -571,6 +623,75 @@ export class GameAudio {
 			}
 		}
 		this.seLoops.clear();
+		for (const pb of this.mmlSeLoops) this.dispose(pb);
+		this.mmlSeLoops.clear();
+	}
+
+	/**
+	 * MML の効果音（data/sfx.ts の値が MML のもの。レコードノイズ・秒針・太鼓など）。
+	 * dtm の playMML（内蔵シンセ）で鳴らし、効果音の音量ノード（seGain）へつなぐ。
+	 * 大きさは BGM と同じく MML の #volume= で1音ずつ決める（雰囲気のゲームなので
+	 * どれも小さく書いてある。data/sfx.ts）。SE_LOUDNESS の補正・区切り待ちは掛けない。
+	 * loop = true でループ（返した関数で止める。ミュートされたら stopSeLoops が止める）。
+	 */
+	private playMmlSe(
+		mml: string,
+		opt?: { pan?: number; volume?: number },
+		loop = false,
+	): () => void {
+		const ctx = this.ctx;
+		const gain = this.seGain;
+		if (!ctx || !gain) return () => {};
+		// （パン）→ 全体の音量。rpgen の効果音と同じ並び
+		let dest: AudioNode = gain;
+		let panner: StereoPannerNode | null = null;
+		if (opt?.pan && typeof ctx.createStereoPanner === "function") {
+			panner = ctx.createStereoPanner();
+			panner.pan.value = Math.max(-1, Math.min(1, opt.pan));
+			panner.connect(gain);
+			dest = panner;
+		}
+		const t0 = performance.now();
+		let pb: MmlPlayback | null = null;
+		let stopped = false;
+		const cleanup = () => panner?.disconnect();
+		void loadDtm().then((dtm) => {
+			if (stopped || !this.seAudible()) return cleanup();
+			// dtm の読み込みに時間がかかりすぎたら鳴らさない（ずれた音は邪魔。ループは鳴らす）
+			if (!loop && performance.now() - t0 > SE_LATE_MS) return cleanup();
+			let ended = false;
+			const playback = dtm.playMML(mml, {
+				loop,
+				audioContext: ctx,
+				destination: dest,
+				pauseWhenHidden: false,
+				// 1回きりの音は、鳴り終わったら片づける（injected ctx なので destroy は
+				// リスナ解除だけ。stop() 経由の再入は ended で止める）
+				onStop: () => {
+					if (loop || ended) return;
+					ended = true;
+					queueMicrotask(() => {
+						try {
+							playback.destroy();
+						} catch {
+							// 片づけ損ねても続行
+						}
+						cleanup();
+					});
+				},
+			});
+			pb = playback;
+			pb.setVolume(Math.min(100, songVolume(mml) * 0.5 * (opt?.volume ?? 1)));
+			if (loop) this.mmlSeLoops.add(pb);
+		});
+		return () => {
+			stopped = true;
+			if (pb) {
+				this.mmlSeLoops.delete(pb);
+				this.dispose(pb);
+				cleanup();
+			}
+		};
 	}
 
 	/** 今から ms の間を区切り待ちにする（前の待ちが長ければそちら）。 */
@@ -622,8 +743,8 @@ export class GameAudio {
 		this.voiceReady ??= (async () => {
 			try {
 				const studio = await this.studio();
-				// 用意する声は4つだけ（DESIGN §5。初回DLを rpg より軽く）
-				await studio.prepareSpeech(["uc", "roze", "rei", "tsukuyomi"], {
+				// コア8音源（DESIGN §5。カメオ音源は改札が開いてから prepareCameoVoices で）
+				await studio.prepareSpeech(CORE_VOICE_MODELS, {
 					onProgress: (loaded: number, total: number) => {
 						this.voiceProgress = { loaded: Math.min(loaded, total), total };
 						this.onVoiceProgress?.();
@@ -636,6 +757,30 @@ export class GameAudio {
 			}
 		})();
 		return this.voiceReady;
+	}
+
+	/**
+	 * カメオ音源の準備（DESIGN §5。終点の一斉再生・朝のスレの声）。
+	 * コアと同時に落とすと重いので、改札が開いた時点（gate_open）の演出が呼ぶ。
+	 * 失敗しても進行は止めない：準備できていない声は speak が null を返し、文字だけで進む。
+	 */
+	prepareCameoVoices(
+		onProgress?: (loaded: number, total: number) => void,
+	): Promise<void> {
+		if (!this.ctx || !settings.voice) return Promise.resolve();
+		this.cameoReady ??= (async () => {
+			try {
+				const studio = await this.studio();
+				await studio.prepareSpeech(CAMEO_VOICE_MODELS, {
+					onProgress: (loaded: number, total: number) =>
+						onProgress?.(Math.min(loaded, total), total),
+				});
+			} catch (e) {
+				console.warn("[audio] カメオ音源の準備に失敗しました", e);
+				this.cameoReady = null;
+			}
+		})();
+		return this.cameoReady;
 	}
 
 	/** AudioContext の時刻 t（秒）に鳴らした音が聞こえる時刻（performance.now の時計、ms）。 */

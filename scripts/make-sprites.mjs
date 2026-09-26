@@ -9,6 +9,12 @@
 // - public/sprites/myaumyau_*.png   … ミャウミャウ A/B/C（紙袋頭の小柄な人影。出会うたび姿が違う）32x64
 // - public/sprites/tsukuyomi.png    … つくよみちゃん（巫女）32x64
 // - public/sprites/hasshaku.png     … 八尺様（白い長身シルエット。1コマ 16x32・シートは 32x128）
+// - public/sprites/rino.png         … 春音リノ（お団子髪・エプロンの女将）32x64
+// - public/sprites/shiyo.png        … 革命シヨ（やきう色ポニテ・猫耳カチューシャ・黒メイド服）32x64
+// - public/sprites/aru.png          … 響化アル（長めマッシュの少年・シャツ）32x64
+// - public/sprites/zero.png         … 解音ゼロ（淡金髪ロング・青いツノ型アンテナ・白×青の和装）32x64
+// - public/sprites/ai.png           … 優音アイ（輪郭線だけのスケッチ姿・半透明）32x64
+// - public/sprites/ushiro.png       … 君野うしろ（赤紫ツインテール。全方向とも後ろ姿）32x64
 //
 // 依存なし（zlib だけ）。ドット絵は下の文字の絵から作る。
 
@@ -1048,6 +1054,403 @@ for (let f = 0; f < 2; f++) {
 }
 writeFileSync(join(OUT, "hasshaku.png"), encodePng(32, 128, hasshaku));
 
+// ───────────────── 春音リノ ─────────────────
+// 過去ログの地層の食堂の女将（45歳・伊勢出身）。お団子髪・落ち着いた色の着物にエプロン。
+
+walkSheet(
+	"rino.png",
+	{
+		K: hex("#2a201a"),
+		H: hex("#6a4a38"), // 髪（こげ茶）
+		h: hex("#4c3426"),
+		F: hex("#ffe0c8"),
+		B: hex("#2a2018"),
+		W: hex("#f2ead6"), // エプロン
+		w: hex("#d8ccb0"),
+		D: hex("#8a5a4a"), // 着物（柿渋色）
+		d: hex("#6a4234"),
+		S: hex("#3a2a22"),
+	},
+	{
+		down: [
+			"......KKKK......",
+			".....KHhHHK.....",
+			"....KKHHHHKK....",
+			"...KHHHHHHHHK...",
+			"..KHHKKKKKKHHK..",
+			"..KHKFFFFFFKHK..",
+			"..KHKFBFFBFKHK..",
+			"..KHKFFFFFFKHK..",
+			"...KKFFFFFFKK...",
+			"...KDDDDDDDDK...",
+			"..KDDWWWWWWDDK..",
+			"..KDKWwWWwWKDK..",
+			"..KDKWWWWWWKDK..",
+			"...KKWWWWWWKK...",
+			...FEET,
+		],
+		up: [
+			"......KKKK......",
+			".....KHhHHK.....",
+			"....KKHHHHKK....",
+			"...KHHHHHHHHK...",
+			"..KHHHHHHHHHHK..",
+			"..KHHhHHHHhHHK..",
+			"..KHHHHHHHHHHK..",
+			"..KHhHHHHHHhHK..",
+			"...KKHHHHHHKK...",
+			"...KDDDDDDDDK...",
+			"..KDDDDWWDDDDK..",
+			"..KDKDWWWWDKDK..",
+			"..KDKDDDDDDKDK..",
+			"...KKDDDDDDKK...",
+			...FEET,
+		],
+		right: [
+			"....KKKK........",
+			"...KHhHHK.......",
+			"..KKHHHHKK......",
+			"..KHHHHHHHHK....",
+			".KHHHHKKFFFFK...",
+			".KHHHHKFFFFFFK..",
+			".KHHHHKFFFBFFK..",
+			".KHHHHKFFFFFFK..",
+			"..KHHHKFFFFKK...",
+			"...KDDDDDDDDK...",
+			"..KDDDWWWWWWK...",
+			"..KDKDWwWWwWK...",
+			"..KDKDWWWWWWK...",
+			"...KKWWWWWWKK...",
+			...FEET,
+		],
+	},
+	FEET_B,
+);
+
+// ───────────────── 革命シヨ ─────────────────
+// やきう色（黄土）のポニーテール・黒メイド服に白エプロン・猫耳カチューシャ・赤目。
+// 丸眼鏡は目のまわりの 1px（G）で示唆する。
+
+walkSheet(
+	"shiyo.png",
+	{
+		K: hex("#1c1820"),
+		E: hex("#2a2433"), // 猫耳カチューシャ
+		Y: hex("#c8a132"), // 髪（やきう色）
+		y: hex("#97781f"),
+		F: hex("#ffe2ca"),
+		R: hex("#c83a3a"), // 赤目
+		G: hex("#d8dce4"), // 丸眼鏡の示唆
+		M: hex("#2c2836"), // メイド服（黒）
+		m: hex("#443e52"),
+		W: hex("#f4f4f8"), // エプロン
+		w: hex("#d8d8e2"),
+		S: hex("#2a2430"),
+	},
+	{
+		down: [
+			"...KK......KK...",
+			"...KEK....KEK...",
+			"..KKEEKKKKEEKK..",
+			"..KYYYYYYYYYYK..",
+			".KYYKKKKKKKKYYK.",
+			".KYKFFFFFFFFKYK.",
+			".KYKGRGFFGRGKYK.",
+			".KYKFFFFFFFFKYK.",
+			"..KYKFFKKFFKYK..",
+			"...KMMMMMMMMK...",
+			"..KMMWWWWWWMMK..",
+			"..KMKWwWWwWKMK..",
+			"..KMKWWWWWWKMK..",
+			"...KKMMMMMMKK...",
+			...FEET,
+		],
+		up: [
+			"...KK......KK...",
+			"...KEK....KEK...",
+			"..KKEEKKKKEEKK..",
+			"..KYYYYYYYYYYK..",
+			".KYYYYYYYYYYYYK.",
+			".KYYYyYYYYyYYYK.",
+			".KYYYYYYYYYYYYK.",
+			"..KYYYYyyYYYYK..",
+			"...KYYKyyKYYK...",
+			"...KMMKyyKMMK...",
+			"..KMMMKyyKMMMK..",
+			"..KMMMKyyKMMMK..",
+			"..KMMMMKKMMMMK..",
+			"...KKMMMMMMKK...",
+			...FEET,
+		],
+		right: [
+			"...KK......KK...",
+			"...KEK....KEK...",
+			"..KKEEKKKKEEKK..",
+			"..KYYYYYYYYYYK..",
+			".KYYYYKKFFFFK...",
+			".KYyYYKFFFFFFK..",
+			".KYyYYKFFGRGFK..",
+			"..KYyYKFFFFFFK..",
+			"..KYyYKFFFFKK...",
+			"..KyyKMMMMMMK...",
+			"..KyyKMWWWWWK...",
+			"...KKKMWwWWWK...",
+			".....KMWWWWWK...",
+			"....KMMMMMMK....",
+			...FEET,
+		],
+	},
+	FEET_B,
+);
+
+// ───────────────── 響化アル ─────────────────
+// hub のエレベーターを計測している科学部の少年。長めのマッシュとシャツ。
+
+walkSheet(
+	"aru.png",
+	{
+		K: hex("#202830"),
+		H: hex("#3e5a5e"), // 髪（暗い青緑）
+		h: hex("#2c4246"),
+		F: hex("#ffe0c8"),
+		B: hex("#262a30"),
+		W: hex("#e8ecf2"), // シャツ
+		w: hex("#ccd2dc"),
+		D: hex("#4a5468"), // ズボン
+		S: hex("#333a48"),
+	},
+	{
+		down: [
+			"....KKKKKKKK....",
+			"...KHHHHHHHHK...",
+			"..KHHHHHHHHHHK..",
+			"..KHHhHHHHhHHK..",
+			"..KHHHHHHHHHHK..",
+			"..KHKFFFFFFKHK..",
+			"..KHKFBFFBFKHK..",
+			"..KHKFFFFFFKHK..",
+			"...KKFFFFFFKK...",
+			"...KWWWWWWWWK...",
+			"..KWWWKWWKWWWK..",
+			"..KWWWWwwWWWWK..",
+			"...KWWWWWWWWK...",
+			"...KKDDDDDDKK...",
+			...FEET,
+		],
+		up: [
+			"....KKKKKKKK....",
+			"...KHHHHHHHHK...",
+			"..KHHHHHHHHHHK..",
+			"..KHHhHHHHhHHK..",
+			"..KHHHHHHHHHHK..",
+			"..KHHhHHHHhHHK..",
+			"..KHHHHHHHHHHK..",
+			"..KHhHHHHHHhHK..",
+			"...KKHHHHHHKK...",
+			"...KWWWWWWWWK...",
+			"..KWWWWWWWWWWK..",
+			"..KWWwWWWWwWWK..",
+			"...KWWWWWWWWK...",
+			"...KKDDDDDDKK...",
+			...FEET,
+		],
+		right: [
+			"....KKKKKKKK....",
+			"...KHHHHHHHHK...",
+			"..KHHHHHHHHHHK..",
+			"..KHHHHHHHHHHK..",
+			"..KHHHHKKFFFFK..",
+			"..KHhHHKFFFFFK..",
+			"..KHhHHKFFFBFK..",
+			"..KHHHHKFFFFFK..",
+			"...KKHHKFFFKK...",
+			"...KWWWWWWWWK...",
+			"..KWWWWWKWWWWK..",
+			"..KWWWWwwWWWWK..",
+			"...KWWWWWWWWK...",
+			"...KKDDDDDDKK...",
+			...FEET,
+		],
+	},
+	FEET_B,
+);
+
+// ───────────────── 解音ゼロ ─────────────────
+// 筆談アンドロイド。淡い金髪ロング・青いツノ型アンテナ・白×青の和風衣装。
+// （アンドロイド可変設定：会うたび細部が違ってよいので、仮グラは標準形のみ）
+
+walkSheet(
+	"zero.png",
+	{
+		K: hex("#262a3a"),
+		A: hex("#3a6ae0"), // ツノ型アンテナ
+		Y: hex("#f0e2ac"), // 髪（淡い金）
+		y: hex("#d4c184"),
+		F: hex("#fff0e4"),
+		B: hex("#3a4a6a"),
+		W: hex("#f8f8fc"), // 和装（白）
+		w: hex("#dcdce8"),
+		L: hex("#4a78d0"), // 青の差し色（帯・衿）
+		S: hex("#3a4258"),
+	},
+	{
+		down: [
+			"..KAK......KAK..",
+			"..KAAK....KAAK..",
+			"..KKYYYYYYYYKK..",
+			"..KYYYYYYYYYYK..",
+			".KYYKKKKKKKKYYK.",
+			".KYKFFFFFFFFKYK.",
+			".KYKFBFFFFBFKYK.",
+			".KYKFFFFFFFFKYK.",
+			".KYKKFFFFFFKKYK.",
+			".KYKWWWWWWWWKYK.",
+			".KYKWWLLLLWWKYK.",
+			"..KKWWWWWWWWKK..",
+			"...KWWLWWLWWK...",
+			"...KKWWWWWWKK...",
+			...FEET,
+		],
+		up: [
+			"..KAK......KAK..",
+			"..KAAK....KAAK..",
+			"..KKYYYYYYYYKK..",
+			"..KYYYYYYYYYYK..",
+			".KYYYYYYYYYYYYK.",
+			".KYYyYYYYYYyYYK.",
+			".KYYYYYYYYYYYYK.",
+			".KYYYYyYYyYYYYK.",
+			".KYYYYYYYYYYYYK.",
+			"..KYYYYYYYYYYK..",
+			"..KYYyYYYYyYYK..",
+			"..KKYYYYYYYYKK..",
+			"...KWWWWWWWWK...",
+			"...KKWWWWWWKK...",
+			...FEET,
+		],
+		right: [
+			"...KAK....KAK...",
+			"...KAAK..KAAK...",
+			"..KKYYYYYYYYKK..",
+			"..KYYYYYYYYYYK..",
+			".KYYYYYKKFFFFK..",
+			".KYyYYYKFFFFFK..",
+			".KYyYYYKFFFBFK..",
+			".KYYYYYKFFFFFK..",
+			".KYYYYKKFFFKK...",
+			".KYYYKWWWWWWK...",
+			".KYYYKWWLLWWK...",
+			"..KKKKWWWWWWK...",
+			".....KWWLWWWK...",
+			"....KKWWWWKK....",
+			...FEET,
+		],
+	},
+	FEET_B,
+);
+
+// ───────────────── 優音アイ ─────────────────
+// 「描きかけの絵」。輪郭線だけのスケッチ風：白〜淡グレーの線のみ・塗りなし・半透明。
+// 色は alpha を落として、うっすら向こうが透ける（消えかけの存在）。
+
+const AI_L = [205, 210, 222, 180]; // 輪郭線
+const AI_l = [180, 186, 200, 110]; // 描きかけの薄い線
+const AI_FEET = [".....LL..LL.....", "................"];
+const AI_FEET_B = ["....LL....LL....", "................"];
+walkSheet(
+	"ai.png",
+	{ L: AI_L, l: AI_l },
+	{
+		down: [
+			"....LLLLLLLL....",
+			"...L........L...",
+			"..L..........L..",
+			"..L..........L..",
+			"..L..l....l..L..",
+			"..L..........L..",
+			"...L........L...",
+			"....LLLLLLLL....",
+			"......L..L......",
+			"....LL....LL....",
+			"...L...ll...L...",
+			"...L........L...",
+			"...L........L...",
+			"....LLLLLLLL....",
+			...AI_FEET,
+		],
+		up: [
+			"....LLLLLLLL....",
+			"...L........L...",
+			"..L..........L..",
+			"..L..........L..",
+			"..L..........L..",
+			"..L..........L..",
+			"...L........L...",
+			"....LLLLLLLL....",
+			"......L..L......",
+			"....LL....LL....",
+			"...L..l..l..L...",
+			"...L........L...",
+			"...L........L...",
+			"....LLLLLLLL....",
+			...AI_FEET,
+		],
+		right: [
+			"....LLLLLLLL....",
+			"...L........L...",
+			"..L..........L..",
+			"..L..........L..",
+			"..L........l.L..",
+			"..L..........L..",
+			"...L........L...",
+			"....LLLLLLLL....",
+			"......L..L......",
+			"....LL....LL....",
+			"...L....l...L...",
+			"...L........L...",
+			"...L........L...",
+			"....LLLLLLLL....",
+			...AI_FEET,
+		],
+	},
+	AI_FEET_B,
+);
+
+// ───────────────── 君野うしろ ─────────────────
+// 「君の、うしろ」。赤紫ツインテールの少女。**全方向とも後ろ姿**（down 向きでも後頭部）。
+// どの向きに歩いても顔が見えない＝目が合わない、をグラだけで作る。
+
+const USHIRO_BACK = [
+	"....KKKKKKKK....",
+	"...KRRRRRRRRK...",
+	"..KRRRRRRRRRRK..",
+	".KRRKRRRRRRKRRK.",
+	".KRrKRRrrRRKRrK.",
+	".KRRKRRRRRRKRRK.",
+	".KRrKKRRRRKKRrK.",
+	".KRRK.KKKK.KRRK.",
+	".KRrKKDDDDKKRrK.",
+	".KRRKDDDDDDKRRK.",
+	".KRrKDdDDdDKRrK.",
+	"..KKKDDDDDDKKK..",
+	"....KDDDDDDK....",
+	"...KDDDDDDDDK...",
+	...FEET,
+];
+walkSheet(
+	"ushiro.png",
+	{
+		K: hex("#241626"),
+		R: hex("#a04070"), // 髪（赤紫）
+		r: hex("#7a2c56"),
+		D: hex("#3a3444"), // 服
+		d: hex("#2a2534"),
+		S: hex("#2a2028"),
+	},
+	{ down: USHIRO_BACK, up: USHIRO_BACK, right: USHIRO_BACK },
+	FEET_B,
+);
+
 console.log(
-	"wrote mujje.png, kiriko_botsu.png, phono.png, minors_*.png, nemurin.png, myaumyau_*.png, tsukuyomi.png, hasshaku.png",
+	"wrote mujje.png, kiriko_botsu.png, phono.png, minors_*.png, nemurin.png, myaumyau_*.png, tsukuyomi.png, hasshaku.png, rino.png, shiyo.png, aru.png, zero.png, ai.png, ushiro.png",
 );

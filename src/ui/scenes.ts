@@ -2,7 +2,7 @@
 
 import type { EndingSummary } from "../engine/defs";
 import { type Game, ResetToTitle } from "../engine/game";
-import { writeSave } from "../engine/save";
+import { markClear, writeSave } from "../engine/save";
 import { sleep } from "../engine/types";
 import { viewport } from "../engine/viewport";
 import { el, nextFrame } from "./dom";
@@ -189,6 +189,8 @@ export const endingRoll = async (
 	// クリア後も遊べるよう、ここで記録する（thread の ending で ending_seen が立っている）。
 	// ロールの途中で閉じたときは記録されず、次の「つづきから」でエンディングがもう一度流れる
 	writeSave(game.state);
+	// 周回外の永続クリア印（DESIGN §7 keep_clear）。「はじめから」でセーブを消しても残る
+	markClear();
 	await waitClose(game, end, 1500);
 	guard();
 	end.remove();

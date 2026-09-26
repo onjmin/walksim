@@ -6,7 +6,7 @@ const KEY = "walksim/settings";
 export type Settings = {
 	/** BGM と効果音をまとめて消す（画面右上のボタン）。 */
 	mute: boolean;
-	/** セリフの読み上げ（初回に約45MBのデータを取得する）。既定 OFF。 */
+	/** セリフの読み上げ（初回に数十MBのデータを取得する）。既定 OFF。 */
 	voice: boolean;
 	/** BGM の鳴らし方。hq = SoundFont（楽器の音色つき）/ light = 内蔵シンセ / off。 */
 	bgm: "hq" | "light" | "off";

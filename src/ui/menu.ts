@@ -1,4 +1,5 @@
-// フィールドのメニュー（Bボタン／☰）：レコード・せってい・きろく・タイトルへ。
+// フィールドのメニュー（Bボタン／☰）：
+// レコード・ノート・めをさます（room 以外）・せってい・きろく・タイトルへ（DESIGN §3）。
 
 import type { Game } from "../engine/game";
 import { ResetToTitle } from "../engine/game";
@@ -154,6 +155,40 @@ const recordMenu = async (game: Game): Promise<void> => {
 	}
 };
 
+/**
+ * かいいノート（DESIGN §6.5）。全 NoteDef を定義順に並べ、未発見は「？？？」
+ * （hint があれば薄字＝desc で添える）。発見済みを選ぶと本文を読み返せる。
+ */
+const noteMenu = async (game: Game): Promise<void> => {
+	const { data, state } = game;
+	const all = Object.values(data.notes);
+	let start = 0;
+	for (;;) {
+		const v = await listWindow(
+			game,
+			"かいいノート",
+			all.map((n) =>
+				state.flags[`note_${n.id}`]
+					? { label: n.title, value: n.id }
+					: { label: "？？？", desc: n.hint, value: n.id, disabled: true },
+			),
+			{ start },
+		);
+		if (v === null) return;
+		start = all.findIndex((n) => n.id === v);
+		const n = data.notes[v];
+		if (!n) return;
+		// レコード再生と同じく、メッセージ窓で2行ずつ読む（文字だけ。名前欄は見出し）
+		for (let i = 0; i < n.lines.length; i += 2)
+			await game.msg.show({
+				name: `『${n.title}』`,
+				text: n.lines.slice(i, i + 2).join("\n"),
+				portrait: null,
+			});
+		game.msg.hideWindow();
+	}
+};
+
 const voiceLabel = (game: Game) => {
 	if (!settings.voice) return "OFF";
 	const p = game.audio.voiceProgress;
@@ -244,7 +279,7 @@ export const settingsMenu = async (game: Game): Promise<void> => {
 			if (!settings.voice) {
 				await game.say(
 					null,
-					"ボイスを　ONにすると、はじめに　やく45MBの　データを　よみこみます。\n（2回目からは　すぐに　はじまります）",
+					"ボイスを　ONにすると、はじめに　すうじゅうMBの　データを　よみこみます。\n（2回目からは　すぐに　はじまります）",
 				);
 				const n = await game.story.choose(["ONにする", "やめておく"], {
 					cancel: 1,
@@ -295,6 +330,11 @@ export const fieldMenu = async (game: Game): Promise<void> => {
 			"",
 			[
 				{ label: "レコード", value: "records" },
+				{ label: "ノート", value: "notes" },
+				// 夢の中（room 以外）でだけ出す安全装置（ゆめにっき9キー相当。DESIGN §3）
+				...(game.state.mapId !== "room"
+					? [{ label: "めをさます", value: "wake" }]
+					: []),
 				{ label: "せってい", value: "settings" },
 				{ label: "きろく", sub: "セーブ", value: "save" },
 				{ label: "タイトルへ", value: "title" },
@@ -303,7 +343,23 @@ export const fieldMenu = async (game: Game): Promise<void> => {
 		);
 		if (v === null) return;
 		if (v === "records") await recordMenu(game);
-		else if (v === "settings") await settingsMenu(game);
+		else if (v === "notes") await noteMenu(game);
+		else if (v === "wake") {
+			await game.say(
+				null,
+				"めを　さましますか？\n（すすんだ分は　きえません）",
+			);
+			const n = await game.story.choose(["はい", "いいえ"], { cancel: 1 });
+			game.msg.hideWindow();
+			if (n === 0) {
+				// 自室のベッドで目が覚める（フラグ・持ちものはそのまま）
+				const st = game.data.start;
+				await game.story.warp(st.mapId, st.x, st.y, st.dir);
+				await game.say(null, "……目が　さめた。");
+				game.msg.hideWindow();
+				return;
+			}
+		} else if (v === "settings") await settingsMenu(game);
 		else if (v === "save") {
 			const ok = writeSave(game.state);
 			game.audio.se(ok ? "save" : "cancel");
