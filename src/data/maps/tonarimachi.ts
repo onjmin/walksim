@@ -1,20 +1,38 @@
 // となりまち「つきみ」（アーケード商店街）。docs/content-briefs.md「日常の町 拡張」。
-// 36×20・outdoor・BGM null・夕方のみ（ekimae の改札からしか来られない）・怪異ゼロ。
+// 36×20・outdoor・BGM null・夕方のみ（ekimae の改札からしか来られない）・怪異ゼロ必達。
 // ここは「行かなくてもいい豊かさ」の担当——進行に一切関係しない。純ノスタルジー地区。
+// かいいノート（s.note）は一つも呼ばない。
 //
 // 座標凍結v3: ekimae の乗車演出 → (3,10) 着地／駅の talk (2,9) → 乗車演出 → ekimae(5,9)。
 // たいやきを買っている（got_taiyaki）と、帰りの車窓の一言が変わる。
 //
-// 経路: 一本目のアーケード(y10-11)と二本目(y16-17)を、東の路地(x30-33)と西の路地(x0)で
-// つないだ回遊ループ。店のあいだの ちいさなくぼみ（x10/x16/x22）にも見るものを置く。
+// 経路: 一本目のアーケード(y10-12)と二本目(y16-18)を、東の路地(x30-33)と西の路地(x0)で
+// つないだ回遊ループ。純喫茶と金物屋のあいだ (7,13)-(7,15) は、黒く見えるが通れる
+// 隠しのすきま（無印。換気扇・ねこ）＝ループの近道にもなる。
+//
+// 一本目（光にぎやか。lights は "yu" 多数）: 駅・レコード店（中に入れる・店主3層）・
+// 本屋（立ち読みの子）・ゲーセン（音だけ・入れない）・模型屋（ジオラマ・二度目に犬）・
+// たいやき屋（choice・got_taiyaki）。くぼみ (10,9)(16,9)(22,9) にも見るもの。
+// 二本目（すこし静か）: 純喫茶・金物屋・骨董屋（店さきに蓄音機——値札を見るキリコ）・
+// 八百屋・テナント募集。
+// 場面（音・光の auto/touch）: 到着・レコードの曲おわり・発車した電車・アーケードの
+// きれめの夕日・すきまの空・帰りの車窓。
 
-import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
+import type {
+	EventDef,
+	GameState,
+	MapDef,
+	Story,
+	TileDef,
+} from "../../engine/defs";
 import { npc } from "../helpers";
+import { SPR } from "../sprites";
 import { base, basePx, PROPS, TOWN } from "../tiles";
 
 // ── タイル ──
-//   M  駅の改札（もどりの talk）  i  たいやき屋の中  < = >  カウンター
-//   o j  しまった戸  d  あいている戸  c  下段の窓（白壁）  t  下段の窓（レンガ）
+//   M  駅の改札（もどりの talk）  i  店の中の床（レコード店・たいやき屋）
+//   < = >  カウンター  o j  しまった戸  d  あいている戸
+//   c  下段の窓（白壁）  t  下段の窓（レンガ）  u  すきま（黒く見えるが通れる＝無印の隠し）
 const PAVE = base(3, 46);
 const WIN_LOW_WHITE = basePx(48, 1382);
 const WIN_LOW_BRICK = basePx(16, 1382);
@@ -69,11 +87,12 @@ const tiles: Record<string, TileDef> = {
 		color: "#a04a3a",
 		passable: false,
 	},
+	u: { layers: [], color: "#000", passable: true },
 	".": { layers: [PAVE], color: "#9a9a9a", passable: true },
 };
 
-// 一本目: 駅・レコード店・本屋・ゲーセン・模型屋・たいやき屋。
-// 二本目: 純喫茶・金物屋・洋品店・八百屋・テナント募集。
+// 一本目: 駅・レコード店（中あり）・本屋・ゲーセン・模型屋・たいやき屋（中あり）。
+// 二本目: 純喫茶・金物屋・骨董屋・八百屋・テナント募集。x7 の黒い縦すじが隠しのすきま。
 const rows = [
 	"                                    ", // y0
 	"                                    ", // y1
@@ -83,15 +102,15 @@ const rows = [
 	"                                    ", // y5
 	"                                    ", // y6
 	"aaaaannnnn nnnnn nnnnn nnnnnnnnnnn  ", // y7  駅とアーケード一本目の屋根
-	"AAAAA(w(w( (w(w( (w(w( %W%W%%iiii%  ", // y8  たいやき屋の中 (30,8)
+	"AAAAA(iii( (w(w( (w(w( %W%W%%iiii%  ", // y8  レコード店の中 (6-8,8)・たいやき屋の中 (30,8)
 	")cM)))c)d).)d)c).)j)t).#t#t#%<==>%  ", // y9  改札 (2,9)・くぼみ (10,9)(16,9)(22,9)
-	"..................................  ", // y10 着地 (3,10)・レコード店主 (7,10)
+	"..................................  ", // y10 着地 (3,10)
 	"..................................  ", // y11
 	"..L.......Bb....p............L....  ", // y12 丸ポスト (6,12)・電話ボックス (20,12)
-	". zzzzz nnnnn aaaaa zzzzz nnnn....  ", // y13 二本目の屋根・東の路地 (30-33)
-	". ZZZZZ ^^^^^ AAAAA ZZZZZ ^^^^....  ", // y14 西の路地 (x0)
-	". )o)c) )c)d) )c)c) )c)o) ]jj]....  ", // y15 純喫茶・金物屋・洋品店・八百屋・テナント
-	"....................................", // y16
+	". zzzzzunnnnn aaaaa zzzzz nnnn....  ", // y13 二本目の屋根・すきま (7,13)・東の路地 (30-33)
+	". ZZZZZu^^^^^ AAAAA ZZZZZ ^^^^....  ", // y14 西の路地 (x0)・すきまのねこ (8,14)
+	". )o)c)u)c)d) )c)c) )c)o) ]jj]....  ", // y15 純喫茶・金物屋・骨董屋・八百屋・テナント
+	"....................................", // y16 蓄音機の台 (16,16)
 	"....................................", // y17
 	"  .L......!.....Bb........L.......  ", // y18 福引き (10,18)
 	"                                    ", // y19
@@ -105,12 +124,33 @@ const WIFE = "pub:assets/rpgen/char/17-woman-d.png";
 const YAOYA = "pub:assets/rpgen/char/02-merchant.png";
 const MAN = "pub:assets/rpgen/char/14-man-a.png";
 
-/** 帰りの乗車演出（夕日の車窓。たいやきを買っていると一言ふえる）。 */
+/** 一度だけ鳴る「場面」の帯（見えない touch を数マスに敷く）。 */
+const sceneBelt = (
+	id: string,
+	cells: [number, number][],
+	flag: string,
+	run: (s: Story) => Promise<void>,
+): EventDef[] =>
+	cells.map(([x, y], i) => ({
+		id: `${id}_${i}`,
+		x,
+		y,
+		trigger: "touch" as const,
+		through: true,
+		when: (st: GameState) => !st.flags[flag],
+		run: async (s: Story) => {
+			s.set(flag);
+			await run(s);
+		},
+	}));
+
+/** 帰りの乗車演出（夕日の車窓。たいやきを買っていると一言ふえる）。座標凍結v3。 */
 const rideHome = async (s: Story): Promise<void> => {
 	await s.fadeOut(600);
 	s.se("train", { volume: 0.7 });
 	await s.wait(900);
 	await s.narrate("――ガタン、ゴトン。");
+	await s.narrate("アーケードの灯りが、\nうしろへ　ながれていく。");
 	await s.narrate("夕日が、川をわたるあいだ\nずっと　ついてきた。");
 	if (s.flag("got_taiyaki"))
 		await s.narrate("ふくろの中の　たいやきが、\nまだ　あたたかい。");
@@ -127,23 +167,29 @@ export const tonarimachi: MapDef = {
 	outside: "#0d0a0c",
 	tiles,
 	rows,
-	// アーケードは夕方から灯りの列（ここだけは「明るい夕方」でよい。生活の密度が主役）
+	// アーケードは灯りの列（ここだけは「明るい夕方」でよい。生活の密度が主役）。
+	// 一本目に多数・二本目はすこし静かに。路地とすきまは灯りなし＝暗さの対比で作る。
 	lights: [
-		{ x: 6, y: 9, r: 2, only: "yu,yoru" },
-		{ x: 14, y: 9, r: 2, only: "yu,yoru" },
-		{ x: 20, y: 9, r: 2, only: "yu,yoru" },
-		{ x: 24, y: 9, r: 2, only: "yu,yoru" },
-		{ x: 26, y: 9, r: 2, only: "yu,yoru" },
-		{ x: 30, y: 9, r: 3, color: "#ffcc88", only: "yu,yoru" },
-		{ x: 5, y: 15, r: 2, only: "yu,yoru" },
-		{ x: 9, y: 15, r: 2, only: "yu,yoru" },
-		{ x: 15, y: 15, r: 2, only: "yu,yoru" },
-		{ x: 17, y: 15, r: 2, only: "yu,yoru" },
-		{ x: 21, y: 15, r: 2, only: "yu,yoru" },
-		{ x: 2, y: 12, r: 3, color: "#ffdf9e", only: "yu,yoru" },
-		{ x: 29, y: 12, r: 3, color: "#ffdf9e", only: "yu,yoru" },
-		{ x: 3, y: 18, r: 3, color: "#ffdf9e", only: "yu,yoru" },
-		{ x: 26, y: 18, r: 3, color: "#ffdf9e", only: "yu,yoru" },
+		// 一本目（にぎやか）
+		{ x: 2, y: 8, r: 2, only: "yu" }, // 駅舎の窓
+		{ x: 6, y: 9, r: 2, only: "yu" }, // レコード店の窓
+		{ x: 7, y: 8, r: 2, only: "yu" }, // レコード店の中
+		{ x: 13, y: 9, r: 2, only: "yu" }, // 本屋の戸
+		{ x: 14, y: 9, r: 2, only: "yu" }, // 本屋の窓
+		{ x: 19, y: 9, r: 2.5, color: "#cfe4ff", only: "yu" }, // ゲーセン（電子の白）
+		{ x: 24, y: 9, r: 2, only: "yu" }, // 模型屋（西）
+		{ x: 26, y: 9, r: 2, only: "yu" }, // 模型屋（東）
+		{ x: 30, y: 8, r: 3, color: "#ffcc88", only: "yu" }, // たいやき屋
+		{ x: 16, y: 9, r: 1.5, color: "#eef4ff", only: "yu" }, // くぼみのじはんき
+		{ x: 2, y: 12, r: 3, color: "#ffdf9e", only: "yu" }, // 街灯（西）
+		{ x: 29, y: 12, r: 3, color: "#ffdf9e", only: "yu" }, // 街灯（東）
+		// 二本目（すこし静か・オレンジ寄り）
+		{ x: 5, y: 15, r: 2, only: "yu" }, // 純喫茶
+		{ x: 9, y: 15, r: 2, only: "yu" }, // 金物屋
+		{ x: 15, y: 15, r: 1.5, only: "yu" }, // 骨董屋（弱い）
+		{ x: 21, y: 15, r: 2, only: "yu" }, // 八百屋
+		{ x: 3, y: 18, r: 3, color: "#ffdf9e", only: "yu" }, // 街灯（南西）
+		{ x: 26, y: 18, r: 3, color: "#ffdf9e", only: "yu" }, // 街灯（南東）
 	],
 	onEnter: async (s) => {
 		s.se("higurashi", { volume: 0.6 });
@@ -194,8 +240,22 @@ export const tonarimachi: MapDef = {
 				await s.narrate("となりの駅は『みなみ』と\n書いてある。……うちの駅だ。");
 			},
 		},
+		// 改札の前をとおると、一本先の電車が出ていく（一度だけ）
+		...sceneBelt(
+			"densha_deru",
+			[
+				[2, 10],
+				[1, 11],
+			],
+			"seen_densha_deru",
+			async (s) => {
+				s.se("densha_far", { pan: -0.6, volume: 0.6 });
+				await s.narrate("改札のおくで、電車が\n一本、出ていった。");
+				await s.say("kiriko", "……吾輩のは、まだ\nあるンゴね？");
+			},
+		),
 
-		// ── レコード店（キリコが長居する店） ──
+		// ── レコード店（キリコが長居する店。中に入れる） ──
 		{
 			id: "record_win",
 			x: 6,
@@ -208,14 +268,51 @@ export const tonarimachi: MapDef = {
 				await s.narrate("どの背も、日に焼けている。");
 			},
 		},
+		// 戸の鈴（入るときも出るときも鳴る）
 		{
-			id: "record_door",
+			id: "record_bell",
 			x: 8,
 			y: 9,
+			trigger: "touch",
+			through: true,
+			run: async (s) => {
+				s.se("doorbell", { volume: 0.7 });
+			},
+		},
+		// 中に入ったとき（一度だけ）
+		{
+			id: "record_naka",
+			x: 8,
+			y: 8,
+			trigger: "touch",
+			through: true,
+			when: (st) => !st.flags.seen_record_naka,
+			run: async (s) => {
+				s.set("seen_record_naka");
+				s.se("record", { volume: 0.6 });
+				await s.narrate("店のなかは、レコードの\n音で　みたされている。");
+				await s.narrate("ざらざらした、いい音だ。");
+			},
+		},
+		{
+			id: "record_tana",
+			x: 9,
+			y: 8,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("あけっぱなしの戸から、\nレコードの音が　もれている。");
-				await s.narrate("……ざらざらした、いい音だ。");
+				await s.narrate("中古の棚。手書きの札に\n『どれも一期一会』。");
+				await s.narrate("背の字が、みんな\n日に焼けて　うすい。");
+				await s.say("kiriko", "ぜんぶ聞くには、人生が\n足りないンゴ……");
+			},
+		},
+		{
+			id: "record_kabe",
+			x: 7,
+			y: 7,
+			trigger: "talk",
+			run: async (s) => {
+				await s.narrate("かべ一面、天井まで\nレコードだ。");
+				await s.narrate("いちばん上は、はしごが\nないと　とどかない。");
 			},
 		},
 		{
@@ -230,6 +327,24 @@ export const tonarimachi: MapDef = {
 				await s.say("kiriko", "……えらべる気が\nしないンゴ");
 			},
 		},
+		// 店の前で、一曲おわる（一度だけ。音だけの場面）
+		...sceneBelt(
+			"record_owari",
+			[
+				[7, 10],
+				[8, 10],
+				[9, 10],
+			],
+			"seen_record_owari",
+			async (s) => {
+				s.se("record", { volume: 0.4, pan: -0.1 });
+				await s.wait(700);
+				s.se("needle", { volume: 0.6, pan: -0.1 });
+				await s.narrate("戸のおくで、曲がおわって\n針のあがる音がした。");
+				await s.wait(600);
+				await s.narrate("すこしして、つぎの曲が\nはじまった。");
+			},
+		),
 
 		// ── 本屋 ──
 		{
@@ -277,19 +392,18 @@ export const tonarimachi: MapDef = {
 				);
 			},
 		},
-		...([19, 20] as const).map((x, i) => ({
-			id: `geesen_oto_${i}`,
-			x,
-			y: 10,
-			trigger: "touch" as const,
-			through: true,
-			when: (st: GameState) => !st.flags.seen_geesen_oto,
-			run: async (s: Story) => {
-				s.set("seen_geesen_oto");
+		...sceneBelt(
+			"geesen_oto",
+			[
+				[19, 10],
+				[20, 10],
+			],
+			"seen_geesen_oto",
+			async (s) => {
 				s.se("decide", { volume: 0.35, pan: 0 });
 				await s.narrate("ゲーセンの前だけ、\n音の温度が　たかい。");
 			},
-		})),
+		),
 
 		// ── 模型屋 ──
 		{
@@ -310,8 +424,14 @@ export const tonarimachi: MapDef = {
 			y: 9,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("ジオラマ。ちいさな駅と、\nちいさな　ふみきり。");
-				await s.narrate("ちいさな人が、ちいさな\nかばんを　もっている。");
+				if (!s.flag("seen_mokei_b")) {
+					s.set("seen_mokei_b");
+					await s.narrate("ジオラマ。ちいさな駅と、\nちいさな　ふみきり。");
+					await s.narrate("ちいさな人が、ちいさな\nかばんを　もっている。");
+					return;
+				}
+				await s.narrate("……ふみきりの前に、\nちいさな犬も　いた。");
+				await s.narrate("さっきは、気づかなかった。");
 			},
 		},
 
@@ -420,8 +540,21 @@ export const tonarimachi: MapDef = {
 				await s.narrate("店さきの　植木ばち。\nきちんと　手入れされている。");
 			},
 		},
+		// アーケードのきれめ（東の路地の口）に、夕日がさしこむ（一度だけ）
+		...sceneBelt(
+			"yuhi_kireme",
+			[
+				[31, 12],
+				[32, 12],
+			],
+			"seen_yuhi_kireme",
+			async (s) => {
+				await s.narrate("アーケードのきれめから、\n夕日が　よこに　さしこむ。");
+				await s.narrate("とおりのかげが、みんな\nながい。");
+			},
+		),
 
-		// ── 二本目の通り（純喫茶・金物屋・洋品店・八百屋・テナント） ──
+		// ── 二本目の通り（純喫茶・金物屋・骨董屋・八百屋・テナント） ──
 		{
 			id: "kissa_door",
 			x: 3,
@@ -464,21 +597,47 @@ export const tonarimachi: MapDef = {
 			},
 		},
 		{
-			id: "yohin_a",
+			id: "kotto_win",
 			x: 15,
 			y: 15,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("洋品店のマネキン。\nセーターは、もう秋ものだ。");
+				await s.narrate(
+					"骨董屋の窓。ブリキのバスと、\nこけしと、ふるいラジオ。",
+				);
+				await s.narrate("ねだんの札は、ぜんぶ\nうらがえしだ。");
 			},
 		},
 		{
-			id: "yohin_b",
+			id: "kotto_oku",
 			x: 17,
 			y: 15,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("『サイズ　とりよせます』の\n手書きの札。");
+				await s.narrate("窓のおく、ガラスびんの\n列に、夕日がとおる。");
+				await s.narrate("店のおくから、野球中継の\nラジオが　きこえる。");
+			},
+		},
+		// 骨董屋の店さきの蓄音機（値札を見るキリコ）
+		{
+			id: "kotto_phono",
+			x: 16,
+			y: 16,
+			sprite: SPR.phono,
+			trigger: "talk",
+			fixedDir: true,
+			run: async (s) => {
+				if (!s.flag("seen_kotto_phono")) {
+					s.set("seen_kotto_phono");
+					await s.narrate("店さきの台に――\n蓄音機だ。");
+					await s.narrate("ラッパのまがりが、うちのと\nすこし　ちがう。");
+					await s.narrate("値札を、そっと　めくる。");
+					await s.say("kiriko", "……ゼロが、ひとつ\n多いンゴ");
+					await s.narrate("そっと、もどした。");
+					return;
+				}
+				await s.narrate("蓄音機は、まだ\n売れていない。");
+				await s.say("kiriko", "（……よかったンゴ）");
 			},
 		},
 		{
@@ -501,7 +660,7 @@ export const tonarimachi: MapDef = {
 			},
 		},
 		{
-			id: "mikan_box",
+			id: "ringo_box",
 			x: 20,
 			y: 16,
 			sprite: base(5, 125),
@@ -512,7 +671,47 @@ export const tonarimachi: MapDef = {
 			},
 		},
 
-		// ── 東の路地（回遊ループのつなぎ目にも見るものを） ──
+		// ── すきま（純喫茶と金物屋のあいだ。黒く見えるが通れる＝無印の隠し） ──
+		{
+			id: "sukima",
+			x: 7,
+			y: 14,
+			trigger: "touch",
+			through: true,
+			when: (st) => !st.flags.seen_sukima,
+			run: async (s) => {
+				s.set("seen_sukima");
+				await s.narrate("ビルとビルの、すきま。");
+				await s.narrate("見あげると、空が\nほそながい。");
+			},
+		},
+		{
+			id: "sukima_kanki",
+			x: 6,
+			y: 14,
+			trigger: "talk",
+			run: async (s) => {
+				await s.narrate("純喫茶の換気扇が、\nゆっくり　まわっている。");
+				await s.narrate("コーヒーのにおいは、\nここから来ていた。");
+			},
+		},
+		{
+			id: "sukima_neko",
+			x: 8,
+			y: 14,
+			trigger: "talk",
+			run: async (s) => {
+				if (!s.flag("seen_sukima_neko")) {
+					s.set("seen_sukima_neko");
+					await s.narrate("室外機のうえに、ねこ。\nここの　ぬしの顔だ。");
+					await s.say("kiriko", "（おじゃまします、\nンゴ……）");
+					return;
+				}
+				await s.narrate("ねこは目をとじたまま、\nしっぽだけ　ふった。");
+			},
+		},
+
+		// ── 路地（回遊ループのつなぎ目にも見るものを） ──
 		{
 			id: "katteguchi",
 			x: 31,
@@ -522,6 +721,16 @@ export const tonarimachi: MapDef = {
 			fixedDir: true,
 			run: async (s) => {
 				await s.narrate("店の勝手口。ネギの\nはこが、つんである。");
+			},
+		},
+		{
+			id: "nishi_jitensha",
+			x: 1,
+			y: 14,
+			trigger: "talk",
+			run: async (s) => {
+				await s.narrate("かべに、はいたつの自転車。\nにもつ台に『米』のはこ。");
+				await s.narrate("とまっているのに、\nいそがしそうな自転車だ。");
 			},
 		},
 		{
@@ -550,7 +759,7 @@ export const tonarimachi: MapDef = {
 			y: 18,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("『歳末大売り出し』のはた。");
+				await s.narrate("街灯のポールに\n『歳末大売り出し』のはた。");
 				await s.narrate("……まだ、秋のはじめだ。\n気がはやい。");
 			},
 		},
@@ -565,33 +774,41 @@ export const tonarimachi: MapDef = {
 		},
 
 		// ── 人たち（夕方だけの町なので when は不要） ──
-		npc("record_oyaji", 7, 10, RECORD_OYAJI, async (s) => {
-			if (!s.flag("seen_record_oyaji")) {
-				s.set("seen_record_oyaji");
-				await s.say(null, "いらっしゃい。……おっ、\nいい耳してそうな顔だ", {
+		// レコード店主（店のおく。3層: 初回／針の話／待機）
+		npc(
+			"record_oyaji",
+			6,
+			8,
+			RECORD_OYAJI,
+			async (s) => {
+				if (!s.flag("seen_record_oyaji")) {
+					s.set("seen_record_oyaji");
+					await s.say(null, "いらっしゃい。……おっ、\nいい耳してそうな顔だ", {
+						name: "レコード店主",
+					});
+					await s.say("kiriko", "か、顔でわかるンゴ？");
+					await s.say(null, "わかるよ。ゆっくり\n見ていきな", {
+						name: "レコード店主",
+					});
+					return;
+				}
+				if (!s.flag("seen_record_oyaji2")) {
+					s.set("seen_record_oyaji2");
+					await s.say(null, "蓄音機の針かい？\nまだ置いてるよ、おくに", {
+						name: "レコード店主",
+					});
+					await s.say("kiriko", "……！　この店、\nしんようできるンゴ");
+					await s.say(null, "はは。針がいる子は\nひさしぶりだ", {
+						name: "レコード店主",
+					});
+					return;
+				}
+				await s.say(null, "閉店？　気分しだいだね。\nゆっくりしていきな", {
 					name: "レコード店主",
 				});
-				await s.say("kiriko", "か、顔でわかるンゴ？");
-				await s.say(null, "わかるよ。ゆっくり\n見ていきな", {
-					name: "レコード店主",
-				});
-				return;
-			}
-			if (!s.flag("seen_record_oyaji2")) {
-				s.set("seen_record_oyaji2");
-				await s.say(null, "蓄音機の針かい？\nまだ置いてるよ、おくに", {
-					name: "レコード店主",
-				});
-				await s.say("kiriko", "……！　この店、\nしんようできるンゴ");
-				await s.say(null, "はは。針がいる子は\nひさしぶりだ", {
-					name: "レコード店主",
-				});
-				return;
-			}
-			await s.say(null, "閉店？　気分しだいだね。\nゆっくりしていきな", {
-				name: "レコード店主",
-			});
-		}),
+			},
+			{ dir: "right" },
+		),
 		npc(
 			"taiyaki_obachan",
 			30,
@@ -635,10 +852,16 @@ export const tonarimachi: MapDef = {
 			10,
 			STUDENT,
 			async (s) => {
-				await s.say(null, "……いま、いいところ\nなんです", {
-					name: "立ち読みの子",
-				});
-				await s.narrate("ページをめくる手が、\n止まらない。");
+				if (!s.flag("seen_tachiyomi")) {
+					s.set("seen_tachiyomi");
+					await s.say(null, "……いま、いいところ\nなんです", {
+						name: "立ち読みの子",
+					});
+					await s.narrate("ページをめくる手が、\n止まらない。");
+					return;
+				}
+				await s.narrate("返事がない。");
+				await s.narrate("ページをめくる音だけ、\nさっきより　はやい。");
 			},
 			{ dir: "up" },
 		),
@@ -648,10 +871,18 @@ export const tonarimachi: MapDef = {
 			16,
 			WIFE,
 			async (s) => {
-				await s.say(null, "ここのコロッケはね、\nならんでも　買うのよ", {
+				if (!s.flag("seen_kaimono_wife")) {
+					s.set("seen_kaimono_wife");
+					await s.say(null, "ここのコロッケはね、\nならんでも　買うのよ", {
+						name: "買いものの人",
+					});
+					await s.say("kiriko", "（コロッケ情報が\n多い町ンゴ）");
+					return;
+				}
+				await s.say(null, "いそいで買うとね、\nろくなことないのよ", {
 					name: "買いものの人",
 				});
-				await s.say("kiriko", "（コロッケ情報が\n多い町ンゴ）");
+				await s.say("kiriko", "（人生の話ンゴ？）");
 			},
 			{ wander: true },
 		),
@@ -668,6 +899,7 @@ export const tonarimachi: MapDef = {
 			},
 			{ dir: "up" },
 		),
+		// 会釈だけの通行人（しらない町の、無害な他者）
 		npc(
 			"eshaku",
 			26,
