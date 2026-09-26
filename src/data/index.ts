@@ -3,12 +3,14 @@
 import type { GameData } from "../engine/defs";
 import { bgm } from "./bgm";
 import { cast } from "./cast";
+import { apart } from "./maps/apart";
 import { debug, debugStart } from "./maps/debug";
 import { hub } from "./maps/hub";
 import { kakolog2 } from "./maps/kakolog2";
 import { kisaragi } from "./maps/kisaragi";
 import { kura } from "./maps/kura";
 import { room } from "./maps/room";
+import { street } from "./maps/street";
 import { terminus } from "./maps/terminus";
 import { train } from "./maps/train";
 import { tunnel } from "./maps/tunnel";
@@ -23,6 +25,8 @@ export const data: GameData = {
 	subtitle: "おんJ発 ネットロア・ウォーキングシミュレーター",
 	maps: {
 		room,
+		apart,
+		street,
 		hub,
 		yellow,
 		village,
@@ -42,12 +46,14 @@ export const data: GameData = {
 	sfx,
 	titleBgm: "title",
 	endingBgm: "ending",
+	// 夕方の帰り道から始まる（DESIGN §4 時間帯システム・座標凍結v2）。
+	// 東寄りの大どおりで西向き＝アパートへ帰るおつかい（晩ごはん）の導線。
 	start: {
-		mapId: "room",
-		x: 2,
-		y: 4,
-		dir: "down",
-		flags: {},
+		mapId: "street",
+		x: 24,
+		y: 10,
+		dir: "left",
+		flags: { tod: "yu" },
 	},
 	debug: debugStart,
 	credits: [

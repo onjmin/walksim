@@ -65,6 +65,22 @@ const mmlSfx: Record<string, string> = {
 	train: "#volume=5;@0t120v14o1c8d8e8e8d8c8;@1t120v9o1c+8d+8f8f8d+8c+8;#end;",
 	/** 小さくかわいい鳴き声（ミニワイ。もきゅ）。 */
 	mokyu: "#volume=6;@0t160v22o6g32>c32;#end;",
+	// ── ここから日常レイヤーの生活音（content-briefs「日常レイヤー」。チップチューン様式化） ──
+	/** ヒグラシの遠い波（street 夕方。ゆっくり3回、波ごとに遠ざかる。seLoop で回す）。 */
+	higurashi:
+		"#volume=4;@0t100v12o7e32d+32e32d+32e32d+32e32d+32e32d+32d32c+32r4v9e32d+32e32d+32e32d+32e32d+32e32d+32d32c+32r4v6e32d+32e32d+32e32d+32e32d+32e32d+32d32c+32r2;#end;",
+	/** 夕方の防災チャイム風（17時。単純な下降3音。オクターブ下を薄く重ねて鐘っぽく）。 */
+	chime17: "#volume=5;@0t80v16o6g4e4c2;@1t80v8o5g4e4c2;#end;",
+	/** 朝の鳥（スズメ。短い高音チチッ×2と長い間。seLoop で回す）。 */
+	suzume: "#volume=5;@0t160v18o7b64r64b64r8v14a64r64b64r1;#end;",
+	/** 遠い電車の走行音（低いゴーッに規則的なジョイント音2回。train より遠く小さく）。 */
+	densha_far:
+		"#volume=4;@0t120v10o1c4c4c4c4;@1t120v7o1c+4c+4c+4c+4;@2t120v14o2r8g32g32r4r8g32g32;#end;",
+	/** 店の戸鈴（カラン、と一鳴りして小さく跳ね返る。夕方の商店の出入り）。 */
+	doorbell: "#volume=5;@0t140v20o7g32e16r16v12g32e8;#end;",
+	/** シャッターを開けるガラガラ（朝の開店準備。低い連打が駆け上がって短く止まる）。 */
+	shutter:
+		"#volume=5;@0t150v18o2c32c32d32d32e32e32f32f32g32g32r16v14o3c16;#end;",
 };
 
 export const sfx: Record<string, string> = {

@@ -3,11 +3,18 @@
 // - ロゼ（hub のベンチで会った回数 seen_roze で一言だけ変わる）・シヨ（缶）・ゼロ（筆談・時刻表の前）
 // - 蓄音機台: rec_a/b/c を「本人の声」で再生（trueVoice・1枚ずつスキップ可）→ rec_last が自動で回る
 //   → ゼロの声のない歌 → キリコが紙をのせて singOnce(zerouta)（キリコの声の代読歌）
-//   → テト到着 → 優音アイが一瞬 → ロゼの「朝は来るアル」→ 帰り方の選択 → kane → 朝の room → ending
+//   → テト到着 → 優音アイが一瞬 → ロゼの「朝は来るアル」→ 帰り方の選択 → kane →
+//   tod="asa"・ending_ready を立てて 朝の room (2,4) へ返す（DESIGN §4 時間帯システム）。
+//   目ざめの一言のあとは通常操作（room→apart→street と歩いて帰る。朝のスレの書き込み
+//   ＝MGRoidらの3レスは room.ts のモニターが tod="asa" で受け持つ）。
+//   エンディング本体（s.ending・まとめカード「こんやの　きろく」）は street.ts の
+//   工事囲いの前のイベントが受け持つ（ending_ready・seen_kaeri を読む）
 // - 音響担当への依存: src/data/bgm/zerouta.mml と engine/audio.ts の singOnce(mml)（統合段階で確認）
 // s.note: zero（代読歌のあと）・ai（床の一行）・haka（墓標→ロゼの「もう一人」のあと）。
 // 読むだけのフラグ（他担当が set）: seen_roze（hub。0〜3 の回数）・seen_rino_request（kakolog2）・
 // seen_yobigoe_reply / note_yobigoe（village）・seen_myau1/2（yellow / kakolog2）・found_miniwai（yellow）。
+// set するフラグ（street の後日譚が読む）: tod="asa"・ending_ready・clear・ending_seen・
+// seen_kaeri（"walk"|"train"）・got_rec_last。
 
 import { singOnce } from "../../engine/audio";
 import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
@@ -19,10 +26,6 @@ import { base, basePx, PROPS, TOWN } from "../tiles";
 /** 駅のアナウンス（レイ。終点だけ、ほとんど人の声のように書く。DESIGN §5）。 */
 const announce = (s: Story, text: string) =>
 	s.say("rei", text, { name: "アナウンス", noPortrait: true });
-
-/** 朝のスレの書き込み（名前欄「名無しさん」。声はカメオ音源）。 */
-const post = (s: Story, who: string, text: string) =>
-	s.say(who, text, { name: "名無しさん", noPortrait: true });
 
 const PAVE = base(5, 48);
 
@@ -298,7 +301,7 @@ export const terminus: MapDef = {
 				} else {
 					await s.narrate("キリコは、レールづたいに\n歩きだした。");
 				}
-				// ミャウミャウ3目撃のごほうび（クレジット直前の一言）
+				// ミャウミャウ3目撃のごほうび（駅を発つ直前の一言）
 				if (
 					s.flag("seen_myau1") &&
 					s.flag("seen_myau2") &&
@@ -316,7 +319,11 @@ export const terminus: MapDef = {
 				await s.fadeOut(1500);
 				s.se("kane", { volume: 0.7 }); // つくよみの鈴（誰も言及しない）
 				await s.wait(1500);
-				// ── 朝の部屋 ──
+				// ── 朝へ（tod="asa"）。日常レイヤーに返す ──
+				// s.ending（まとめカード「こんやの　きろく」）は street.ts の
+				// 工事囲いの前のイベントが受け持つ（ending_ready と seen_kaeri を読む）
+				s.set("tod", "asa");
+				s.set("ending_ready");
 				await s.warp("room", 2, 4, "down", { fade: false });
 				await s.wait(400);
 				await s.fadeIn(1200);
@@ -324,38 +331,9 @@ export const terminus: MapDef = {
 				s.se("tick", { volume: 0.7 });
 				await s.wait(500);
 				s.se("tick", { volume: 0.7 });
-				await s.narrate("――時計の音が、している。");
-				await s.narrate("7:00。うごいている。");
+				await s.narrate("――秒針が、もどっている。");
 				await s.narrate("窓から、あさの光。");
 				await s.say("kiriko", "……ただいまンゴ");
-				await s.narrate("モニターに、あかり。\n（スレが　うごいている。）");
-				await post(s, "mgroid", "おはようさん。ひさびさに\n来てもうたわ");
-				await post(s, "motroid", "スレ、まだあって草。\nただいまやで");
-				await post(
-					s,
-					"nynroid",
-					"朝メシ、おでんの残りに\nするわ。あったまるで",
-				);
-				await s.say("kiriko", "……吾輩も、あとで\n書くンゴ");
-				const recs = ["rec_a", "rec_b", "rec_c", "rec_last"].filter(
-					(id) => s.has(id) > 0,
-				).length;
-				const myau = ["seen_myau1", "seen_myau2", "seen_myau3"].filter(
-					(f) => !!s.flag(f),
-				).length;
-				const lines = [
-					`レコード　${recs}まい`,
-					`ミャウミャウ目撃　${myau}かい`,
-				];
-				if (s.flag("found_miniwai")) lines.push("ミニワイに　会った（もきゅ）");
-				if (s.flag("seen_yobigoe_reply")) lines.push("呼び声に　へんじをした");
-				else if (s.flag("note_yobigoe")) lines.push("呼び声に　だまっていた");
-				lines.push(way === 0 ? "あるいて　帰った" : "終電で　帰った");
-				await s.ending({
-					summary: {
-						sections: [{ title: "こんやの　きろく", lines }],
-					},
-				});
 			},
 		},
 

@@ -331,8 +331,9 @@ export const fieldMenu = async (game: Game): Promise<void> => {
 			[
 				{ label: "レコード", value: "records" },
 				{ label: "ノート", value: "notes" },
-				// 夢の中（room 以外）でだけ出す安全装置（ゆめにっき9キー相当。DESIGN §3）
-				...(game.state.mapId !== "room"
+				// 夢の中（room 以外）でだけ出す安全装置（ゆめにっき9キー相当。DESIGN §3）。
+				// 日常パート（夕方・夜）ではまだ夢でないので出さない: tod が深夜のときだけ（DESIGN §4）
+				...(game.state.flags.tod === "shinya" && game.state.mapId !== "room"
 					? [{ label: "めをさます", value: "wake" }]
 					: []),
 				{ label: "せってい", value: "settings" },
@@ -352,9 +353,9 @@ export const fieldMenu = async (game: Game): Promise<void> => {
 			const n = await game.story.choose(["はい", "いいえ"], { cancel: 1 });
 			game.msg.hideWindow();
 			if (n === 0) {
-				// 自室のベッドで目が覚める（フラグ・持ちものはそのまま）
-				const st = game.data.start;
-				await game.story.warp(st.mapId, st.x, st.y, st.dir);
+				// 自室のベッドで目が覚める（フラグ・持ちものはそのまま）。
+				// data.start は夕方の街路（DESIGN §4）なので、行き先はベッドに固定する
+				await game.story.warp("room", 2, 4, "down");
 				await game.say(null, "……目が　さめた。");
 				game.msg.hideWindow();
 				return;

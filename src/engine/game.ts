@@ -37,6 +37,35 @@ const LIGHT_RADIUS_FLASHLIGHT = 6.5;
 /** 光のふちのぼかし幅（マス）。 */
 const LIGHT_EDGE = 1.5;
 
+/**
+ * 時間帯の色調プリセット（DESIGN §4）。屋外マップ（MapDef.outdoor）の描画時、
+ * フラグ tod（"yu"|"yoru"|"shinya"|"asa"。将来 "hiru"）に対応する項があれば、
+ * その tint / outside を MapDef の値より優先して使う。夕=茜、深夜=青暗、朝=金。
+ * yoru（夜）は室内パートなのでプリセットなし（マップ自身の色のまま）。
+ */
+type TintPass = { color: string; blend?: GlobalCompositeOperation };
+const TOD_PRESETS: Record<string, { passes?: TintPass[]; outside?: string }> = {
+	// 夕焼け＝琥珀の overlay 1パス（明部は茜に輝き、暗部は沈む。昼にも夜にも寄らない）
+	yu: {
+		passes: [{ color: "rgba(235,130,50,0.75)", blend: "overlay" }],
+		outside: "#1c0d12",
+	},
+	// 深夜＝青の multiply で冷やして沈め、薄い紺をかぶせる（無人の2時。コンビニの灯りだけが浮く暗さ）
+	shinya: {
+		passes: [
+			{ color: "rgba(90,110,190,0.70)", blend: "multiply" },
+			{ color: "rgba(10,15,45,0.25)" },
+		],
+		outside: "#04060f",
+	},
+	asa: {
+		passes: [
+			{ color: "rgba(255,240,210,0.30)", blend: "screen" },
+			{ color: "rgba(255,215,140,0.40)", blend: "overlay" },
+		],
+	},
+};
+
 /** 0〜1 の決まった乱数（粒の置き場所など。毎コマ同じ値になる）。 */
 const hash01 = (n: number): number => {
 	const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
@@ -145,6 +174,8 @@ export class Game {
 	private pathTalk: Actor | null = null;
 	private marker: { x: number; y: number; t: number } | null = null;
 	private time = 0;
+	/** いまのマップに入った時刻（time 基準）。深夜の「夜が深まる」黒の進行に使う。 */
+	private mapEnteredAt = 0;
 	private last = 0;
 	private camX = 0;
 	private camY = 0;
@@ -263,6 +294,7 @@ export class Game {
 		this.field?.dispose();
 		const field = new Field(def);
 		this.field = field;
+		this.mapEnteredAt = this.time;
 		this.state.mapId = mapId;
 		this.state.x = x;
 		this.state.y = y;
@@ -586,7 +618,10 @@ export class Game {
 	private render(): void {
 		const ctx = this.screen.begin();
 		const field = this.field;
-		ctx.fillStyle = field?.def.outside ?? "#000";
+		// 屋外マップは時間帯フラグ tod の色調（TOD_PRESETS）が tint / outside に優先する（DESIGN §4）
+		const todFlag = field?.def.outdoor ? this.state.flags.tod : undefined;
+		const tod = typeof todFlag === "string" ? TOD_PRESETS[todFlag] : undefined;
+		ctx.fillStyle = tod?.outside ?? field?.def.outside ?? "#000";
 		ctx.fillRect(0, 0, this.screen.width, this.screen.height);
 		if (!field) return;
 		const ox = this.camX;
@@ -608,9 +643,26 @@ export class Game {
 		field.drawAbove(ctx, ox, oy);
 		// 雰囲気（DESIGN §3）：イベントのあと・UI の前に、色 → 暗闇 → 粒 の順で重ねる
 		const def = field.def;
-		if (def.tint) {
-			ctx.fillStyle = def.tint;
-			ctx.fillRect(0, 0, this.screen.width, this.screen.height);
+		const passes: TintPass[] | undefined =
+			tod?.passes ?? (def.tint ? [{ color: def.tint }] : undefined);
+		if (passes) {
+			for (const p of passes) {
+				ctx.globalCompositeOperation = p.blend ?? "source-over";
+				ctx.fillStyle = p.color;
+				ctx.fillRect(0, 0, this.screen.width, this.screen.height);
+			}
+			ctx.globalCompositeOperation = "source-over";
+		}
+		// 深夜の屋外は、入ってから約60秒かけて黒がじわじわ深くなる（夜が深まる。気づくかどうかの速さで）
+		if (todFlag === "shinya") {
+			const creep = Math.min(
+				0.28,
+				((this.time - this.mapEnteredAt) / 60000) * 0.28,
+			);
+			if (creep > 0.005) {
+				ctx.fillStyle = `rgba(0,0,5,${creep})`;
+				ctx.fillRect(0, 0, this.screen.width, this.screen.height);
+			}
 		}
 		if (def.dark) this.drawDark(ctx, def.dark);
 		if (def.ambient)

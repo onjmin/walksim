@@ -46,8 +46,9 @@ const VOICE_MODELS = [
 ];
 // フラグの約束（DESIGN §7）。スクリプトが set するフラグは、この形に収める。
 // done:/hide: はエンジン、seen_ は目撃、got_ は入手、rule_/note_/found_ はワールドの発見。
+// tod は時間帯（DESIGN §4: "yu"|"yoru"|"shinya"|"asa"）。
 const FLAG_OK =
-	/^(done:|hide:|seen_|got_|rule_|note_|found_|gate_open$|clear$|ending_seen$|keep_clear$|flashlight$|debug$)/;
+	/^(done:|hide:|seen_|got_|rule_|note_|found_|gate_open$|clear$|ending_ready$|ending_seen$|keep_clear$|flashlight$|debug$|tod$)/;
 
 const server = await createServer({
 	server: { middlewareMode: true, hmr: false, ws: false },
@@ -176,7 +177,9 @@ try {
 					`map ${id}: touch イベント ${e.id} が見た目つきで通れない（踏めない）`,
 				);
 			if (e.sprite?.startsWith("char:") && !data.cast[e.sprite.slice(5)])
-				err(`map ${id}: イベント ${e.id} の見た目 "${e.sprite}" が cast に無い`);
+				err(
+					`map ${id}: イベント ${e.id} の見た目 "${e.sprite}" が cast に無い`,
+				);
 		}
 		if (m.bgm && !data.bgm[m.bgm]) err(`map ${id}: BGM "${m.bgm}" が無い`);
 		if (m.dark !== undefined && !(m.dark >= 0 && m.dark <= 1))
@@ -444,10 +447,7 @@ try {
 					err(`${where}: hide の "${id}" がこのマップのイベントに無い`, note);
 			},
 			place: (id, x, y) => {
-				if (
-					id !== "player" &&
-					!(here().events ?? []).some((e) => e.id === id)
-				)
+				if (id !== "player" && !(here().events ?? []).some((e) => e.id === id))
 					err(`${where}: place の "${id}" がこのマップのイベントに無い`, note);
 				const g = grids[state.mapId];
 				if (x < 0 || y < 0 || x >= g.w || y >= g.h)
@@ -609,15 +609,13 @@ try {
 		(id) => !usedNotes.has(id),
 	);
 	if (unusedNotes.length)
-		warn(
-			`ノート: どこからも s.note() されていない: ${unusedNotes.join("・")}`,
-		);
+		warn(`ノート: どこからも s.note() されていない: ${unusedNotes.join("・")}`);
 
 	// ── フラグの約束（DESIGN §7）：スクリプトが set するフラグの形 ──
 	for (const k of setFlags.keys())
 		if (!FLAG_OK.test(k))
 			warn(
-				`フラグの約束: "${k}" が決めた形（done:/hide:/seen_/got_/rule_/note_/found_/gate_open/clear/ending_seen/keep_clear/flashlight）に無い`,
+				`フラグの約束: "${k}" が決めた形（done:/hide:/seen_/got_/rule_/note_/found_/gate_open/clear/ending_ready/ending_seen/keep_clear/flashlight/tod）に無い`,
 			);
 
 	// ── 開始位置・デバッグルーム ──

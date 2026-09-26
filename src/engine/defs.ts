@@ -81,6 +81,8 @@ export type MapDef = {
 	onEnter?: Script;
 	/** マップの外側の色。 */
 	outside?: string;
+	/** 屋外。flags.tod により TOD_PRESETS（engine/game.ts）の色調が乗る。 */
+	outdoor?: boolean;
 };
 
 // ───────────────── キャラ ─────────────────
@@ -186,6 +188,10 @@ export type GameState = {
 	x: number;
 	y: number;
 	dir: Dir;
+	/**
+	 * 進行フラグ。時間帯は flags.tod = "yu"|"yoru"|"shinya"|"asa"（将来 "hiru"）で持ち、
+	 * outdoor マップの色調（TOD_PRESETS）とイベントの when/onEnter 分岐が参照する（DESIGN §4）。
+	 */
 	flags: Record<string, number | boolean | string>;
 	items: Record<string, number>;
 	playMs: number;

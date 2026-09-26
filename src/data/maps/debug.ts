@@ -15,10 +15,12 @@ type Items = GameState["items"];
 const done = (map: string, ...ids: string[]): Flags =>
 	Object.fromEntries(ids.map((id) => [`done:${map}:${id}`, true]));
 
-// 本編の区切りごとに立っているフラグ（前の区切りに足していく）
+// 本編の区切りごとに立っているフラグ（前の区切りに足していく）。
+// tod は時間帯システム（DESIGN §4）: 夢パートは "shinya"（menu の「めをさます」条件）
 const AWAKE: Flags = {
 	...done("room", "opening"),
 	seen_door: true,
+	tod: "shinya",
 };
 const REC3: Flags = {
 	...AWAKE,
@@ -51,13 +53,38 @@ type Checkpoint = {
 };
 
 const CHECKPOINTS: Checkpoint[] = [
+	// 日常レイヤー（開始は street の夕方。data/index.ts の start と同じ）
+	{
+		id: "cp_street_yu",
+		label: "はじまり（まちのどおり・夕方）",
+		sprite: "pub:assets/rpgen/char/02-merchant.png",
+		flags: { tod: "yu" },
+		items: {},
+		to: { map: "street", x: 24, y: 10, dir: "left" },
+	},
+	{
+		id: "cp_apart",
+		label: "アパートの廊下（夕方）",
+		sprite: SPR.woman,
+		flags: { tod: "yu", got_dinner_onigiri: true },
+		items: {},
+		to: { map: "apart", x: 10, y: 5, dir: "left" },
+	},
 	{
 		id: "cp_room",
-		label: "はじまり（キリコの部屋）",
+		label: "キリコの部屋（深夜2:00）",
 		sprite: "char:kiriko",
-		flags: {},
+		flags: { tod: "shinya" },
 		items: {},
 		to: { map: "room", x: 2, y: 4, dir: "down" },
+	},
+	{
+		id: "cp_street_shinya",
+		label: "まちのどおり（深夜2:00）",
+		sprite: SPR.townsfolk,
+		flags: { ...AWAKE, got_dinner_onigiri: true },
+		items: {},
+		to: { map: "street", x: 2, y: 10, dir: "down" },
 	},
 	{
 		id: "cp_hub",
@@ -131,6 +158,21 @@ const CHECKPOINTS: Checkpoint[] = [
 		items: KEYS3,
 		to: { map: "terminus", x: 13, y: 5, dir: "left" },
 	},
+	// 朝のまちのどおり（エンディングは東端の囲いの手前。ending_ready は terminus が立てる）
+	{
+		id: "cp_street_asa",
+		label: "まちのどおり（朝・エンディング）",
+		sprite: "pub:assets/rpgen/char/12-warrior-b.png",
+		flags: {
+			...REC3,
+			tod: "asa",
+			ending_ready: true,
+			seen_kaeri: "walk",
+			got_dinner_onigiri: true,
+		},
+		items: KEYS3,
+		to: { map: "street", x: 2, y: 10, dir: "right" },
+	},
 ];
 
 /** その場面の手前まで進めた状態に作りなおして飛ぶ（いまの状態は捨てる）。 */
@@ -142,6 +184,9 @@ const jump =
 		if (n !== 0) return;
 		s.state.flags = { ...cp.flags, debug: true };
 		s.state.items = { ...cp.items };
+		// tod は set でも入れ直す（値は同じ。validate の2周目が時間帯の分岐を通れるように）
+		const tod = cp.flags.tod;
+		if (typeof tod === "string") s.set("tod", tod);
 		await s.warp(cp.to.map, cp.to.x, cp.to.y, cp.to.dir, { se: "warp" });
 	};
 
@@ -154,7 +199,7 @@ const supply = async (s: Story): Promise<void> => {
 	await s.narrate("大事なものを　ぜんぶ　もらった。");
 };
 
-// 人の並び（x = 2, 4, 6, 8, 10 の2列）
+// 人の並び（x = 2, 4, 6, 8, 10 の3列）
 const spots: [number, number][] = [
 	[2, 2],
 	[4, 2],
@@ -166,6 +211,10 @@ const spots: [number, number][] = [
 	[6, 5],
 	[8, 5],
 	[10, 5],
+	[2, 7],
+	[4, 7],
+	[6, 7],
+	[8, 7],
 ];
 
 const events: EventDef[] = [
