@@ -1,0 +1,1875 @@
+/* 蓄音キリコの大冒険 — 画面のスタイル（スマホ縦持ち優先、横持ち・PC も可） */
+
+:root {
+	--bg: #1b1026;
+	--win-bg: rgba(12, 10, 28, 0.9);
+	--win-border: #f4f1ff;
+	--text: #fbf8ff;
+	--muted: #b9b0d6;
+	--accent: #ffcf4a;
+	--hp: #62e07a;
+	--mp: #6fb7ff;
+	--danger: #ff5d6c;
+	--safe-b: env(safe-area-inset-bottom, 0px);
+	--safe-t: env(safe-area-inset-top, 0px);
+	--safe-l: env(safe-area-inset-left, 0px);
+	--safe-r: env(safe-area-inset-right, 0px);
+	/*
+	 * 画面の「いま見えている箱」（ブラウザのバーの裏は含まない）。
+	 * engine/viewport.ts が visualViewport で実測して px で入れ直す。
+	 * ここの値はその前・JS が動かないときの控え。100vh はバーが引っこんだときの
+	 * 大きい画面なので、バーの出ている小さいほう（svh）を使う
+	 */
+	--app-x: 0px;
+	--app-y: 0px;
+	--app-w: 100vw;
+	--app-h: 100vh;
+	--font:
+		"DotGothic16", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic",
+		sans-serif;
+}
+
+@supports (height: 100svh) {
+	:root {
+		--app-w: 100svw;
+		--app-h: 100svh;
+	}
+}
+
+* {
+	box-sizing: border-box;
+	-webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+	margin: 0;
+	/* ページ自体を見えている高さに切りつめる（はみ出しでバーが出入りするのを防ぐ） */
+	height: var(--app-h);
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font);
+	overflow: hidden;
+	overscroll-behavior: none;
+	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
+}
+
+/*
+ * iOS の Safari は overflow: hidden だけではページが指で動いてしまうことがある。
+ * ページが 1px でも画面より高いと、その分だけずれて上がバーの裏に入りタッチできなくなるので、
+ * ページ自体を画面に貼りつけて動かせなくする
+ */
+body {
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 100%;
+}
+
+button {
+	font-family: inherit;
+	color: inherit;
+	touch-action: manipulation;
+}
+
+/*
+ * ゲームの中身は必ず「見えている箱」の中だけに置く。
+ * inset: 0 だと position: fixed の基準がバーの裏まで広がる画面があり、
+ * そこに乗った右上の 🔇・☰ が隠れてタッチできなくなる
+ */
+#app {
+	position: fixed;
+	left: var(--app-x);
+	top: var(--app-y);
+	width: var(--app-w);
+	height: var(--app-h);
+	overflow: hidden;
+}
+
+#screen {
+	position: absolute;
+	left: 0;
+	top: 0;
+	image-rendering: pixelated;
+}
+
+#ui {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 20;
+}
+
+#ui > * {
+	pointer-events: auto;
+}
+
+/* 見た目だけの層はタップを下へ通す */
+#ui > .portrait-layer,
+#ui > .fade,
+#ui > .flash,
+#ui > .toast {
+	pointer-events: none;
+}
+
+body.shake #app {
+	animation: shake 0.1s linear infinite;
+}
+
+@keyframes shake {
+	0% {
+		transform: translate(0, 0);
+	}
+	25% {
+		transform: translate(-3px, 1px);
+	}
+	50% {
+		transform: translate(2px, -2px);
+	}
+	75% {
+		transform: translate(-1px, 2px);
+	}
+}
+
+/* ───────── 共通ウィンドウ ───────── */
+
+.window {
+	background: var(--win-bg);
+	border: 3px solid var(--win-border);
+	border-radius: 8px;
+	box-shadow:
+		0 0 0 2px #000,
+		0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+/* ───────── メッセージ窓 ───────── */
+
+/* スマホ幅でも 1 行に全角 22 字が入るように、文字の大きさを画面の幅から決める
+   （セリフは 1 行 22 字までという決まりで書いている） */
+.msg {
+	position: absolute;
+	left: calc(6px + var(--safe-l));
+	right: calc(6px + var(--safe-r));
+	bottom: calc(10px + var(--safe-b));
+	min-height: 108px;
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 14px 10px 22px;
+	font-size: clamp(13px, calc((var(--app-w) - 34px) / 22.4), 17px);
+	line-height: 1.65;
+	display: none;
+	z-index: 22;
+	cursor: pointer;
+}
+
+.msg.shown {
+	display: block;
+	animation: pop-in 0.12s ease-out;
+}
+
+@keyframes pop-in {
+	from {
+		transform: translateY(6px);
+		opacity: 0.4;
+	}
+	to {
+		transform: none;
+		opacity: 1;
+	}
+}
+
+.msg-name {
+	position: absolute;
+	top: -15px;
+	left: 12px;
+	padding: 1px 12px;
+	font-size: 14px;
+	background: #000;
+	border: 2px solid var(--char, #fff);
+	border-radius: 6px;
+	color: var(--char, #fff);
+	text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.msg-text {
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.msg.narration .msg-text {
+	color: #e8e2ff;
+}
+
+.msg-next {
+	position: absolute;
+	right: 14px;
+	bottom: 4px;
+	font-size: 12px;
+	opacity: 0;
+}
+
+.msg-next.shown {
+	opacity: 1;
+	animation: blink 0.9s steps(2) infinite;
+}
+
+@keyframes blink {
+	50% {
+		opacity: 0.2;
+	}
+}
+
+/* ───────── 立ち絵 ───────── */
+
+/* 立ち絵の枠。下の 40px はメッセージ窓の裏に潜らせて、上半身の切り口を隠す */
+.portrait-layer {
+	--layer-h: min(var(--app-h) * 0.5, 440px);
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: calc(118px + 12px - 40px + var(--safe-b));
+	height: var(--layer-h);
+	pointer-events: none;
+	z-index: 21;
+	max-width: 900px;
+	margin: 0 auto;
+}
+
+.portrait {
+	--slot-w: min(var(--app-w) * 0.46, 340px);
+	/* 左右の枠のあいだの空きの半分（レイヤーの幅は min(--app-w, 900px)、枠は両端から 2%） */
+	--gap-half: max(0px, min(var(--app-w), 900px) * 0.48 - var(--slot-w));
+	position: absolute;
+	bottom: -6px;
+	width: var(--slot-w);
+	height: 100%;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	opacity: 0;
+	transform: translateY(12px);
+	transition:
+		opacity 0.2s,
+		transform 0.2s,
+		filter 0.2s;
+}
+
+/* --ext-l・--ext-r: 絵を出してよい範囲を枠の左・右へ広げる幅（外側は画面の端の先まで、内側は真ん中まで） */
+.portrait.left {
+	left: 2%;
+	--ext-l: var(--slot-w);
+	--ext-r: var(--gap-half);
+}
+.portrait.right {
+	right: 2%;
+	--ext-l: var(--gap-half);
+	--ext-r: var(--slot-w);
+}
+
+.portrait.shown {
+	opacity: 1;
+	transform: none;
+}
+
+.portrait.dim {
+	filter: brightness(0.55) saturate(0.7);
+}
+
+/*
+ * 立ち絵を出してよい範囲（枠を左右へ --ext-l・--ext-r、上へ枠の高さの半分だけ広げた箱）。
+ * 横に広がる髪・腕・しっぽは、外側は画面の端まで出す。内側は左右の枠のあいだの真ん中で、
+ * 手前から少しずつ消す（となりのキャラに重ねず、切り口をまっすぐな壁に見せない）
+ */
+.portrait-art {
+	--fade-w: calc(var(--slot-w) * 0.12);
+	position: absolute;
+	top: -50%;
+	bottom: 0;
+	left: calc(var(--ext-l) * -1);
+	right: calc(var(--ext-r) * -1);
+}
+.portrait.left .portrait-art {
+	-webkit-mask-image: linear-gradient(to left, transparent, #000 var(--fade-w));
+	mask-image: linear-gradient(to left, transparent, #000 var(--fade-w));
+}
+.portrait.right .portrait-art {
+	-webkit-mask-image: linear-gradient(
+		to right,
+		transparent,
+		#000 var(--fade-w)
+	);
+	mask-image: linear-gradient(to right, transparent, #000 var(--fade-w));
+}
+
+/*
+ * 余白を切り詰めた立ち絵（canvas。てっぺんの上のはみ出し〜切り口）。値は message.ts で測って入れる。
+ * - --body: 全身（てっぺん〜足もと）の高さ。どのキャラも同じ。切り口を枠の下端に置いたとき、
+ *   てっぺんが枠の上から 5% に来る大きさ。細い画面では枠の幅の 2.4 倍まで（頭が枠に収まるように）
+ * - --cut: この canvas の高さ（全身の高さに対する割合）
+ * - --hx: 枠の中央に合わせる点（頭の中心。canvas の幅に対する割合）
+ * - --scale・--dy: キャラごとの手直し（大きさの倍率・下へのずれ）
+ */
+.portrait-img {
+	--body: calc(
+		min(var(--layer-h) * 0.95 / var(--crop, 1), var(--slot-w) * 2.4) *
+		var(--scale, 1)
+	);
+	position: absolute;
+	left: calc(var(--ext-l) + var(--slot-w) / 2);
+	bottom: calc(var(--body) * var(--dy, 0) * -1);
+	height: calc(var(--body) * var(--cut, 1));
+	width: auto;
+	transform: translateX(calc(var(--hx, 0.5) * -100%));
+	filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+
+/* 上半身だけ切り出したときは、下端をぼかして切り口を目立たせない */
+.portrait-img.cropped {
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		#000 var(--fade-at, 82%),
+		transparent 100%
+	);
+	mask-image: linear-gradient(
+		to bottom,
+		#000 var(--fade-at, 82%),
+		transparent 100%
+	);
+}
+
+/* 絵の向きと立つ側が合わないときは左右反転して中央を向かせる（--hx は反転後の位置） */
+.portrait-img.flip {
+	transform: translateX(calc(var(--hx, 0.5) * -100%)) scaleX(-1);
+}
+
+/* 色を反転する（ボツキリコ。キリコの絵のネガ） */
+.portrait-img.invert {
+	filter: invert(1) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+
+/* 立ち絵が届くまでのダミー（マップを隠しすぎないように小さめ・半透明） */
+.portrait-dummy {
+	position: relative;
+	width: 62%;
+	height: 72%;
+	opacity: 0.8;
+	border: 3px dashed var(--char);
+	border-radius: 14px 14px 0 0;
+	background: linear-gradient(
+		to top,
+		color-mix(in srgb, var(--char) 35%, transparent),
+		rgba(0, 0, 0, 0.15)
+	);
+	overflow: hidden;
+}
+
+.portrait-dummy .silhouette {
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	width: 64%;
+	height: 78%;
+	transform: translateX(-50%);
+	background:
+		radial-gradient(
+			circle at 50% 22%,
+			color-mix(in srgb, var(--char) 70%, #000) 0 19%,
+			transparent 19.5%
+		),
+		radial-gradient(
+			ellipse at 50% 100%,
+			color-mix(in srgb, var(--char) 55%, #000) 0 58%,
+			transparent 58.5%
+		);
+	opacity: 0.85;
+}
+
+.portrait-dummy .label {
+	position: absolute;
+	top: 8px;
+	left: 0;
+	right: 0;
+	text-align: center;
+	white-space: pre-line;
+	font-size: 13px;
+	color: #fff;
+	text-shadow:
+		0 0 4px #000,
+		0 0 2px #000;
+}
+
+/* ───────── 選択肢・メニュー ───────── */
+
+.choice {
+	position: absolute;
+	right: calc(14px + var(--safe-r));
+	bottom: calc(142px + var(--safe-b));
+	min-width: 180px;
+	/* 選択肢は全角14字まで（validate の MAX_CHOICE）。360px 幅の端末でも1行に収まるよう、左の余白まで使ってよい */
+	max-width: calc(var(--app-w) - 28px - var(--safe-l) - var(--safe-r));
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	z-index: 30;
+}
+
+.choice-item,
+.menu-item,
+.menu-close {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 12px;
+	width: 100%;
+	text-align: left;
+	padding: 10px 12px 10px 26px;
+	font-size: 17px;
+	background: transparent;
+	border: none;
+	border-radius: 6px;
+	position: relative;
+	cursor: pointer;
+}
+
+/* 320px 幅でも全角14字が1行に収まるよう、狭い画面では少し小さくする */
+.choice-item {
+	font-size: clamp(14px, calc((var(--app-w) - 90px) / 15), 17px);
+}
+
+.choice-item.cur,
+.menu-item.cur {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.choice-item.cur::before,
+.menu-item.cur::before {
+	content: "▶";
+	position: absolute;
+	left: 8px;
+	font-size: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	animation: blink 0.9s steps(2) infinite;
+}
+
+.menu-item small {
+	color: var(--accent);
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.menu-item.disabled,
+.cmd.disabled,
+.title-btn.disabled {
+	opacity: 0.35;
+}
+
+/*
+ * 2行目の説明（どうぐの効果）。タップは押した瞬間に決まるので、選ぶ前から行の中に見せておく。
+ * 2行まで（itemText.ts が長いときは札を省いて収める。それでも超える分は切る）
+ */
+.menu-item.has-desc {
+	flex-wrap: wrap;
+	row-gap: 3px;
+	padding-top: 8px;
+	padding-bottom: 8px;
+}
+
+/* カーソルは名前の行に合わせる */
+.menu-item.has-desc.cur::before {
+	top: 19px;
+}
+
+.menu-item .desc,
+.cmd .desc {
+	flex-basis: 100%;
+	font-size: 12px;
+	line-height: 1.35;
+	color: var(--muted);
+	text-align: left;
+	/* 折り返すときは「　」や「、」の区切りで（「鳴ら／せる。」のように語の途中で割らない）。
+	 * 区切りのない長い語だけは途中で割る */
+	word-break: keep-all;
+	overflow-wrap: anywhere;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	overflow: hidden;
+}
+
+/* だれに効くか・だいじなもの の札 */
+.desc .tag {
+	display: inline-block;
+	font-weight: normal;
+	font-size: 11px;
+	line-height: 1.25;
+	padding: 0 4px;
+	margin-right: 6px;
+	border: 1px solid currentColor;
+	border-radius: 3px;
+}
+
+.menu {
+	position: absolute;
+	top: calc(64px + var(--safe-t));
+	right: calc(12px + var(--safe-r));
+	width: min(360px, calc(var(--app-w) - 24px));
+	max-height: calc(100% - 90px - var(--safe-t) - var(--safe-b));
+	overflow-y: auto;
+	padding: 10px;
+	z-index: 30;
+	touch-action: pan-y;
+}
+
+.menu.main-menu {
+	width: 200px;
+}
+
+.menu-title {
+	padding: 4px 8px 8px;
+	color: var(--muted);
+	font-size: 14px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+	margin-bottom: 6px;
+}
+
+.menu-close {
+	justify-content: center;
+	padding: 8px;
+	margin-top: 6px;
+	color: var(--muted);
+	font-size: 14px;
+	border-top: 1px solid rgba(255, 255, 255, 0.15);
+	border-radius: 0;
+}
+
+/* プロフィール（なかよし度で開くページ） */
+.profile .menu-title {
+	color: var(--char);
+}
+
+.profile-page {
+	border-left: 3px solid var(--char);
+	padding: 4px 10px 6px;
+	margin: 8px 0;
+	background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-page.locked {
+	border-left-color: #555;
+	color: var(--muted);
+}
+
+.profile-head {
+	font-size: 14px;
+	color: var(--accent);
+	margin-bottom: 2px;
+}
+
+.profile-page.locked .profile-head {
+	color: var(--muted);
+}
+
+.profile-page p {
+	margin: 2px 0;
+	font-size: 14px;
+	line-height: 1.55;
+}
+
+.status-card {
+	border-left: 4px solid var(--char);
+	padding: 6px 10px;
+	margin: 6px 0;
+	background: rgba(255, 255, 255, 0.04);
+}
+
+/* 控え（つよさ）：たたかっていない仲間は少し淡く */
+.status-card.bench {
+	opacity: 0.72;
+	border-left-style: dashed;
+}
+
+.s-name {
+	color: var(--char);
+	font-size: 17px;
+	display: flex;
+	justify-content: space-between;
+}
+
+.s-row {
+	font-size: 14px;
+	margin-top: 2px;
+}
+
+.s-row.small {
+	font-size: 12px;
+	color: var(--muted);
+	padding: 4px 2px 0;
+}
+
+/* ───────── HUD ───────── */
+
+.hud {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 21;
+	transition: opacity 0.15s;
+}
+
+/* タイトル画面ではミュートボタンだけ出す */
+.hud.hidden .pad,
+.hud.hidden .ab,
+.hud.hidden .menu-btn {
+	display: none;
+}
+
+.hud.modal .pad,
+.hud.modal .ab {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.hud > * {
+	pointer-events: auto;
+}
+
+.pad {
+	position: absolute;
+	left: calc(16px + var(--safe-l));
+	bottom: calc(20px + var(--safe-b));
+	width: 136px;
+	height: 136px;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.28);
+	border: 2px solid rgba(255, 255, 255, 0.35);
+	touch-action: none;
+}
+
+.hud.no-pad .pad {
+	display: none;
+}
+
+.pad i {
+	position: absolute;
+	width: 42px;
+	height: 42px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.22);
+	pointer-events: none;
+}
+
+.pad i::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 0;
+	height: 0;
+	border: 8px solid transparent;
+}
+
+.pad .up {
+	left: 47px;
+	top: 6px;
+}
+.pad .down {
+	left: 47px;
+	bottom: 6px;
+}
+.pad .left {
+	left: 6px;
+	top: 47px;
+}
+.pad .right {
+	right: 6px;
+	top: 47px;
+}
+.pad .up::after {
+	border-bottom-color: #fff;
+	margin-top: 6px;
+}
+.pad .down::after {
+	border-top-color: #fff;
+	margin-bottom: 6px;
+}
+.pad .left::after {
+	border-right-color: #fff;
+	margin-left: 6px;
+}
+.pad .right::after {
+	border-left-color: #fff;
+	margin-right: 6px;
+}
+.pad[data-dir="up"] .up,
+.pad[data-dir="down"] .down,
+.pad[data-dir="left"] .left,
+.pad[data-dir="right"] .right {
+	background: rgba(255, 207, 74, 0.7);
+}
+
+.ab {
+	position: absolute;
+	right: calc(16px + var(--safe-r));
+	bottom: calc(24px + var(--safe-b));
+	width: 150px;
+	height: 120px;
+}
+
+.btn {
+	position: absolute;
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	border: 2px solid rgba(255, 255, 255, 0.5);
+	background: rgba(0, 0, 0, 0.35);
+	font-size: 22px;
+	cursor: pointer;
+}
+
+.btn.down {
+	background: rgba(255, 207, 74, 0.6);
+}
+
+.btn-a {
+	right: 0;
+	top: 0;
+}
+.btn-b {
+	left: 0;
+	bottom: 0;
+}
+
+.top-btns {
+	position: absolute;
+	top: calc(10px + var(--safe-t));
+	right: calc(10px + var(--safe-r));
+	display: flex;
+	gap: 8px;
+}
+
+.icon-btn {
+	width: 44px;
+	height: 44px;
+	border-radius: 10px;
+	border: 2px solid rgba(255, 255, 255, 0.45);
+	background: rgba(0, 0, 0, 0.45);
+	font-size: 20px;
+	cursor: pointer;
+}
+
+.icon-btn.off {
+	border-color: var(--danger);
+}
+
+/* ───────── フェード・トースト ───────── */
+
+.fade {
+	position: absolute;
+	inset: 0;
+	background: #000;
+	opacity: 0;
+	pointer-events: none;
+	z-index: 50;
+}
+
+.flash {
+	position: absolute;
+	inset: 0;
+	opacity: 0.8;
+	pointer-events: none;
+	z-index: 51;
+}
+
+.toast {
+	position: absolute;
+	top: calc(14px + var(--safe-t));
+	left: calc(14px + var(--safe-l));
+	padding: 6px 14px;
+	background: rgba(0, 0, 0, 0.6);
+	border-left: 4px solid var(--accent);
+	font-size: 15px;
+	opacity: 0;
+	pointer-events: none;
+	z-index: 24;
+}
+
+.toast.shown {
+	animation: toast 2.6s ease forwards;
+}
+
+@keyframes toast {
+	0% {
+		opacity: 0;
+		transform: translateX(-10px);
+	}
+	12% {
+		opacity: 1;
+		transform: none;
+	}
+	80% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+/* ───────── 章タイトル ───────── */
+
+.chapter {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.88);
+	opacity: 0;
+	transition: opacity 0.5s;
+	z-index: 60;
+	gap: 14px;
+	text-align: center;
+	padding: 20px;
+}
+
+.chapter.shown {
+	opacity: 1;
+}
+
+.chapter-label {
+	color: var(--accent);
+	letter-spacing: 0.3em;
+	font-size: 16px;
+}
+
+.chapter-title {
+	font-size: clamp(18px, var(--app-w) * 0.062, 38px);
+	word-break: keep-all;
+	text-shadow: 0 0 12px rgba(160, 120, 255, 0.8);
+}
+
+/* ───────── エンカウント演出（ui/battle.ts の encounterFx） ───────── */
+
+/* 戦闘（.battle）のすぐ下。エンカウントの音が鳴り終わるまでフィールドを覆う */
+.encounter {
+	position: absolute;
+	inset: 0;
+	z-index: 24;
+}
+
+/* モザイクで崩していくフィールド（canvas は画面と同じデバイス画素） */
+.encounter-view {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	image-rendering: pixelated;
+}
+
+/* 白く2回光る（音の頭に合わせて --at だけ遅らせる。長さは battle.ts の FLASH_MS） */
+.encounter::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: #fff;
+	opacity: 0;
+	animation: encounter-flash 0.4s linear var(--at, 0ms) forwards;
+}
+
+@keyframes encounter-flash {
+	0%,
+	20% {
+		opacity: 0.85;
+	}
+	21%,
+	45% {
+		opacity: 0;
+	}
+	46%,
+	66% {
+		opacity: 0.85;
+	}
+	67%,
+	100% {
+		opacity: 0;
+	}
+}
+
+/* 最後は真っ暗 */
+.encounter.dark {
+	background: #000;
+}
+
+.encounter.dark .encounter-view {
+	visibility: hidden;
+}
+
+/* 動きを減らす設定：光らせず崩さず、音の長さでゆっくり暗転するだけ */
+.encounter.calm {
+	background: #000;
+	opacity: 0;
+	transition: opacity var(--fade, 1s) linear var(--at, 0ms);
+}
+
+.encounter.calm.dark {
+	opacity: 1;
+}
+
+.encounter.calm::after {
+	animation: none;
+}
+
+/* ───────── 戦闘 ───────── */
+
+.battle {
+	position: absolute;
+	inset: 0;
+	z-index: 25;
+	display: flex;
+	flex-direction: column;
+	opacity: 0;
+	transition: opacity 0.25s;
+	padding: calc(8px + var(--safe-t)) calc(8px + var(--safe-r))
+		calc(8px + var(--safe-b)) calc(8px + var(--safe-l));
+}
+
+.battle.shown {
+	opacity: 1;
+}
+
+.battle-bg {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background:
+		repeating-linear-gradient(
+			0deg,
+			rgba(255, 255, 255, 0.035) 0 2px,
+			transparent 2px 6px
+		),
+		radial-gradient(ellipse at 50% 40%, #3a2a6a 0%, #150d2c 70%, #07040f 100%);
+}
+
+/* MOTHER2 風に うごく背景（ui/battleBg.ts）。ドットのまま引きのばす */
+.battle-bg-canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	image-rendering: pixelated;
+}
+
+/* 走査線と、ふちを暗く（敵と文字を うもれさせない） */
+.battle-bg::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background:
+		repeating-linear-gradient(
+			0deg,
+			rgba(0, 0, 0, 0.12) 0 1px,
+			transparent 1px 3px
+		),
+		radial-gradient(
+			ellipse at 50% 40%,
+			transparent 30%,
+			rgba(7, 4, 15, 0.65) 100%
+		);
+}
+
+.battle.quake {
+	animation: shake 0.1s linear 3;
+}
+
+/* とくぎを使った合図。主役は .fx なので、背景は ひとつ息をのむぐらいに光らせるだけ */
+.battle.sing .battle-bg {
+	animation: sing 0.45s steps(3);
+}
+
+@keyframes sing {
+	0% {
+		filter: brightness(1);
+	}
+	35% {
+		filter: brightness(1.55) saturate(1.25);
+	}
+	100% {
+		filter: brightness(1);
+	}
+}
+
+/*
+ * ───────── とくぎの演出（ui/battle.ts の playFx・fxNode） ─────────
+ *
+ * 当たる相手（敵1体・なかまの札）の上、または相手の並んだ列の上に置く箱。
+ * 絵は足さず CSS だけで作り、ドット絵に合わせて steps でカクッと動かす。
+ * 色は --fx（技ごと。data/battle.ts の SkillDef.fx）。
+ */
+.fx {
+	position: absolute;
+	pointer-events: none;
+	overflow: hidden;
+	z-index: 5;
+	--fx: #fff;
+}
+
+.fx i,
+.fx b {
+	position: absolute;
+	display: block;
+}
+
+/* slash: ななめの筋が 3本、ずれて はしる（斬る・つりあげる） */
+.fx-slash {
+	overflow: visible;
+}
+.fx-slash i {
+	left: -25%;
+	top: 50%;
+	width: 150%;
+	height: 5px;
+	background: var(--fx);
+	box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.75);
+	transform-origin: 0 50%;
+	animation: fx-slash 0.34s steps(4) both;
+}
+.fx-slash i:nth-child(2) {
+	top: 32%;
+	animation-delay: 0.08s;
+}
+.fx-slash i:nth-child(3) {
+	top: 68%;
+	animation-delay: 0.16s;
+}
+
+@keyframes fx-slash {
+	0% {
+		transform: rotate(-34deg) scaleX(0);
+		opacity: 1;
+	}
+	55% {
+		transform: rotate(-34deg) scaleX(1);
+		opacity: 1;
+	}
+	100% {
+		transform: rotate(-34deg) scaleX(1);
+		opacity: 0;
+	}
+}
+
+/* burst: 芯が光って、輪が2つ ひろがる（はじける） */
+.fx-burst {
+	overflow: visible;
+}
+.fx-burst i {
+	inset: 0;
+	border: 4px solid var(--fx);
+	border-radius: 50%;
+	animation: fx-burst-ring 0.42s steps(5) both;
+}
+.fx-burst i:nth-child(2) {
+	animation-delay: 0.12s;
+}
+.fx-burst b {
+	inset: 26%;
+	background: var(--fx);
+	border-radius: 50%;
+	animation: fx-burst-core 0.3s steps(3) both;
+}
+
+@keyframes fx-burst-ring {
+	0% {
+		transform: scale(0.25);
+		opacity: 1;
+	}
+	100% {
+		transform: scale(1.5);
+		opacity: 0;
+	}
+}
+
+@keyframes fx-burst-core {
+	0% {
+		transform: scale(0.2);
+		opacity: 0.95;
+	}
+	100% {
+		transform: scale(1.7);
+		opacity: 0;
+	}
+}
+
+/*
+ * ring: 札のかたちの輪が ひろがって、＋ が 立ちのぼる（回復）。
+ * なかまの札は小さいので、丸い波紋より 札のふちを なぞる輪のほうが よく見える
+ */
+.fx-ring {
+	overflow: visible;
+}
+.fx-ring i {
+	inset: 0;
+	border: 3px solid var(--fx);
+	border-radius: 7px;
+	animation: fx-pulse 0.5s steps(5) both;
+}
+.fx-ring i:nth-child(2) {
+	animation-delay: 0.14s;
+}
+.fx-ring b {
+	bottom: 8%;
+	font-size: 19px;
+	line-height: 1;
+	color: var(--fx);
+	text-shadow:
+		0 0 4px #000,
+		0 2px 0 rgba(0, 0, 0, 0.6);
+	animation: fx-plus 0.7s steps(7) both;
+}
+
+@keyframes fx-pulse {
+	0% {
+		transform: scale(0.96);
+		opacity: 0.95;
+	}
+	100% {
+		transform: scale(1.5);
+		opacity: 0;
+	}
+}
+
+@keyframes fx-plus {
+	0% {
+		transform: translateY(0);
+		opacity: 0;
+	}
+	25% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateY(-260%);
+		opacity: 0;
+	}
+}
+
+/* aura: 札の下から 光の筋が 立ちのぼる（強化）。札の外まで のびる */
+.fx-aura {
+	overflow: visible;
+}
+.fx-aura i {
+	bottom: 0;
+	width: 5%;
+	height: 42%;
+	background: linear-gradient(to top, var(--fx), transparent);
+	box-shadow: 0 0 6px var(--fx);
+	animation: fx-rise 0.6s steps(7) both;
+}
+
+@keyframes fx-rise {
+	0% {
+		transform: translateY(30%) scaleY(0.5);
+		opacity: 0;
+	}
+	25% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateY(-230%) scaleY(1);
+		opacity: 0;
+	}
+}
+
+/* 回復・強化を受けた なかまの札を ひと呼吸 ひからせる（--fx は battle.ts が入れる） */
+.member.fx-lit {
+	animation: fx-lit 0.5s steps(3);
+}
+
+@keyframes fx-lit {
+	0% {
+		box-shadow: none;
+	}
+	40% {
+		box-shadow:
+			0 0 0 3px var(--fx),
+			0 0 14px var(--fx);
+	}
+	100% {
+		box-shadow: none;
+	}
+}
+
+/* rain: 字が 降りそそぐ（碁石・素粒子）。--fall は列の高さ（battle.ts が入れる） */
+.fx-rain i {
+	top: -26px;
+	font-size: 19px;
+	line-height: 1;
+	color: var(--fx);
+	text-shadow:
+		0 0 4px #000,
+		0 2px 0 rgba(0, 0, 0, 0.6);
+	animation: fx-fall 0.5s steps(7) both;
+}
+
+@keyframes fx-fall {
+	0% {
+		transform: translateY(0);
+		opacity: 0;
+	}
+	15% {
+		opacity: 1;
+	}
+	85% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateY(var(--fall, 300px));
+		opacity: 0;
+	}
+}
+
+/* spin: まわる輪が 2つ、ひろがりながら 回る（ドリル） */
+.fx-spin i {
+	left: 50%;
+	top: 50%;
+	width: 62%;
+	height: 62%;
+	margin: -31% 0 0 -31%;
+	border: 7px dashed var(--fx);
+	border-radius: 50%;
+	animation: fx-spin 0.6s steps(9) both;
+}
+.fx-spin i:nth-child(2) {
+	width: 34%;
+	height: 34%;
+	margin: -17% 0 0 -17%;
+	border-width: 5px;
+	animation-delay: 0.1s;
+	animation-direction: reverse;
+}
+
+@keyframes fx-spin {
+	0% {
+		transform: rotate(0) scale(0.3);
+		opacity: 0;
+	}
+	20% {
+		opacity: 1;
+	}
+	75% {
+		opacity: 1;
+	}
+	100% {
+		transform: rotate(540deg) scale(1.25);
+		opacity: 0;
+	}
+}
+
+.enemy-row {
+	flex: 1 1 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 10px 18px;
+	min-height: 150px;
+	padding-top: 40px;
+}
+
+.enemy {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	transition:
+		opacity 0.4s,
+		transform 0.4s;
+}
+
+.enemy-sprite {
+	image-rendering: pixelated;
+	filter: drop-shadow(0 6px 0 rgba(0, 0, 0, 0.35));
+}
+
+/* 裏ボスの手下：1行ずつ組み上がるように出る（コンパイル） */
+.enemy.summoned .enemy-sprite {
+	animation: compile 0.5s steps(8) both;
+}
+
+@keyframes compile {
+	from {
+		clip-path: inset(0 0 100% 0);
+		filter: brightness(3);
+	}
+	to {
+		clip-path: inset(0);
+		filter: none;
+	}
+}
+
+/* 裏ボス：守りのある間の攻撃を よける */
+.enemy.dodge .enemy-sprite {
+	animation: dodge 0.3s ease-out;
+}
+
+@keyframes dodge {
+	40% {
+		transform: translateX(-14px);
+	}
+}
+
+.enemy.hit .enemy-sprite {
+	animation: hit 0.35s steps(2);
+}
+
+@keyframes hit {
+	0%,
+	100% {
+		opacity: 1;
+		transform: none;
+	}
+	25% {
+		opacity: 0;
+		transform: translateX(-4px);
+	}
+	50% {
+		opacity: 1;
+		transform: translateX(4px);
+	}
+	75% {
+		opacity: 0;
+	}
+}
+
+.enemy.dead {
+	opacity: 0;
+	transform: scale(0.6);
+	pointer-events: none;
+}
+
+.hpbar {
+	width: 60px;
+	height: 5px;
+	background: rgba(0, 0, 0, 0.6);
+	border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.hpbar i {
+	display: block;
+	height: 100%;
+	background: var(--danger);
+	transition: width 0.3s;
+}
+
+/* 守りのある間は HP のバーを灰色に（とけたら赤にもどる＝もう当たる合図） */
+.enemy.shielded .hpbar i {
+	background: var(--muted);
+}
+
+.party-row {
+	display: flex;
+	gap: 6px;
+	justify-content: center;
+	flex-wrap: wrap;
+	margin: 6px 0;
+}
+
+.member {
+	flex: 1 1 0;
+	min-width: 92px;
+	max-width: 180px;
+	padding: 6px 8px;
+	background: var(--win-bg);
+	border: 2px solid var(--char, #fff);
+	border-radius: 6px;
+	font-size: 12px;
+}
+
+.member.down {
+	opacity: 0.45;
+	border-color: #666;
+}
+
+.member.pinch {
+	animation: pinch 1s ease-in-out infinite;
+}
+
+@keyframes pinch {
+	50% {
+		box-shadow: 0 0 10px var(--danger);
+	}
+}
+
+.member.hit {
+	animation: member-hit 0.3s;
+}
+
+@keyframes member-hit {
+	0%,
+	100% {
+		background: var(--win-bg);
+	}
+	40% {
+		background: #7a1020;
+	}
+}
+
+.m-name {
+	color: var(--char, #fff);
+	font-size: 14px;
+	display: flex;
+	justify-content: space-between;
+	gap: 4px;
+	white-space: nowrap;
+}
+
+.m-name span {
+	color: var(--muted);
+	font-size: 11px;
+}
+
+/* 幅のせまい端末（〜340px）でも戦闘の3人を1列に収める。
+   .narrow は viewport.ts が付ける（@media だとバーの裏まで数えた幅で決まってしまう） */
+.narrow .member {
+	min-width: 0;
+	padding: 6px 5px;
+}
+.narrow .m-name {
+	font-size: 13px;
+}
+
+.m-bar {
+	height: 5px;
+	background: rgba(255, 255, 255, 0.12);
+	margin-top: 4px;
+}
+
+.m-bar i {
+	display: block;
+	height: 100%;
+	transition: width 0.3s;
+}
+
+.m-bar.hp i {
+	background: var(--hp);
+}
+.m-bar.mp i {
+	background: var(--mp);
+}
+
+.m-num {
+	font-size: 11px;
+	color: #ddd;
+}
+
+.m-num.novoice {
+	margin-top: 4px;
+	color: var(--muted);
+}
+
+.battle-log {
+	min-height: 64px;
+	padding: 10px 14px;
+	font-size: 16px;
+	line-height: 1.5;
+	margin: 4px 0;
+}
+
+.battle-cmd {
+	display: none;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px;
+	min-height: 0;
+}
+
+.battle-cmd.shown {
+	display: grid;
+}
+
+.cmd {
+	padding: 12px 8px;
+	font-size: 17px;
+	background: var(--win-bg);
+	border: 2px solid rgba(255, 255, 255, 0.55);
+	border-radius: 8px;
+	cursor: pointer;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+}
+
+.cmd small {
+	font-size: 11px;
+	color: var(--accent);
+}
+
+.cmd.cur {
+	border-color: var(--accent);
+	background: rgba(60, 40, 110, 0.95);
+}
+
+.cmd.back {
+	grid-column: 1 / -1;
+	color: var(--muted);
+	font-size: 14px;
+	padding: 8px;
+}
+
+/* オート中の「やめる」。スマホには B のボタンが無いので、コマンドの場所いっぱいに出す */
+.cmd.auto-stop {
+	grid-column: 1 / -1;
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+/*
+ * 説明つきの一覧（戦闘の「どうぐ」）は1列。名前と数を1行目、効果を2行目に。
+ * 選んでいる間は空の文の欄をたたんで一覧に場所をゆずり、それでも入りきらなければ巻き取る
+ */
+.battle.picking .battle-log {
+	display: none;
+}
+
+.battle-cmd.list {
+	grid-template-columns: 1fr;
+	gap: 4px;
+	overflow-y: auto;
+	touch-action: pan-y;
+}
+
+.battle-cmd.list .cmd.back {
+	padding: 5px;
+}
+
+.cmd.has-desc {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 2px 12px;
+	padding: 5px 12px;
+	font-size: 16px;
+	line-height: 1.2;
+	text-align: left;
+}
+
+.cmd.has-desc small {
+	font-size: 13px;
+}
+
+/* ───────── タイトル ───────── */
+
+.title {
+	position: absolute;
+	inset: 0;
+	z-index: 19;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 18px;
+	padding: 20px;
+	text-align: center;
+	background:
+		radial-gradient(
+			circle at 50% 35%,
+			rgba(255, 207, 74, 0.18),
+			transparent 45%
+		),
+		repeating-radial-gradient(
+			circle at 50% 35%,
+			rgba(255, 255, 255, 0.05) 0 2px,
+			transparent 2px 14px
+		),
+		linear-gradient(#2a1450, #120a24 70%);
+	transition: opacity 0.5s;
+}
+
+.title.leaving {
+	opacity: 0;
+}
+
+.title-sub {
+	color: var(--muted);
+	font-size: 14px;
+	letter-spacing: 0.2em;
+}
+
+.title-logo {
+	margin: 0;
+	font-weight: normal;
+	font-size: clamp(30px, var(--app-w) * 0.105, 58px);
+	word-break: keep-all;
+	line-height: 1.2;
+	color: #fff4c9;
+	text-shadow:
+		0 3px 0 #b04a8a,
+		0 6px 0 #3b1a64,
+		0 0 24px rgba(255, 180, 90, 0.6);
+}
+
+.title-logo .title-logo-sub {
+	display: block;
+	font-size: 0.56em;
+	margin-top: 0.3em;
+	letter-spacing: 0.02em;
+}
+
+.title-walkers {
+	width: calc(80px * 4);
+	max-width: calc(var(--app-w) * 0.8);
+	image-rendering: pixelated;
+	aspect-ratio: 4 / 1;
+	height: auto;
+}
+
+.title-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: min(280px, var(--app-w) * 0.8);
+}
+
+.title-btn {
+	padding: 12px;
+	font-size: 19px;
+	background: var(--win-bg);
+	border: 3px solid var(--win-border);
+	border-radius: 8px;
+	cursor: pointer;
+}
+
+.title-btn.cur {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.title-foot {
+	font-size: 12px;
+	color: var(--muted);
+}
+
+/* ───────── エンディング ───────── */
+
+.credits {
+	position: absolute;
+	inset: 0;
+	z-index: 55;
+	background: #000;
+	overflow: hidden;
+	text-align: center;
+}
+
+.credits-inner {
+	padding: 0 20px;
+}
+
+.credits h2 {
+	color: var(--accent);
+	font-weight: normal;
+	font-size: 16px;
+	margin: 28px 0 10px;
+	letter-spacing: 0.15em;
+}
+
+.credits p {
+	margin: 6px 0;
+	font-size: 15px;
+	line-height: 1.6;
+	word-break: break-all;
+}
+
+.credits .gap {
+	height: 60px;
+}
+
+.the-end {
+	position: absolute;
+	inset: 0;
+	z-index: 56;
+	background: #000;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	opacity: 0;
+	transition: opacity 1.2s;
+}
+
+.the-end.shown {
+	opacity: 1;
+}
+
+.the-end-title {
+	font-size: 42px;
+	color: #fff4c9;
+}
+
+.the-end-tap {
+	margin-top: 30px;
+	font-size: 13px;
+	color: var(--muted);
+	animation: blink 1.4s steps(2) infinite;
+}
+
+/* まとめカード（スタッフロールのあと・おわりの前）。1行は全角22字まで */
+.matome {
+	position: absolute;
+	inset: 0;
+	z-index: 56;
+	background: #000;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	/* 収まるときは上下中央、はみ出すときは上から（auto の余白で中央に寄せる） */
+	justify-content: flex-start;
+	gap: 16px;
+	padding: calc(16px + var(--safe-t)) calc(16px + var(--safe-r))
+		calc(16px + var(--safe-b)) calc(16px + var(--safe-l));
+	overflow-x: hidden;
+	overflow-y: auto;
+	touch-action: pan-y;
+	opacity: 0;
+	transition: opacity 0.8s;
+}
+
+.matome.shown {
+	opacity: 1;
+}
+
+.matome > :first-child {
+	margin-top: auto;
+}
+
+.matome > :last-child {
+	margin-bottom: auto;
+}
+
+.matome .the-end-tap {
+	margin-top: 4px;
+	flex: none;
+}
+
+.matome-card {
+	flex: none;
+	width: 100%;
+	max-width: calc(22em + 32px);
+	padding: 12px 14px;
+	border: 2px solid var(--win-border);
+	border-radius: 6px;
+	background: var(--win-bg);
+	text-align: left;
+	/* 狭い画面でも全角22字が1行に収まるように縮める（外と内の余白・枠で 66px） */
+	font-size: min(14px, calc((var(--app-w) - 66px) / 22));
+	line-height: 1.7;
+}
+
+.matome-head {
+	text-align: center;
+	color: #fff4c9;
+	font-size: 16px;
+	letter-spacing: 0.1em;
+	margin-bottom: 8px;
+}
+
+.matome-sec + .matome-sec {
+	margin-top: 12px;
+}
+
+.matome-title {
+	color: var(--accent);
+}
+
+.matome-line {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+/* 横持ちのスマホ：2つのセクションを横に並べて、縦にはみ出しにくくする。
+   .short-landscape は viewport.ts が付ける（@media だとバーの裏まで数えた高さで決まってしまう） */
+.short-landscape .matome {
+	gap: 8px;
+	/* 右上の 🔇・☰（.top-btns。#ui より手前の .hud にある。上から 10px＋44px）に重ならない */
+	padding-top: calc(58px + var(--safe-t));
+	padding-bottom: calc(10px + var(--safe-b));
+}
+.short-landscape .matome-card {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22em), 1fr));
+	column-gap: 20px;
+	row-gap: 8px;
+	max-width: calc(44em + 52px);
+	font-size: 13px;
+	line-height: 1.55;
+}
+.short-landscape .matome-head {
+	grid-column: 1 / -1;
+	margin-bottom: 0;
+}
+.short-landscape .matome-sec + .matome-sec {
+	margin-top: 0;
+}
+.short-landscape .matome .the-end-tap {
+	margin-top: 0;
+}
+
+/* ───────── 横持ち・大きい画面 ───────── */
+
+.short-landscape .msg {
+	left: 170px;
+	right: 180px;
+	min-height: 96px;
+	font-size: 15px;
+	padding: 10px 14px 18px;
+}
+.short-landscape .portrait-layer {
+	--layer-h: calc(var(--app-h) * 0.66);
+	bottom: calc(96px + 12px - 30px);
+}
+/*
+ * 戦闘：左に敵・文・コマンド、右になかま（2人ずつ並べる）。
+ * なかまを縦に1列に積むと 3人でもコマンドが画面の下へ押し出されるので、右の列は高さいっぱいを使う
+ */
+.short-landscape .battle {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) min(36%, 360px);
+	grid-template-rows: minmax(0, 1fr) auto auto;
+	grid-template-areas:
+		"enemy party"
+		"log party"
+		"cmd party";
+	column-gap: 8px;
+}
+.short-landscape .enemy-row {
+	grid-area: enemy;
+	min-height: 0;
+	padding-top: 0;
+}
+/* 右上の 🔇・☰（.top-btns。上から 10px＋44px）の下から並べる */
+.short-landscape .party-row {
+	grid-area: party;
+	align-content: center;
+	margin: 0;
+	padding-top: 50px;
+}
+.short-landscape .member {
+	flex-basis: 40%;
+}
+.short-landscape .battle-log {
+	grid-area: log;
+	min-height: 50px;
+}
+.short-landscape .battle-cmd {
+	grid-area: cmd;
+	grid-template-columns: repeat(3, 1fr);
+}
+.short-landscape .battle-cmd.list {
+	grid-template-columns: repeat(2, 1fr);
+	max-height: calc(var(--app-h) * 0.48);
+}
