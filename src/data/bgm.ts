@@ -34,6 +34,13 @@ import deep1 from "./bgm/deep1.mml?raw"; // ハ短調 128・retro_game・8beat�
 import deep2 from "./bgm/deep2.mml?raw"; // ト短調 90・orchestra（ライン・クリシェ、打楽器なし）→ 黄色い部屋
 import deep4 from "./bgm/deep4.mml?raw"; // ニ短調 150・cyber_punk・16beat → 過去ログの地層
 import ending from "./bgm/ending.mml?raw"; // b312cbafed564277「変ト長調 (G♭) デュエット」
+// 新規手打ち（音響担当。DESIGN §9「品質担保の原則」＝既存MMLの編集的変換）
+// title の「壊れた再演」（#edo=31・t72・2トラック・長い休符・2音だけ約39セントずれ）
+// → クリア後の 無題のレコード『　』（docs/style-kaiwai.md §3-1）。朗読なしで、これを流すだけ。
+// #volume=8 は仮（title より明らかに小さく＝-30 LUFS 級を狙った値。冒頭の手順で測って直すこと）。
+// ※ zerouta.mml（ゼロの代読歌）は BGM ではないのでここに登録しない。
+//   terminus のスクリプトが ?raw で import して engine/audio.ts の singOnce(mml) に渡す。
+import kowareta from "./bgm/kowareta.mml?raw";
 // うんｊレゼ の 名無し155 の曲（使ってよい曲として もらったもの）
 import retro from "./bgm/retro.mml?raw"; // post/1316 の >>9 30b7932c9e1a4102「今回はメロディ手で書いたわ。正直こっちのが好き」
 import sad from "./bgm/sad.mml?raw"; // 155deb066bc94429「イ短調（Aマイナー）」→ 夕暮れの村
@@ -51,4 +58,5 @@ export const bgm: Record<string, string> = {
 	deep2,
 	deep4,
 	retro,
+	kowareta,
 };

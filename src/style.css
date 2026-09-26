@@ -1,4 +1,4 @@
-/* 蓄音キリコの大冒険 — 画面のスタイル（スマホ縦持ち優先、横持ち・PC も可） */
+/* 蓄音キリコと　きさらぎ回線 — 画面のスタイル（スマホ縦持ち優先、横持ち・PC も可） */
 
 :root {
 	--bg: #1b1026;
@@ -1562,7 +1562,10 @@ body.shake #app {
 	font-size: 13px;
 }
 
-/* ───────── タイトル ───────── */
+/* ───────── タイトル（walksim「深夜の駅名標」ui/title.ts） ─────────
+ * ほぼ黒＋かすかな走査線の上に、白い駅名標プレートが浮かぶ。
+ * 明滅・1文字化けは夜（既定）だけ。.cleared（クリア済み＝朝）では止まる。
+ * ジャンプスケア禁止：急な大変化・高速点滅は入れない */
 
 .title {
 	position: absolute;
@@ -1572,21 +1575,15 @@ body.shake #app {
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	gap: 18px;
-	padding: 20px;
+	gap: 20px;
+	padding: 20px 16px calc(var(--app-h) * 0.16);
 	text-align: center;
-	background:
-		radial-gradient(
-			circle at 50% 35%,
-			rgba(255, 207, 74, 0.18),
-			transparent 45%
-		),
-		repeating-radial-gradient(
-			circle at 50% 35%,
-			rgba(255, 255, 255, 0.05) 0 2px,
-			transparent 2px 14px
-		),
-		linear-gradient(#2a1450, #120a24 70%);
+	background: radial-gradient(
+		ellipse at 50% 38%,
+		#0b0b12 0%,
+		#050508 62%,
+		#030305 100%
+	);
 	transition: opacity 0.5s;
 }
 
@@ -1594,64 +1591,264 @@ body.shake #app {
 	opacity: 0;
 }
 
-.title-sub {
-	color: var(--muted);
+/* 走査線（ごく薄く・全体の一番手前。タップは通す） */
+.title::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	pointer-events: none;
+	background: repeating-linear-gradient(
+		0deg,
+		rgba(255, 255, 255, 0.03) 0 1px,
+		transparent 1px 3px
+	);
+}
+
+/* ゆっくり降りる帯ノイズ（ブラウン管の名残り程度） */
+.title::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: -30%;
+	height: 30%;
+	z-index: 3;
+	pointer-events: none;
+	background: linear-gradient(
+		to bottom,
+		transparent,
+		rgba(255, 255, 255, 0.02) 40%,
+		rgba(0, 0, 0, 0.06) 70%,
+		transparent
+	);
+	animation: title-roll 13s linear infinite;
+}
+
+@keyframes title-roll {
+	to {
+		transform: translateY(466%);
+	}
+}
+
+/* ── 駅名標プレート ── */
+
+.title-sign {
+	width: min(calc(var(--app-w) - 48px), 460px);
+	padding: 18px 14px 0;
+	background: #eef0ec;
+	color: #16181a;
+	border-radius: 5px;
+	overflow: hidden;
+	box-shadow:
+		0 0 26px rgba(190, 210, 220, 0.14),
+		0 6px 18px rgba(0, 0, 0, 0.65);
+	/* 蛍光灯の明滅（緩やか・たまに）。ちらつきは opacity のみ */
+	animation: title-flicker 9s linear infinite;
+}
+
+.title.cleared .title-sign {
+	animation: none;
+}
+
+@keyframes title-flicker {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	3% {
+		opacity: 0.82;
+	}
+	4% {
+		opacity: 0.97;
+	}
+	5.5% {
+		opacity: 0.88;
+	}
+	7%,
+	57% {
+		opacity: 1;
+	}
+	58% {
+		opacity: 0.92;
+	}
+	59%,
+	83% {
+		opacity: 1;
+	}
+	84% {
+		opacity: 0.84;
+	}
+	85.5% {
+		opacity: 0.98;
+	}
+	87% {
+		opacity: 1;
+	}
+}
+
+.title-sign-big {
+	font-size: clamp(24px, calc(var(--app-w) * 0.082), 40px);
+	letter-spacing: 0.1em;
+	line-height: 1.15;
+	white-space: nowrap;
+	color: #101214;
+}
+
+.title-sign-name {
+	margin-top: 7px;
+	font-size: 13px;
+	letter-spacing: 0.08em;
+	color: #2c2f33;
+}
+
+.title-sign-romaji {
+	margin: 3px 0 12px;
+	font-size: 11px;
+	letter-spacing: 0.3em;
+	color: #5a5f66;
+}
+
+/* 路線色の帯。隣駅表示は両側とも空白（title.ts が全角空白を入れる） */
+.title-sign-band {
+	display: flex;
+	justify-content: space-between;
+	margin: 0 -14px;
+	padding: 5px 12px;
+	background: #1b5f52;
+	color: #e8ece9;
+	font-size: 13px;
+	letter-spacing: 0.1em;
+}
+
+/* ── 画面隅の時計 ── */
+
+.title-clock {
+	position: absolute;
+	top: calc(12px + var(--safe-t));
+	left: calc(16px + var(--safe-l));
 	font-size: 14px;
-	letter-spacing: 0.2em;
+	letter-spacing: 0.12em;
+	color: #74767f;
 }
 
-.title-logo {
-	margin: 0;
-	font-weight: normal;
-	font-size: clamp(30px, var(--app-w) * 0.105, 58px);
-	word-break: keep-all;
-	line-height: 1.2;
-	color: #fff4c9;
-	text-shadow:
-		0 3px 0 #b04a8a,
-		0 6px 0 #3b1a64,
-		0 0 24px rgba(255, 180, 90, 0.6);
+/* 朝（クリア済み）：ほんのり暖色で、コロンがゆっくり打ちはじめる（夜は止まったまま） */
+.title.cleared .title-clock {
+	color: #b3a67c;
 }
 
-.title-logo .title-logo-sub {
-	display: block;
-	font-size: 0.56em;
-	margin-top: 0.3em;
-	letter-spacing: 0.02em;
+.title.cleared .title-clock span {
+	animation: title-colon 2s steps(2) infinite;
 }
 
-.title-walkers {
-	width: calc(80px * 4);
-	max-width: calc(var(--app-w) * 0.8);
-	image-rendering: pixelated;
-	aspect-ratio: 4 / 1;
-	height: auto;
+@keyframes title-colon {
+	50% {
+		opacity: 0.25;
+	}
 }
+
+/* ── 副題・注記 ── */
+
+.title-sub {
+	font-size: 11px;
+	letter-spacing: 0.18em;
+	color: #5c5e68;
+}
+
+.title-foot {
+	font-size: 11px;
+	color: #4c4e58;
+}
+
+/* ── メニュー（細い白枠・黒地・小さめ。機能は現行のまま） ── */
 
 .title-buttons {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	width: min(280px, var(--app-w) * 0.8);
+	gap: 7px;
+	width: min(230px, calc(var(--app-w) * 0.64));
+	z-index: 1;
 }
 
 .title-btn {
-	padding: 12px;
-	font-size: 19px;
-	background: var(--win-bg);
-	border: 3px solid var(--win-border);
-	border-radius: 8px;
+	padding: 9px 10px;
+	font-size: 15px;
+	letter-spacing: 0.22em;
+	background: rgba(0, 0, 0, 0.55);
+	border: 1px solid rgba(255, 255, 255, 0.38);
+	border-radius: 2px;
+	color: #c9c9cf;
 	cursor: pointer;
 }
 
 .title-btn.cur {
-	border-color: var(--accent);
-	color: var(--accent);
+	border-color: #fff;
+	color: #fff;
+	background: rgba(255, 255, 255, 0.08);
 }
 
-.title-foot {
-	font-size: 12px;
-	color: var(--muted);
+/* ── 画面下の線路の暗示＋横切るシルエット ── */
+
+.title-rail {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 20%;
+	pointer-events: none;
+	background:
+		repeating-linear-gradient(
+			90deg,
+			rgba(255, 255, 255, 0.03) 0 3px,
+			transparent 3px 27px
+		),
+		linear-gradient(to top, #04040a 0%, #0d0d15 68%, transparent 100%);
+}
+
+/* レールの照り返し（2本・ごく薄く） */
+.title-rail::before,
+.title-rail::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background: rgba(255, 255, 255, 0.08);
+}
+
+.title-rail::before {
+	top: 22%;
+}
+
+.title-rail::after {
+	top: 40%;
+	background: rgba(255, 255, 255, 0.045);
+}
+
+/* キリコのシルエット（kiriko.png を brightness(0) で黒く。title.ts が動かす） */
+.title-walker {
+	position: absolute;
+	left: 0;
+	bottom: 42%;
+	width: 48px;
+	height: 48px;
+	image-rendering: pixelated;
+	filter: brightness(0);
+	opacity: 0;
+	transition: opacity 0.8s;
+}
+
+.title-walker.crossing {
+	opacity: 0.9;
+}
+
+/* 動きを減らす設定：明滅・帯ノイズを止める（化け・横断は title.ts 側で止める） */
+@media (prefers-reduced-motion: reduce) {
+	.title::after,
+	.title-sign,
+	.title.cleared .title-clock span {
+		animation: none;
+	}
 }
 
 /* ───────── エンディング ───────── */

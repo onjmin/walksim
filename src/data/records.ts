@@ -4,6 +4,9 @@
 // rec_a〜c の朗読はレイの機械音声（rei）。1要素＝メッセージ窓1枚・全角22字×2行まで。
 // trueVoice は終点・供養スレ駅の一斉再生（Story.record の opt.trueVoice）でだけ流れる
 // 「本人の声」（rec_last はもともとキリコ＝uc の声なので trueVoice は持たない）。
+// rec_a と rec_c は鏡写しの対句（docs/kousatsu-bait.md 技法8）:
+// a の末尾「……ちょっと　風呂/入ってくるわ」(03:04) ↔ c の冒頭「ただいま。ええ湯やったわ」(03:15)。
+// 声（trueVoice）は別人。終点の一斉再生で並べて聞いたときだけ気づく。答え合わせはしない。
 
 import type { ItemDef, RecordDef } from "../engine/defs";
 
@@ -42,6 +45,7 @@ export const records: Record<string, RecordDef> = {
 		trueVoice: { model: "teto" },
 		date: "2021/03/15(月) 03:15",
 		lines: [
+			"ただいま。ええ湯やったわ",
 			"みんな　まだ起きてて草",
 			"ワイ　明日から　ちょっと\n忙しくなるんや",
 			"落ちてたら　また誰か\n立ててくれや",
@@ -90,7 +94,7 @@ export const items: Record<string, ItemDef> = {
 	omamori: {
 		id: "omamori",
 		name: "つくよみのお守り",
-		desc: "神社で　もらった　お守り。\n持っていると「ぽぽぽ」が　とおざかる。",
+		desc: "神社で　もらった　お守り。\n『ぽ』の音が、とおくなる気がする。",
 		key: true,
 	},
 	flashlight: {

@@ -1,0 +1,12 @@
+// 無題のレコード『　』— title.mml の「壊れた再演」（DESIGN §9・docs/style-kaiwai.md §1「狂うオルゴール」）。
+// 元: bgm/title.mml（6c5cd6e3edc4433b「ゲーム音楽っぽい何か」）。編集的変換のみ:
+// 遅く（t185→t72）・4トラック→2トラックに間引き・フレーズ間とループ終端に長い休符・
+// #edo=31（ミーントーン）で全体の調律がわずかに古び、a#+（8小節目）と b_（12小節目）の
+// 2音だけ約39セントずれる。12平均律の f+ 綴りは 31平均律では微分音になるため、
+// シャープは全て # で綴り直してある（# はどちらの音律でも半音）。
+// @1 末尾の v1 の16分音符は無音のスペーサ（ループ終端＝最後の音の終わりなので、
+// 終端の休符2小節を実際に鳴らすための置き石。聞こえない）。
+#inst=retro_game#volume=8#reverb=32#reverbdecay=12#reverbpredelay=30#mastercomp=25#fadeout=15#mode=simple#edo=31#t0inst=Lead 1 (square)#t1inst=Synth Bass 1#t0comp=35#t1comp=40#t0width=115#t0rev=22#t1rev=8#t0eqlo=-2#t0eqhi=-1#t1eqlo=2#t1eqhi=-3#t0dly=15;
+@0t72v80o4b8.>f#16f8d#8r8c#16d#16a#8g#8f8.d#16c#8g#8r8f#16f16d#8c#8r1f8.b16a#8g#8r8f#16g#16>d#8c#8<a#8.g#16f#8>c#8r8<b16a#16g#8f#8r1r1<b8.>f#16f8d#8r8c#16d#16a#+8g#8f8.d#16c#8g#8r2r1c#2r4<b4b_1r1r1;
+@1t72v60o2b1>c#1r1<a#1d#1r1r1b1>c#2r2r1r1r1r1r2r4r8r16v1c16;
+#end;

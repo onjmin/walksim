@@ -1,0 +1,14 @@
+// 解音ゼロの代読歌（DESIGN §9・content-briefs「terminus」）。約19秒・1回きり。
+// 終点・供養スレ駅で、キリコ（uc）がゼロの書いた紙を蓄音機にのせて歌う。
+// 歌詞はゼロの書き文字という体の2フレーズ（創作。テーマ: まっていました／こえ／あさ）。
+// 民謡音階の抜粋（ファ・ソ・ラ・ド）の単旋律わらべうた型。主音に着地せずソで止まり、
+// 最後は ↓ で声量が消えていく（終止しない）。伴奏なし。
+// 再生は engine/audio.ts の singOnce(mml)（BGM を一時停止→歌のあと続きから復帰。
+// ボイスOFF・軽量モードではオルゴール（Music Box）のインストで鳴る）。
+// 末尾の v1 o2 c16 は無音のスペーサ（最後の伸ばした音とリバーブの尻尾が
+// 切れないよう、曲の終わりを1小節うしろに置く。歌詞は消費し尽きて楽器音・聞こえない）。
+// #volume=14 は仮（歌唱は engine の SING_GAIN 込みで ending と同程度の見込み。実測して直すこと）。
+#inst=piano#volume=14#reverb=20#reverbdecay=8#reverbpredelay=20#mastercomp=25#fadeout=10#mode=simple#t0inst=Music Box;
+@0t84v100o4a4a8g8g4f4g4f2r4a4a8g8g4f4g4a2r4a8a8g8g8f4g8a8>c8<a8g8f8g4f8g8g2.r4r2.r8r16v1o2c16;
+@@0 uc v190 r20 まっていました、まっていました、あなたのこえが、あさになるまでー↓;
+#end;

@@ -22,7 +22,7 @@ export const notes: Record<string, NoteDef> = {
 		],
 		hint: "駅で？",
 	}),
-	/** kisaragi 西端: トンネル入口の看板「いさぬき」。 */
+	/** kisaragi 西端: トンネル入口の看板「いさぬき」（初出は train の車窓からも）。 */
 	isanuki: n({
 		id: "isanuki",
 		title: "伊佐貫トンネル",
@@ -204,7 +204,7 @@ export const notes: Record<string, NoteDef> = {
 		lines: [
 			"つながらないはずの電話が、",
 			"鳴った。『いま、どこ？』",
-			"……そっちこそ、どこなんだ。",
+			"……そっちこそ、どこンゴ。",
 		],
 	}),
 	/** tunnel: 壁の落書き看板。 */
@@ -225,7 +225,7 @@ export const notes: Record<string, NoteDef> = {
 		lines: [
 			"壁のはり紙。『この顔を　夢で",
 			"見たことが　ありますか？』",
-			"……ある気がして、いやだ。",
+			"……ある。……ある気がする。",
 		],
 	}),
 	/** hub: 開かないエレベーター横の手書きメモ。 */
@@ -334,7 +334,7 @@ export const notes: Record<string, NoteDef> = {
 			"二度目に見たら、一行ふえていた。",
 			"『たのしかった……』",
 		],
-		hint: "二日だけ、いた",
+		hint: "お絵かき掲示板で？",
 	}),
 	/** terminus: ホームの端の小さな墓標（ロゼの「もう一人」のあと）。 */
 	haka: n({
@@ -354,8 +354,8 @@ export const notes: Record<string, NoteDef> = {
 		lines: [
 			"ふりむかない女の子。",
 			"気づくと、真うしろにいる。",
-			"生まれたスレでは、レスが消えて",
-			"文字化けが　動いたらしい。",
+			"レスが消える・文字化けが動く",
+			"――そんな話を、どこかで読んだ。",
 		],
 		hint: "きみの、うしろ",
 	}),

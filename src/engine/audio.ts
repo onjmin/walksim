@@ -192,6 +192,37 @@ export type Speaking = {
 	started?: Promise<SpeechStart | null>;
 };
 
+/** いまのゲームの音（{@link GameAudio} は main.ts で1つだけ作られる）。{@link singOnce} が引く。 */
+let currentAudio: GameAudio | null = null;
+
+/**
+ * 歌入りの短い MML を1回だけ流す（終点・解音ゼロの代読歌が使う。
+ * data/bgm/zerouta.mml を ?raw で import して渡す）。今の BGM を一時停止し、
+ * 歌い終わる（か鳴らせないと分かる）と resolve して元の曲の続きへ戻す。
+ * ミュート・BGM OFF・音のアンロック前は何もせずすぐ resolve する。
+ */
+export const singOnce = (mml: string): Promise<void> =>
+	currentAudio ? currentAudio.singOnce(mml) : Promise.resolve();
+
+/**
+ * カメオ音源の追加読み込み（DESIGN §5。改札が開いた演出＝hub の gate_open が呼ぶ）。
+ * 進み具合は {@link GameAudio.voiceProgress} に流す（せっていの「ボイス」欄に出る）。
+ * ボイス OFF・音のアンロック前は何もせずすぐ resolve する。
+ */
+export const prepareCameoVoices = (): Promise<void> => {
+	const audio = currentAudio;
+	if (!audio) return Promise.resolve();
+	return audio
+		.prepareCameoVoices((loaded, total) => {
+			audio.voiceProgress = { loaded, total };
+			audio.onVoiceProgress?.();
+		})
+		.finally(() => {
+			audio.voiceProgress = null;
+			audio.onVoiceProgress?.();
+		});
+};
+
 export class GameAudio {
 	private ctx: AudioContext | null = null;
 	private seGain: GainNode | null = null;
@@ -234,6 +265,7 @@ export class GameAudio {
 	onVoiceProgress: (() => void) | null = null;
 
 	constructor(bgm: Record<string, string>, sfx: Record<string, string>) {
+		currentAudio = this; // main.ts で1つだけ作られる（モジュール関数 singOnce が使う）
 		this.bgmData = bgm;
 		this.sfxData = sfx;
 		let prev = {
@@ -377,6 +409,93 @@ export class GameAudio {
 		this.bgmName = name;
 		this.sing = settings.voice && settings.bgm === "hq";
 		this.restartBgm(0);
+	}
+
+	/**
+	 * 歌入りの短い MML を1回だけ流す（終点・解音ゼロの代読歌。data/bgm/zerouta.mml）。
+	 * 今の BGM を一時停止し、歌い終わったら同じ曲の続きから戻す。
+	 * ボイス OFF・軽量モードのときは歌わずインストで流す（{@link singBgm} と同じ扱い）。
+	 * ミュート・BGM OFF・アンロック前は何もせずすぐ戻る。
+	 */
+	async singOnce(mml: string): Promise<void> {
+		const ctx = this.ctx;
+		if (!ctx || !this.canPlayBgm()) return;
+		// 今の曲を一時停止。bgmName を外しておくと、歌の間の設定変更（restartBgm）が
+		// 元の曲を歌に重ねて鳴らし直すことはない（下で bgmPlayback に登録するので、
+		// ミュート・曲質の切り替えは stopBgmPlayback 経由で歌ごと止まる）。
+		const prevName = this.bgmName;
+		const prevStep = this.bgmLastStep;
+		this.stopBgmPlayback();
+		this.bgmName = null;
+		const token = this.bgmToken;
+		const volume = this.volumeFor(mml);
+		try {
+			await new Promise<void>((resolve) => {
+				let done = false;
+				const finish = () => {
+					if (done) return;
+					done = true;
+					resolve();
+				};
+				void (async () => {
+					try {
+						// 1回きりなので loop: false。鳴り終わる（か止められる）と onStop → finish
+						const common = {
+							loop: false,
+							onStop: finish,
+							pauseWhenHidden: false,
+						};
+						let pb: MmlPlayback | null = null;
+						if (settings.bgm === "hq") {
+							const studio = await this.studio();
+							if (settings.voice) {
+								try {
+									pb = await studio.playSingingMML(mml, common);
+									pb.setVolume(Math.min(100, volume * SING_GAIN));
+								} catch (e) {
+									console.warn(
+										"[audio] 歌声つきで流せなかったのでインストにします",
+										e,
+									);
+								}
+							}
+							if (!pb) {
+								pb = studio.play(mml, common);
+								pb.setVolume(volume);
+							}
+						} else {
+							const dtm = await loadDtm();
+							pb = dtm.playMML(mml, {
+								...common,
+								audioContext: ctx,
+								destination: ctx.destination,
+							});
+							pb.setVolume(volume);
+						}
+						if (token !== this.bgmToken || done) {
+							this.dispose(pb);
+							finish();
+							return;
+						}
+						this.bgmPlayback = pb;
+					} catch (e) {
+						console.warn("[audio] 歌を流せませんでした", e);
+						finish();
+					}
+				})();
+			});
+		} finally {
+			if (token === this.bgmToken) {
+				// 何事もなく歌い終わった：元の曲の続きから戻す
+				this.bgmName = prevName;
+				this.restartBgm(prevStep);
+			} else if (this.bgmName === null && !this.canPlayBgm()) {
+				// 歌の途中でミュート等：曲名だけ戻す（解除の restartBgm がその曲を鳴らす）
+				this.bgmName = prevName;
+				this.bgmLastStep = prevStep;
+			}
+			// それ以外（歌の間に bgm() で曲が切り替わった）は、新しい曲を尊重して何もしない
+		}
 	}
 
 	private canPlayBgm(): boolean {

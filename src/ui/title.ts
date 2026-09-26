@@ -1,11 +1,30 @@
-// タイトル画面。
+// タイトル画面 —「深夜の駅名標」（docs/content-briefs.md タイトル画面 節）。
+// ほぼ黒の画面に白い駅名標プレートが浮かび、蛍光灯風にときどき明滅する。
+// ごく稀に1文字だけ化けてすぐ戻る。画面下は暗い線路の暗示で、
+// キリコのシルエットが数十秒に一度ゆっくり横切る。
+// クリア済み（hasClearMark）なら朝：明滅も化けも止まり、時計が 7:00 になり、
+// プレートのひらがなが一行だけ優しい内容に変わる（周回差分）。
 
 import type { GameState } from "../engine/defs";
 import type { Game } from "../engine/game";
-import { hasSave, readSave } from "../engine/save";
+import { hasClearMark, hasSave, readSave } from "../engine/save";
 import { drawWalk, stepFrame } from "../engine/sprite";
 import { el } from "./dom";
 import { listWindow, settingsMenu } from "./menu";
+
+/** 駅名標の大きなひらがな。 */
+const SIGN_BIG = "きさらぎかいせん";
+
+/** 1文字化けの置換表（似た字・濁点の増減だけ。派手にしない）。 */
+const GLITCH: Record<string, string> = {
+	き: "ぎ",
+	さ: "ち",
+	ら: "ろ",
+	ぎ: "き",
+	か: "が",
+	い: "ぃ",
+	せ: "ぜ",
+};
 
 /** タイトルを出し、「はじめから／つづきから」で選ばれた状態を返す。 */
 export const showTitle = (game: Game): Promise<GameState> =>
@@ -13,25 +32,42 @@ export const showTitle = (game: Game): Promise<GameState> =>
 		const { data } = game;
 		game.audio.bgm(data.titleBgm);
 		document.title = data.title.replace(/\n/g, " ");
-		const cast = ["kiriko", "nemurin", "tsukuyomi", "roze"]
-			.map((id) => data.cast[id])
-			.filter(Boolean);
-		const walkers = el("canvas", { class: "title-walkers" });
-		walkers.width = cast.length * 20;
-		walkers.height = 20;
-		const root = el("div", { class: "title" }, [
-			el("div", { class: "title-sub", text: data.subtitle ?? "" }),
-			el("h1", {
-				class: "title-logo",
-				// 1行目は大きく、2行目以降（副題）は小さく
-				html: data.title
-					.split("\n")
-					.map((line, i) =>
-						i === 0 ? line : `<span class="title-logo-sub">${line}</span>`,
-					)
-					.join(""),
+
+		const cleared = hasClearMark();
+		// 動きを減らす設定の端末では、化け・シルエット横断も出さない（CSS 側で明滅等も止まる）
+		const calm =
+			window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+		// ── 駅名標プレート ──
+		const bigText = cleared ? "おかえりなさい" : SIGN_BIG;
+		const big = el("div", { class: "title-sign-big", text: bigText });
+		const sign = el("div", { class: "title-sign" }, [
+			big,
+			el("div", {
+				class: "title-sign-name",
+				text: data.title.replace(/\n/g, "　"),
 			}),
-			walkers,
+			el("div", { class: "title-sign-romaji", text: "KISARAGI KAISEN" }),
+			// 隣駅表示は両側とも空白（どこから来て どこへ行くのかは書かない）
+			el("div", { class: "title-sign-band" }, [
+				el("span", { text: "←　　　　" }),
+				el("span", { text: "　　　　→" }),
+			]),
+		]);
+
+		// ── 線路の暗示＋横切るシルエット（kiriko.png を黒く塗って使う） ──
+		const walker = el("canvas", { class: "title-walker" });
+		walker.width = 16;
+		walker.height = 16;
+		const rail = el("div", { class: "title-rail" }, [walker]);
+
+		const root = el("div", { class: `title${cleared ? " cleared" : ""}` }, [
+			el("div", {
+				class: "title-clock",
+				html: `${cleared ? "7" : "2"}<span>:</span>00`,
+			}),
+			sign,
+			el("div", { class: "title-sub", text: data.subtitle ?? "" }),
 		]);
 		const buttons = el("div", { class: "title-buttons" });
 		root.appendChild(buttons);
@@ -41,29 +77,80 @@ export const showTitle = (game: Game): Promise<GameState> =>
 				text: "BGM・効果音は右上の🔊で切り替え",
 			}),
 		);
+		root.appendChild(rail);
 		game.ui.appendChild(root);
 
+		// ── 演出ループ（1文字化け・シルエット横断） ──
+		const walkRef = data.cast.kiriko?.walk ?? "pub:sprites/kiriko.png";
+		const walkerCtx = walker.getContext("2d");
+		let nextGlitch = 0; // 次に化ける時刻
+		let glitchUntil = 0; // 化けている間は戻す時刻
+		let nextCross = 0; // 次にシルエットが現れる時刻
+		let cross: { start: number; dur: number; dir: 1 | -1 } | null = null;
 		let raf = 0;
 		const anim = (t: number) => {
-			const ctx = walkers.getContext("2d");
-			if (ctx && root.isConnected) {
-				ctx.imageSmoothingEnabled = false;
-				ctx.clearRect(0, 0, walkers.width, walkers.height);
-				cast.forEach((c, i) => {
-					drawWalk(
-						ctx,
-						c.walk,
-						"down",
-						stepFrame(t + i * 130, true),
-						i * 20 + 2,
-						2,
-					);
-				});
-				raf = requestAnimationFrame(anim);
+			if (!root.isConnected) return;
+			if (!nextGlitch) {
+				// 初回フレームで時刻を初期化
+				nextGlitch = t + 15_000 + Math.random() * 25_000;
+				nextCross = t + 8_000 + Math.random() * 14_000;
 			}
+			// 1文字化け（数十秒に一度・0.4〜0.9秒で戻る）。朝は化けない
+			if (!cleared && !calm) {
+				if (glitchUntil && t >= glitchUntil) {
+					big.textContent = SIGN_BIG;
+					glitchUntil = 0;
+					nextGlitch = t + 20_000 + Math.random() * 30_000;
+				} else if (!glitchUntil && t >= nextGlitch) {
+					const idxs = [...SIGN_BIG]
+						.map((ch, i) => (GLITCH[ch] ? i : -1))
+						.filter((i) => i >= 0);
+					const i = idxs[Math.floor(Math.random() * idxs.length)];
+					big.textContent =
+						SIGN_BIG.slice(0, i) + GLITCH[SIGN_BIG[i]] + SIGN_BIG.slice(i + 1);
+					glitchUntil = t + 400 + Math.random() * 500;
+				}
+			}
+			// シルエット横断（数十秒に一度・十数秒かけてゆっくり）
+			if (!calm) {
+				if (!cross && t >= nextCross) {
+					cross = {
+						start: t,
+						dur: 12_000 + Math.random() * 5_000,
+						dir: Math.random() < 0.5 ? 1 : -1,
+					};
+					walker.classList.add("crossing");
+				}
+				if (cross) {
+					const p = (t - cross.start) / cross.dur;
+					if (p >= 1) {
+						cross = null;
+						walker.classList.remove("crossing");
+						nextCross = t + 25_000 + Math.random() * 30_000;
+					} else {
+						const w = root.clientWidth + 96;
+						const x = (cross.dir > 0 ? p : 1 - p) * w - 48;
+						walker.style.transform = `translateX(${x}px)`;
+						if (walkerCtx) {
+							walkerCtx.imageSmoothingEnabled = false;
+							walkerCtx.clearRect(0, 0, 16, 16);
+							drawWalk(
+								walkerCtx,
+								walkRef,
+								cross.dir > 0 ? "right" : "left",
+								stepFrame(t, true),
+								0,
+								0,
+							);
+						}
+					}
+				}
+			}
+			raf = requestAnimationFrame(anim);
 		};
 		raf = requestAnimationFrame(anim);
 
+		// ── メニュー（機能は rpg 由来の現行のまま・見た目だけ style.css で変更） ──
 		const showDebug =
 			!!data.debug &&
 			(import.meta.env.DEV ||

@@ -171,4 +171,32 @@ export const cast: Record<string, CharDef> = {
 		walk: "pub:sprites/ushiro.png",
 		color: "#b04a86",
 	}),
+	/**
+	 * 朝のスレの「名無しさん」の声その1（クッキー☆由来の UTAU。声のみ使用・DESIGN §5）。
+	 * 姿はマップに出さない（terminus の朝の書き込みを noPortrait＋名前欄「名無しさん」で読む。
+	 * 歩行グラは念のため同梱の汎用グラを引き当てておく）。
+	 */
+	mgroid: c({
+		id: "mgroid",
+		name: "名無しさん",
+		walk: "pub:assets/rpgen/char/14-man-a.png",
+		color: "#8a97a8",
+		voice: { model: "mgroid" },
+	}),
+	/** 朝のスレの「名無しさん」の声その2（mgroid と同じ扱い）。 */
+	motroid: c({
+		id: "motroid",
+		name: "名無しさん",
+		walk: "pub:assets/rpgen/char/16-man-b.png",
+		color: "#98a88a",
+		voice: { model: "motroid" },
+	}),
+	/** 朝のスレの「名無しさん」の声その3（mgroid と同じ扱い）。 */
+	nynroid: c({
+		id: "nynroid",
+		name: "名無しさん",
+		walk: "pub:assets/rpgen/char/09-woman-a.png",
+		color: "#a88a98",
+		voice: { model: "nynroid" },
+	}),
 };

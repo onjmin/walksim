@@ -65,7 +65,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		sprite: "char:nemurin",
 		flags: AWAKE,
 		items: {},
-		to: { map: "hub", x: 4, y: 10, dir: "up" },
+		to: { map: "hub", x: 10, y: 12, dir: "up" },
 	},
 	{
 		id: "cp_yellow",
@@ -73,7 +73,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		sprite: SPR.myaumyauA,
 		flags: AWAKE,
 		items: {},
-		to: { map: "yellow", x: 4, y: 5, dir: "up" },
+		to: { map: "yellow", x: 3, y: 2, dir: "down" },
 	},
 	{
 		id: "cp_village",
@@ -81,7 +81,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		sprite: "char:tsukuyomi",
 		flags: AWAKE,
 		items: {},
-		to: { map: "village", x: 4, y: 6, dir: "up" },
+		to: { map: "village", x: 3, y: 2, dir: "down" },
 	},
 	{
 		id: "cp_kura",
@@ -89,7 +89,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		sprite: SPR.myaumyauB,
 		flags: { ...AWAKE, got_omamori: true },
 		items: { omamori: 1 },
-		to: { map: "kura", x: 3, y: 5, dir: "up" },
+		to: { map: "kura", x: 4, y: 6, dir: "up" },
 	},
 	{
 		id: "cp_kakolog",
@@ -97,7 +97,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		sprite: "char:onchan",
 		flags: AWAKE,
 		items: {},
-		to: { map: "kakolog2", x: 4, y: 6, dir: "up" },
+		to: { map: "kakolog2", x: 3, y: 2, dir: "down" },
 	},
 	{
 		id: "cp_train",
@@ -105,7 +105,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		sprite: "char:rei",
 		flags: REC3,
 		items: KEYS3,
-		to: { map: "train", x: 1, y: 3, dir: "right" },
+		to: { map: "train", x: 2, y: 3, dir: "right" },
 	},
 	{
 		id: "cp_kisaragi",
@@ -113,7 +113,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		sprite: "char:oldman",
 		flags: REC3,
 		items: KEYS3,
-		to: { map: "kisaragi", x: 10, y: 3, dir: "left" },
+		to: { map: "kisaragi", x: 4, y: 4, dir: "down" },
 	},
 	{
 		id: "cp_tunnel",
@@ -129,7 +129,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		sprite: "char:roze",
 		flags: REC3,
 		items: KEYS3,
-		to: { map: "terminus", x: 12, y: 3, dir: "left" },
+		to: { map: "terminus", x: 13, y: 5, dir: "left" },
 	},
 ];
 

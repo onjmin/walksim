@@ -1,46 +1,223 @@
-// TODO: 仮マップ（データの骨組み）。あとの段階（line: kisaragi 担当）が
-// docs/content-briefs.md「line: train / kisaragi / tunnel / terminus」に沿って、
-// このファイルごと完全に置き換える。
-// 本実装: 14×6 の車内（眠る乗客・レイのアナウンス・タイムスタンプ演出）。
-// いまは「乗る → きさらぎ駅で降りる」だけができる最小の車両。
+// 終電（きさらぎ線・車内）。DESIGN §4・content-briefs「line: train / kisaragi / tunnel / terminus」。
+// 14×6。hub の改札から乗る（着地 (2,3)）。眠る乗客×5（起きない）。
+// タイムスタンプ「――23:14」で目がさめる。レイのアナウンス（voice rei）のあと、
+// 東のドア (12,3) から降車 → kisaragi (4,4)。**片道**（うしろの車両のドアは開かない。
+// 電車は きさらぎ駅で去る。もどる手段は メニューの「めをさます」だけ＝ジャンル準拠）。
+// s.note: saruyume（乗客の寝言）・isanuki（窓の外の駅名。kisaragi 西端の看板でも呼ぶ）。
 
-import type { MapDef } from "../../engine/defs";
-import { npc, warp } from "../helpers";
-import { SPR } from "../sprites";
-import { INDOOR } from "../tiles";
+import type { MapDef, Story, TileDef } from "../../engine/defs";
+import { base, INDOOR, PROPS } from "../tiles";
+
+/** 駅のアナウンス（レイの機械音声。立ち絵なし・名前欄「アナウンス」）。 */
+const announce = (s: Story, text: string) =>
+	s.say("rei", text, { name: "アナウンス", noPortrait: true });
+
+// INDOOR ＋ 車両の備品。E = 降車ドア（東の壁。鉄の扉）
+const tiles: Record<string, TileDef> = {
+	...INDOOR,
+	E: {
+		layers: [base(1, 78), PROPS.metalDoor],
+		color: "#e8e4dc",
+		passable: false,
+	},
+};
 
 const rows = [
-	"##########", // y0
-	"#hhhhhhhh#", // y1
-	"#.n.n.n.n#", // y2  座席。眠る乗客 (3,2)
-	"D........D", // y3  西 (0,3) → hub ／ 東 (9,3) → kisaragi
-	"##########", // y4
+	"##############", // y0
+	"#hWhQWhWQhWhh#", // y1  路線図 (4,1)・窓 (5,1)・中づり (8,1)
+	"#n.n..n..n.n.#", // y2  座席。乗客 (3,2)(6,2)(11,2)・かさ (9,2)・だれもいない席 (1,2)
+	"#............E", // y3  通路。乗車位置 (2,3)・降車 (12,3)・うしろのドア (1,3)
+	"#.n..n..n..n.#", // y4  座席。乗客 (5,4)(8,4)
+	"##############", // y5
 ];
+
+/** 眠る乗客の共通の1枚目。 */
+const asleep = (s: Story) =>
+	s.narrate("（ふかく　ねむっている。\n起きる気配は　ない。）");
 
 export const train: MapDef = {
 	id: "train",
 	name: "終電",
 	bgm: null,
-	outside: "#08070c",
-	tiles: INDOOR,
+	outside: "#000",
+	tiles,
 	rows,
 	events: [
-		warp(
-			"to_hub",
-			0,
-			3,
-			{ map: "hub", x: 12, y: 6, dir: "left" },
-			{ se: "door" },
-		),
-		warp(
-			"to_kisaragi",
-			9,
-			3,
-			{ map: "kisaragi", x: 10, y: 3, dir: "left" },
-			{ se: "door" },
-		),
-		npc("sleeper", 3, 2, SPR.townsfolk, async (s) => {
-			await s.narrate("（ふかく　ねむっている。\n起きる気配は　ない。）");
-		}),
+		// ── 乗った直後（auto once）。――23:14 ──
+		{
+			id: "wake",
+			x: 2,
+			y: 3,
+			trigger: "auto",
+			once: true,
+			run: async (s) => {
+				await s.wait(500);
+				s.se("train", { volume: 0.6 });
+				await s.narrate("――23:14");
+				await s.say("kiriko", "……この車両、こんなに\nながかったンゴ？");
+				await s.narrate("乗客は、みんな　ねむっている。");
+				s.se("train", { volume: 0.4 });
+				await s.wait(600);
+				await announce(s, "つぎは――　きさらぎ、\nきさらぎ、です");
+				await s.say("kiriko", "……そんな駅、路線図に\nあったンゴ？");
+			},
+		},
+
+		// ── 降車ドア（東・片道）。踏むと きさらぎ駅へ ──
+		{
+			id: "alight",
+			x: 12,
+			y: 3,
+			trigger: "touch",
+			through: true,
+			run: async (s) => {
+				s.se("door");
+				await s.narrate("ドアが　ひらいた。");
+				await s.warp("kisaragi", 4, 4, "down");
+			},
+		},
+		// ── うしろの車両へのドア（あかない） ──
+		{
+			id: "backdoor",
+			x: 1,
+			y: 3,
+			trigger: "touch",
+			through: true,
+			when: (st) => !st.flags.seen_traindoor,
+			run: async (s) => {
+				s.set("seen_traindoor");
+				await s.narrate("うしろの車両への　ドア。\n……あかない。");
+				await s.narrate("窓の向こうは、くらくて\nなにも　見えない。");
+			},
+		},
+
+		// ── 眠る乗客×5（話しかけても起きない） ──
+		{
+			id: "sleeper_a",
+			x: 3,
+			y: 2,
+			sprite: "pub:assets/rpgen/char/09-woman-a.png",
+			dir: "down",
+			trigger: "talk",
+			fixedDir: true,
+			run: async (s) => {
+				await asleep(s);
+				await s.narrate("マフラーが、座席まで\nずりおちている。");
+			},
+		},
+		{
+			id: "sleeper_b",
+			x: 6,
+			y: 2,
+			sprite: "pub:assets/rpgen/char/14-man-a.png",
+			dir: "down",
+			trigger: "talk",
+			fixedDir: true,
+			run: async (s) => {
+				await asleep(s);
+				await s.narrate("ねごとが、聞こえた。\n『……いい、ゆめ……』");
+				await s.say("kiriko", "……起こさないほうが、\nいい気がするンゴ");
+				await s.note("saruyume");
+			},
+		},
+		{
+			id: "sleeper_c",
+			x: 11,
+			y: 2,
+			sprite: "pub:assets/rpgen/char/05-elderly-b.png",
+			dir: "down",
+			trigger: "talk",
+			fixedDir: true,
+			run: async (s) => {
+				await asleep(s);
+				await s.narrate("切符を、にぎったまま。\n行き先は、見えない。");
+			},
+		},
+		{
+			id: "sleeper_d",
+			x: 5,
+			y: 4,
+			sprite: "pub:assets/rpgen/char/16-man-b.png",
+			dir: "up",
+			trigger: "talk",
+			fixedDir: true,
+			run: async (s) => {
+				await asleep(s);
+				await s.narrate("ときどき、くちもとが\nわらう。");
+			},
+		},
+		{
+			id: "sleeper_e",
+			x: 8,
+			y: 4,
+			sprite: "pub:assets/rpgen/char/15-woman-c.png",
+			dir: "up",
+			trigger: "talk",
+			fixedDir: true,
+			run: async (s) => {
+				await asleep(s);
+				await s.narrate("ヘッドホンから、ちいさな\n音が　もれている。");
+			},
+		},
+
+		// ── しらべられるもの ──
+		{
+			id: "empty_seat",
+			x: 1,
+			y: 2,
+			trigger: "talk",
+			run: async (s) => {
+				await s.narrate("だれも　座っていない。\n……ここだけ、あたたかい。");
+			},
+		},
+		{
+			id: "umbrella",
+			x: 9,
+			y: 2,
+			trigger: "talk",
+			run: async (s) => {
+				await s.narrate("わすれものの　かさ。");
+				await s.narrate("……この車両の　だれかの、\nという気は　しない。");
+			},
+		},
+		{
+			id: "routemap",
+			x: 4,
+			y: 1,
+			trigger: "talk",
+			run: async (s) => {
+				await s.narrate(
+					"路線図。……見おぼえのある\n駅名は、とちゅうで　おわる。",
+				);
+				await s.narrate("その先は、しらない字が\nならんでいる。");
+			},
+		},
+		// 窓の外の駅（いさぬき）。ノートは kisaragi 西端の看板とどちらか先の方で
+		{
+			id: "window_isanuki",
+			x: 5,
+			y: 1,
+			trigger: "talk",
+			run: async (s) => {
+				await s.narrate("窓の外。トンネルを　ぬけた。\n――『いさぬき』…？");
+				await s.say("kiriko", "しらない駅ンゴ。……とまらず、\nとおりすぎたンゴ");
+				await s.note("isanuki");
+			},
+		},
+		// 中づり広告（二度目に見ると、やぶれ方がちがう。考察バイト）
+		{
+			id: "nakazuri",
+			x: 8,
+			y: 1,
+			trigger: "talk",
+			run: async (s) => {
+				if (!s.flag("seen_nakazuri")) {
+					s.set("seen_nakazuri");
+					await s.narrate("中づり広告。『行楽は　い』\n……やぶれて、よめない。");
+					return;
+				}
+				await s.narrate("……『行楽は　い』。\nやぶれ方が、さっきと　ちがう。");
+			},
+		},
 	],
 };
