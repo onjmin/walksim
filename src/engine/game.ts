@@ -50,11 +50,12 @@ const TOD_PRESETS: Record<string, { passes?: TintPass[]; outside?: string }> = {
 		passes: [{ color: "rgba(235,130,50,0.75)", blend: "overlay" }],
 		outside: "#1c0d12",
 	},
-	// 深夜＝青の multiply で冷やして沈め、薄い紺をかぶせる（無人の2時。コンビニの灯りだけが浮く暗さ）
+	// 深夜＝ツクールの夜 (-68,-68,0,68) と同じ設計（青を最後まで残す・彩度を落とす・純黒にしない。docs/night-fx.md）
 	shinya: {
 		passes: [
-			{ color: "rgba(90,110,190,0.70)", blend: "multiply" },
-			{ color: "rgba(10,15,45,0.25)" },
+			{ color: "rgba(90,110,210,0.70)", blend: "multiply" },
+			{ color: "rgba(128,128,128,0.45)", blend: "saturation" },
+			{ color: "rgba(12,16,48,0.22)" },
 		],
 		outside: "#04060f",
 	},
@@ -65,6 +66,19 @@ const TOD_PRESETS: Record<string, { passes?: TintPass[]; outside?: string }> = {
 		],
 	},
 };
+
+/** ビネットの色（青黒。純黒より murk になりにくい。docs/night-fx.md §3）。 */
+const VIGNETTE_RGB = "5,6,15";
+/** ビネットの強さ（globalAlpha）。時間帯別。dark マップでは重ねない。 */
+const VIGNETTE_BY_TOD: Record<string, number> = {
+	shinya: 0.3,
+	yu: 0.12,
+	asa: 0.08,
+};
+/** 光源（MapDef.lights）の点灯強度。深夜=全灯、夕=営業中の窓あかり。 */
+const LIGHTS_BY_TOD: Record<string, number> = { shinya: 1, yu: 0.4 };
+/** 深夜にプレイヤーの足元へ常駐させる月明かり（可読性の守り。ランタンに見せない青白）。 */
+const MOON_GLOW = { r: 1.75, color: "#9db4e8", alpha: 0.25 };
 
 /** 0〜1 の決まった乱数（粒の置き場所など。毎コマ同じ値になる）。 */
 const hash01 = (n: number): number => {
@@ -185,6 +199,10 @@ export class Game {
 	private rafId = 0;
 	/** 暗闇の作業キャンバス（画面と同じ大きさ。大きさが変わったら作り直す）。 */
 	private darkCanvas: HTMLCanvasElement | null = null;
+	/** ビネット（全強度で1枚だけ作り、globalAlpha で時間帯別に減衰）。リサイズで作り直す。 */
+	private vignetteCanvas: HTMLCanvasElement | null = null;
+	/** 光源の光だまりスタンプ（半径:色 ごとにキャッシュ）。 */
+	private glowStamps = new Map<string, HTMLCanvasElement>();
 	/** 光の抜き型（放射グラデーション。半径が変わったら作り直す）。 */
 	private lightStamp: { canvas: HTMLCanvasElement; radius: number } | null =
 		null;
@@ -664,7 +682,29 @@ export class Game {
 				ctx.fillRect(0, 0, this.screen.width, this.screen.height);
 			}
 		}
+		// ビネット（画面端ほど黒が濃い。dark マップは穴あき暗闇と二重にしない。docs/night-fx.md §3）
+		const vig = typeof todFlag === "string" ? VIGNETTE_BY_TOD[todFlag] : 0;
+		if (vig && !def.dark) this.drawVignette(ctx, vig);
 		if (def.dark) this.drawDark(ctx, def.dark);
+		// 光源（MapDef.lights）：色調の上へ加算で光だまりを重ねる（ツクールの定番構成）
+		const lightsAlpha =
+			(typeof todFlag === "string" ? LIGHTS_BY_TOD[todFlag] : 0) ?? 0;
+		if (def.lights && lightsAlpha > 0)
+			this.drawLights(ctx, def.lights, lightsAlpha, todFlag as string);
+		// 深夜はプレイヤーの足元に月明かり（可読性の守り）
+		if (todFlag === "shinya") {
+			ctx.globalCompositeOperation = "lighter";
+			ctx.globalAlpha = MOON_GLOW.alpha;
+			const stamp = this.glowFor(MOON_GLOW.r, MOON_GLOW.color);
+			if (stamp)
+				ctx.drawImage(
+					stamp,
+					this.player.fx * TILE + TILE / 2 - this.camX - stamp.width / 2,
+					this.player.fy * TILE + TILE / 2 - this.camY - stamp.height / 2,
+				);
+			ctx.globalAlpha = 1;
+			ctx.globalCompositeOperation = "source-over";
+		}
 		if (def.ambient)
 			drawAmbient(
 				ctx,
@@ -675,6 +715,97 @@ export class Game {
 				this.screen.width,
 				this.screen.height,
 			);
+	}
+
+	// ───────────────── 夜の光（ビネット・光源） ─────────────────
+
+	/** ビネットを重ねる（全強度キャッシュ × globalAlpha）。 */
+	private drawVignette(ctx: CanvasRenderingContext2D, alpha: number): void {
+		const { width, height } = this.screen;
+		if (width <= 0 || height <= 0) return;
+		let buf = this.vignetteCanvas;
+		if (!buf || buf.width !== width || buf.height !== height) {
+			buf = document.createElement("canvas");
+			buf.width = width;
+			buf.height = height;
+			const g = buf.getContext("2d");
+			if (!g) return;
+			const r = 0.5 * Math.hypot(width, height);
+			const grad = g.createRadialGradient(
+				width / 2,
+				height / 2,
+				0,
+				width / 2,
+				height / 2,
+				r,
+			);
+			grad.addColorStop(0.55, `rgba(${VIGNETTE_RGB},0)`);
+			grad.addColorStop(0.8, `rgba(${VIGNETTE_RGB},0.45)`);
+			grad.addColorStop(1, `rgba(${VIGNETTE_RGB},1)`);
+			g.fillStyle = grad;
+			g.fillRect(0, 0, width, height);
+			this.vignetteCanvas = buf;
+		}
+		ctx.globalAlpha = alpha;
+		ctx.drawImage(buf, 0, 0);
+		ctx.globalAlpha = 1;
+	}
+
+	/** 光だまりのスタンプ（半径 r タイル・色 #rrggbb）。中心 α0.48 → 半分 α0.18 → ふち 0。 */
+	private glowFor(r: number, color: string): HTMLCanvasElement | null {
+		const key = `${r}:${color}`;
+		const hit = this.glowStamps.get(key);
+		if (hit) return hit;
+		const size = Math.ceil(r * TILE * 2);
+		const c = document.createElement("canvas");
+		c.width = c.height = size;
+		const g = c.getContext("2d");
+		if (!g) return null;
+		const grad = g.createRadialGradient(
+			size / 2,
+			size / 2,
+			0,
+			size / 2,
+			size / 2,
+			size / 2,
+		);
+		grad.addColorStop(0, `${color}7a`);
+		grad.addColorStop(0.5, `${color}2e`);
+		grad.addColorStop(1, `${color}00`);
+		g.fillStyle = grad;
+		g.fillRect(0, 0, size, size);
+		this.glowStamps.set(key, c);
+		return c;
+	}
+
+	/** マップの光源（MapDef.lights）を加算で描く。alpha は時間帯の点灯強度。 */
+	private drawLights(
+		ctx: CanvasRenderingContext2D,
+		lights: NonNullable<MapDef["lights"]>,
+		alpha: number,
+		tod: string,
+	): void {
+		ctx.globalCompositeOperation = "lighter";
+		for (let i = 0; i < lights.length; i++) {
+			const l = lights[i];
+			if (l.only && l.only !== tod) continue;
+			const stamp = this.glowFor(l.r, l.color ?? "#ffcc88");
+			if (!stamp) continue;
+			const px = (l.x + 0.5) * TILE - this.camX;
+			const py = (l.y + 0.5) * TILE - this.camY;
+			if (
+				px < -l.r * TILE ||
+				py < -l.r * TILE ||
+				px > this.screen.width + l.r * TILE ||
+				py > this.screen.height + l.r * TILE
+			)
+				continue;
+			// 灯りのゆらぎ（ステートレス。ambient と同じ思想）
+			ctx.globalAlpha = alpha * (1 + 0.05 * Math.sin(this.time / 300 + i * 7));
+			ctx.drawImage(stamp, px - stamp.width / 2, py - stamp.height / 2);
+		}
+		ctx.globalAlpha = 1;
+		ctx.globalCompositeOperation = "source-over";
 	}
 
 	// ───────────────── 暗闇（MapDef.dark） ─────────────────

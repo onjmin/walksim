@@ -83,6 +83,19 @@ export type MapDef = {
 	outside?: string;
 	/** 屋外。flags.tod により TOD_PRESETS（engine/game.ts）の色調が乗る。 */
 	outdoor?: boolean;
+	/**
+	 * 光源（窓明かり・街灯・自販機など）。深夜=全灯・夕=0.4 の強度で、色調の上へ
+	 * 加算の光だまりを描く（docs/night-fx.md §2）。r はタイル半径。color 省略時は暖色 #ffcc88。
+	 * 定番: 窓 #ffcc88 r2 / 街灯 #ffdf9e r3 / コンビニ #cfe4ff r4 / 自販機 #eef4ff r1.5。
+	 */
+	lights?: {
+		x: number;
+		y: number;
+		r: number;
+		color?: string;
+		/** この時間帯だけ点く（省略時は点灯強度のある全時間帯）。窓=夕のみ・街灯=深夜のみ等。 */
+		only?: string;
+	}[];
 };
 
 // ───────────────── キャラ ─────────────────

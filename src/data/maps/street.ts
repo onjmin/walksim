@@ -302,6 +302,24 @@ export const street: MapDef = {
 	outside: "#0d0b09",
 	tiles,
 	rows,
+	// 光源（docs/night-fx.md §2）。街灯・自販機・コンビニは深夜のみ（夕方は「まだついていない」）、
+	// 民家・商店の窓明かりは夕方のみ（深夜の民家は消えている＝無人の記号）
+	lights: [
+		{ x: 1, y: 12, r: 3, color: "#ffdf9e", only: "shinya" },
+		{ x: 11, y: 12, r: 3, color: "#ffdf9e", only: "shinya" },
+		{ x: 25, y: 12, r: 3, color: "#ffdf9e", only: "shinya" },
+		{ x: 19, y: 12, r: 1.5, color: "#eef4ff", only: "shinya" },
+		{ x: 19, y: 9, r: 4, color: "#cfe4ff", only: "shinya" },
+		{ x: 21, y: 9, r: 2, color: "#cfe4ff", only: "shinya" },
+		{ x: 7, y: 8, r: 2, only: "yu" },
+		{ x: 13, y: 9, r: 2, color: "#cfe4ff", only: "yu" },
+		{ x: 25, y: 8, r: 2, only: "yu" },
+		{ x: 1, y: 8, r: 2, only: "yu" },
+		{ x: 3, y: 8, r: 2, only: "yu" },
+		{ x: 19, y: 9, r: 3, color: "#cfe4ff", only: "yu" },
+		{ x: 8, y: 18, r: 2, only: "yu" },
+		{ x: 16, y: 18, r: 2, only: "yu" },
+	],
 	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。深夜は無音のまま）
 	onEnter: async (s) => {
 		lastWave = "";
