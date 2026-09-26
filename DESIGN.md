@@ -213,7 +213,17 @@ RecordDef に voice（通常）と trueVoice（終点用）を持たせる。
 - タイル: rpg と同じ `public/assets/rpg-reze/Base.png`・`field.png`・`rpgen/map.png` から切り出し（data/tiles.ts 流用）。暗さは `tint`/`dark` で作る（チップの描き直しは後日、作者に依頼）
 - 歩行グラ: kiriko/phono/minors/mujje は rpg から PNG コピー。新規（nemurin・myaumyau A/B/C・tsukuyomi・hasshaku 16×32・oldman は RPGEN 検索でも可）は `scripts/make-sprites.mjs` に生成コードを足す
 - 立ち絵: kiriko/roze/rei を rpg からコピー。新キャラはダミー（色シルエット）で出し、README に**作者への発注リスト**を書く（ネムリン・ミャウミャウ・つくよみちゃん、全身・右向き・透過PNG）
-- BGM: rpg/roguelike の MML を流用（title / ending / sad / secret / tense / deep1 / deep2 / deep4 / retro）。差し替えは作者に依頼可
+- BGM（作者指示: 全体的に界隈曲的な不思議な雰囲気を目指す。docs/style-kaiwai.md §1 のレシピに従う）:
+  - **方式は MML 手打ち**（作者から判断委任→決定）。根拠は dtm の docs/handover-compose.md（作者自身の実測記録）:
+    自動作曲は統計を界隈曲コーパス（作者自作91本）へ寄せ切っても知覚評価 0/10 で、
+    「ヒット曲でなく**人が手を入れる出発点**」に目標を置き直し済み。よって v1 は手打ち＋流用で仮組みし、
+    **正式BGMは界隈曲の作り手である作者本人への発注を理想形**とする（発注リストに明記）
+  - 流用: title / ending（rpg・情感側はそのまま）、sad / secret / tense（rpg）、deep1 / deep2 / deep4 / retro（roguelike・環境音系）
+  - 新規手打ち（音響担当）: ①無題のレコード『　』用 = title の壊れた変奏（**別ファイル**・#edo=31 で1〜2音に
+    +/_ の約39セントずれ・遅く・トラックを間引く）②解音ゼロの代読歌（playSingingMML 用・15〜20秒・
+    うた素朴に。キリコ(uc)歌唱）③必要なら hub 用の短い界隈曲風ループ（低い四つ打ち＋マイナーに1音だけ
+    add9/aug＋r1〜r2 の休符）。すべて #volume= を測って -23 LUFS に揃える（bgm.ts 冒頭の手順）
+  - 差し替え・追加は作者に依頼可（発注リストに記載）
 - SFX: rpg の data/sfx.ts + loudness.ts を流用。追加候補: 太鼓（和太鼓系）・鈴・レコードノイズ・時計の秒針・蛍光灯のうなり（RPGEN で探し、無ければ MML で作る）
 
 ## 10. クレジット・倫理
