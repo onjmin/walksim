@@ -401,6 +401,41 @@ const makeBack = (
 };
 let actorLayer: HTMLCanvasElement | null = null;
 
+/** いま画面に出ている場面のパレット（立ち絵を同じ色に落とすため）。 */
+let currentPal: { key: string; ramp: Ramp; accent: Ramp } | null = null;
+const portraitCache = new Map<string, HTMLCanvasElement>();
+
+/**
+ * 立ち絵（胸像のドット絵）を、いまの場面と同じ色・ディザに落とした画用紙を返す。
+ * 場面（時間帯）が変わると描き直す。場面がまだ無ければ深夜の色。
+ */
+export const stylizePortrait = (
+	id: string,
+	img: HTMLImageElement,
+): HTMLCanvasElement | null => {
+	const pal =
+		currentPal ??
+		(() => {
+			const sc = SCENES.shinya;
+			return {
+				key: "shinya",
+				ramp: sc.ramp.map(hex),
+				accent: sc.accent.map(hex),
+			};
+		})();
+	const key = `${id}:${pal.key}`;
+	const hit = portraitCache.get(key);
+	if (hit) return hit;
+	const c = canvas(img.width, img.height);
+	const g = c.getContext("2d", { willReadFrequently: true });
+	if (!g) return null;
+	g.imageSmoothingEnabled = false;
+	g.drawImage(img, 0, 0);
+	quantize(g, img.width, img.height, 0, 0, pal.ramp, pal.accent, 0.12, []);
+	portraitCache.set(key, c);
+	return c;
+};
+
 export const renderDiorama = (
 	ctx: CanvasRenderingContext2D,
 	screenW: number,
@@ -417,6 +452,7 @@ export const renderDiorama = (
 		pal = { ramp: scene.ramp.map(hex), accent: scene.accent.map(hex) };
 		rampCache.set(tod ?? "", pal);
 	}
+	currentPal = { key: tod ?? "", ...pal };
 	const box = boxFor(field, player);
 	const { sx, sy } = boxPlacement(field, box, screenW, screenH, player);
 	const back = backHeight(field, box);

@@ -2113,3 +2113,23 @@ html.diorama .msg-next {
 html.diorama .portrait-layer {
 	display: none;
 }
+
+/* ジオラマ表示の立ち絵：場面の色に落とした胸像のドット絵を、字幕の上に整数倍で */
+.msg-dot {
+	display: none;
+}
+
+html.diorama .msg-dot.shown {
+	display: block;
+	width: 96px;
+	height: 96px;
+	margin: 0 auto 2px;
+	image-rendering: pixelated;
+}
+
+@media (min-width: 900px) and (min-height: 640px) {
+	html.diorama .msg-dot.shown {
+		width: 144px;
+		height: 144px;
+	}
+}

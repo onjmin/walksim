@@ -23,8 +23,9 @@
 // 出しきって間を置くまで遅らせ（onShow の leadMs）、文字送りはそのぶん声より先に出し始める。
 // 読み上げが OFF のとき（GameAudio.speak が started を返さないとき）は待たずにすぐ出し始める。
 
-import { publicUrl } from "../engine/assets";
+import { loadImage, publicUrl } from "../engine/assets";
 import type { SpeechStart } from "../engine/audio";
+import { DIORAMA, stylizePortrait } from "../engine/diorama";
 import type { Input } from "../engine/input";
 import { sleep } from "../engine/types";
 import { el } from "./dom";
@@ -257,6 +258,8 @@ export type MessageParams = {
 	color?: string;
 	text: string;
 	portrait?: PortraitSpec | null;
+	/** ジオラマ表示の立ち絵（胸像のドット絵 public/portraits-dot/<id>.png）のキャラ id。 */
+	dot?: string;
 	/**
 	 * "slow" は重い文（敵の独白など）。文字送りを遅くし（設定の「しゅんかん」なら一瞬のまま）、
 	 * 出てすぐと出きってすぐの押しを受けない。
@@ -375,6 +378,9 @@ export class MessageWindow {
 	private nameEl: HTMLDivElement;
 	private textEl: HTMLDivElement;
 	private nextEl: HTMLDivElement;
+	private dotEl: HTMLCanvasElement;
+	/** 立ち絵の読み込みが追い越されたら描かない（送りの速い会話で前の人が出ないように）。 */
+	private dotSeq = 0;
 	private left: PortraitSlot;
 	private right: PortraitSlot;
 	private input: Input;
@@ -398,10 +404,12 @@ export class MessageWindow {
 		root.appendChild(layer);
 		this.left = new PortraitSlot(layer, "left");
 		this.right = new PortraitSlot(layer, "right");
+		this.dotEl = el("canvas", { class: "msg-dot" });
 		this.nameEl = el("div", { class: "msg-name" });
 		this.textEl = el("div", { class: "msg-text" });
 		this.nextEl = el("div", { class: "msg-next", text: "▼" });
 		this.win = el("div", { class: "msg window" }, [
+			this.dotEl,
 			this.nameEl,
 			this.textEl,
 			this.nextEl,
@@ -432,12 +440,36 @@ export class MessageWindow {
 		return home.lastSpoke <= away.lastSpoke ? home : away;
 	}
 
+	/** ジオラマ表示の立ち絵（場面の色に落とした胸像）を字幕の上に出す。無い人は出さない。 */
+	private showDot(id: string | undefined): void {
+		const seq = ++this.dotSeq;
+		if (!DIORAMA || !id) {
+			this.dotEl.classList.remove("shown");
+			return;
+		}
+		void loadImage(`pub:portraits-dot/${id}.png`).then((img) => {
+			if (seq !== this.dotSeq) return;
+			const art = img && stylizePortrait(id, img);
+			if (!art) {
+				this.dotEl.classList.remove("shown");
+				return;
+			}
+			this.dotEl.width = art.width;
+			this.dotEl.height = art.height;
+			const g = this.dotEl.getContext("2d");
+			g?.clearRect(0, 0, art.width, art.height);
+			g?.drawImage(art, 0, 0);
+			this.dotEl.classList.add("shown");
+		});
+	}
+
 	show(p: MessageParams): Promise<void> {
 		this.win.classList.add("shown");
 		this.nameEl.textContent = p.name ?? "";
 		this.nameEl.style.display = p.name ? "" : "none";
 		this.nameEl.style.setProperty("--char", p.color ?? "#fff");
 		this.win.classList.toggle("narration", !p.name);
+		this.showDot(p.dot);
 		if (p.portrait) {
 			const slot = this.pickSlot(p.portrait);
 			const other = slot === this.left ? this.right : this.left;
