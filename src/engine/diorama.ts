@@ -102,6 +102,17 @@ const SCENES: Record<string, Scene> = {
 	},
 };
 
+/** 時間帯の場面パレット（暗→明の段と差し色。タイトル画面などジオラマの外で同じ色を使う）。 */
+export const scenePalette = (
+	tod: string,
+): { ramp: [number, number, number][]; accent: [number, number, number][] } => {
+	const sc = SCENES[tod] ?? SCENES.shinya;
+	return { ramp: sc.ramp.map(hex), accent: sc.accent.map(hex) };
+};
+
+export const BAYER4 = (x: number, y: number): number =>
+	BAYER[(y & 3) * 4 + (x & 3)];
+
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(
 	(v) => v / 16 - 0.5,
 );

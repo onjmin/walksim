@@ -11,6 +11,7 @@
 // クリア済み（hasClearMark）なら朝：時計 7:00・空が朝の金色・反転も化けも止まる。
 
 import type { GameState } from "../engine/defs";
+import { BAYER4, DIORAMA, scenePalette } from "../engine/diorama";
 import type { Game } from "../engine/game";
 import { hasClearMark, hasSave, readSave } from "../engine/save";
 import { drawWalk, stepFrame } from "../engine/sprite";
@@ -52,6 +53,126 @@ const wiresSvg = (): SVGSVGElement => {
 	return svg;
 };
 
+/** 決定論のノイズ 0..1。 */
+const noise = (x: number, y: number): number => {
+	let h = (x * 374761393 + y * 668265263) | 0;
+	h = Math.imul(h ^ (h >>> 13), 1274126177);
+	return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+};
+
+/**
+ * ジオラマ表示のタイトルの書き割り（ドット絵）。低解像度の画用紙に描いて整数倍で拡大する。
+ * 空は場面パレットの段をベイヤーディザでつなぐ。家並み・電柱・電線・歩道・横切るキリコは
+ * いちばん暗い段のシルエット。夕（17:03）／深夜の一瞬の反転／朝（クリア後）で パレットだけ替える。
+ */
+const drawPixelScape = (
+	c: HTMLCanvasElement,
+	tod: string,
+	walker: { x: number; frame: HTMLCanvasElement | null } | null,
+): void => {
+	const g = c.getContext("2d");
+	if (!g) return;
+	const W = c.width;
+	const H = c.height;
+	const { ramp } = scenePalette(tod);
+	const img = g.createImageData(W, H);
+	const d = img.data;
+	const horizon = Math.round(H * 0.7);
+	const put = (x: number, y: number, col: [number, number, number]) => {
+		if (x < 0 || y < 0 || x >= W || y >= H) return;
+		const i = (y * W + x) * 4;
+		d[i] = col[0];
+		d[i + 1] = col[1];
+		d[i + 2] = col[2];
+		d[i + 3] = 255;
+	};
+	const n = ramp.length - 1;
+	// 空：上は暗く、地平線に向かって明るく（夕は茜、朝は金）
+	for (let y = 0; y < H; y++) {
+		const t = Math.min(1, y / horizon);
+		const v = 0.6 + t * (n - 1.2);
+		for (let x = 0; x < W; x++)
+			put(
+				x,
+				y,
+				ramp[Math.max(0, Math.min(n, Math.round(v + BAYER4(x, y) * 0.9)))],
+			);
+	}
+	// 沈む日（地平線の少し上の明るい円と、そのまわりのディザの光）
+	const sunX = Math.round(W * 0.68);
+	const sunY = horizon - Math.round(H * 0.05);
+	const sunR = Math.max(4, Math.round(W * 0.05));
+	for (let y = sunY - sunR * 3; y <= sunY + sunR * 3; y++)
+		for (let x = sunX - sunR * 3; x <= sunX + sunR * 3; x++) {
+			const dd = Math.hypot(x - sunX, y - sunY) / sunR;
+			if (dd <= 1) put(x, y, ramp[n]);
+			else if (dd < 3 && BAYER4(x, y) + 0.5 < ((3 - dd) / 2) * 0.6)
+				put(x, y, ramp[n - 1]);
+		}
+	const ink = ramp[0];
+	const dim = ramp[1];
+	// 遠くの家並み（屋根の段々・ところどころ灯った窓）
+	let x = 0;
+	let k = 0;
+	while (x < W) {
+		const w = 8 + Math.floor(noise(k, 1) * 14);
+		const h = Math.round(H * (0.07 + noise(k, 2) * 0.09));
+		const top = horizon - h;
+		const gable = noise(k, 3) < 0.5;
+		for (let yy = top; yy < horizon; yy++)
+			for (let xx = x; xx < Math.min(W, x + w); xx++) {
+				if (gable) {
+					const peak = Math.min(xx - x, x + w - 1 - xx);
+					if (yy < top + Math.max(0, 3 - peak)) continue;
+				}
+				put(xx, yy, dim);
+			}
+		if (noise(k, 4) < 0.45) put(x + 3, top + 5, ramp[n - 1]);
+		x += w;
+		k++;
+	}
+	// 歩道と路面
+	for (let yy = horizon; yy < H; yy++)
+		for (let xx = 0; xx < W; xx++)
+			put(xx, yy, yy === horizon ? dim : noise(xx, yy) < 0.04 ? dim : ink);
+	// 電柱（3本）と電線（たわんだ1ドット線）
+	const poles = [0.1, 0.52, 0.92].map((f) => Math.round(W * f));
+	const poleTop = Math.round(H * 0.08);
+	for (const px of poles) {
+		for (let yy = poleTop; yy < horizon + 3; yy++) {
+			put(px, yy, ink);
+			put(px + 1, yy, ink);
+		}
+		for (let xx = px - 4; xx <= px + 5; xx++) put(xx, poleTop + 3, ink);
+		for (let xx = px - 3; xx <= px + 4; xx++) put(xx, poleTop + 7, ink);
+		put(px - 2, poleTop + 2, ink);
+		put(px + 3, poleTop + 2, ink);
+	}
+	for (let wire = 0; wire < 3; wire++) {
+		const y0 = poleTop + 3 + wire * 2;
+		for (let p = 0; p < poles.length - 1; p++) {
+			const a = poles[p];
+			const b = poles[p + 1];
+			const sag = (b - a) * (0.08 + wire * 0.02);
+			for (let xx = a; xx <= b; xx++) {
+				const t = (xx - a) / (b - a);
+				put(xx, Math.round(y0 + 4 * sag * t * (1 - t)), ink);
+			}
+		}
+		// 画面の外へ出ていく線
+		for (let xx = 0; xx < poles[0]; xx++)
+			put(xx, y0 + Math.round((poles[0] - xx) * 0.05), ink);
+		for (let xx = poles[2]; xx < W; xx++)
+			put(xx, y0 + Math.round((xx - poles[2]) * 0.06), ink);
+	}
+	g.putImageData(img, 0, 0);
+	// 横切るキリコ（歩道の上。シルエット）
+	if (walker?.frame) {
+		g.globalCompositeOperation = "source-over";
+		g.drawImage(walker.frame, Math.round(walker.x), horizon - 14);
+	}
+};
+
 /** タイトルを出し、「はじめから／つづきから」で選ばれた状態を返す。 */
 export const showTitle = (game: Game): Promise<GameState> =>
 	new Promise((resolve) => {
@@ -65,6 +186,7 @@ export const showTitle = (game: Game): Promise<GameState> =>
 			window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
 		// ── 背景（空・電柱・電線・歩道）。すべてシルエットの書き割り ──
+		const root0Class: string[] = [];
 		const skyNight = el("div", { class: "title-sky-night" });
 		const walker = el("canvas", { class: "title-walker" });
 		walker.width = 16;
@@ -78,6 +200,15 @@ export const showTitle = (game: Game): Promise<GameState> =>
 		scape.appendChild(el("div", { class: "title-pole p3" }));
 		scape.appendChild(el("div", { class: "title-street" }));
 		scape.appendChild(walker);
+		// ジオラマ表示：書き割りをドット絵の1枚に（空・家並み・電柱・電線・キリコ）
+		const pix = el("canvas", { class: "title-pix" });
+		const silhouette = document.createElement("canvas");
+		silhouette.width = 16;
+		silhouette.height = 16;
+		if (DIORAMA) {
+			scape.replaceChildren(pix);
+			root0Class.push("pix");
+		}
 
 		// ── 題字（プレート廃止。控えめな白の DotGothic16 の2行だけ） ──
 		const lineEls = data.title
@@ -85,7 +216,9 @@ export const showTitle = (game: Game): Promise<GameState> =>
 			.map((s) => el("div", { class: "title-name-line", text: s }));
 		const name = el("div", { class: "title-name" }, lineEls);
 
-		const root = el("div", { class: `title${cleared ? " cleared" : ""}` });
+		const root = el("div", {
+			class: `title${cleared ? " cleared" : ""}${root0Class.length ? ` ${root0Class.join(" ")}` : ""}`,
+		});
 		root.appendChild(scape);
 		root.appendChild(
 			el("div", {
@@ -200,6 +333,53 @@ export const showTitle = (game: Game): Promise<GameState> =>
 						}
 					}
 				}
+			}
+			if (DIORAMA) {
+				// 画面の大きさに合わせて、整数倍で拡大できる低解像度の画用紙にする
+				const cw = root.clientWidth || 320;
+				const ch = root.clientHeight || 480;
+				const scale = Math.max(2, Math.floor(Math.min(cw, ch) / 150));
+				const W = Math.ceil(cw / scale);
+				const H = Math.ceil(ch / scale);
+				if (pix.width !== W || pix.height !== H) {
+					pix.width = W;
+					pix.height = H;
+					pix.style.width = `${W * scale}px`;
+					pix.style.height = `${H * scale}px`;
+				}
+				const tod = cleared
+					? "asa"
+					: root.classList.contains("night")
+						? "shinya"
+						: "yu";
+				let wk: { x: number; frame: HTMLCanvasElement | null } | null = null;
+				if (cross) {
+					const p = (t - cross.start) / cross.dur;
+					const sg = silhouette.getContext("2d");
+					if (sg && p < 1) {
+						sg.imageSmoothingEnabled = false;
+						sg.clearRect(0, 0, 16, 16);
+						drawWalk(
+							sg,
+							walkRef,
+							cross.dir > 0 ? "right" : "left",
+							stepFrame(t, true),
+							0,
+							0,
+						);
+						// シルエットにする（いちばん暗い段で塗る）
+						sg.globalCompositeOperation = "source-in";
+						const [r, gg, b] = scenePalette(tod).ramp[0];
+						sg.fillStyle = `rgb(${r},${gg},${b})`;
+						sg.fillRect(0, 0, 16, 16);
+						sg.globalCompositeOperation = "source-over";
+						wk = {
+							x: (cross.dir > 0 ? p : 1 - p) * (W + 32) - 16,
+							frame: silhouette,
+						};
+					}
+				}
+				drawPixelScape(pix, tod, wk);
 			}
 			raf = requestAnimationFrame(anim);
 		};

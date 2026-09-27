@@ -2128,3 +2128,32 @@ html.diorama .portrait-img.dots {
 	-webkit-mask-image: none;
 	mask-image: none;
 }
+
+/* ───────── タイトル（ジオラマ表示：ドット絵の書き割り。ui/title.ts の drawPixelScape） ───────── */
+.title-pix {
+	position: absolute;
+	left: 0;
+	top: 0;
+	image-rendering: pixelated;
+}
+
+.title.pix .title-walker {
+	display: none;
+}
+
+.title.pix .title-name {
+	/* ぼかしの影はやめて、1ドットぶんの硬い影 */
+	text-shadow: 2px 2px 0 rgba(20, 8, 16, 0.85);
+}
+
+.title.pix .title-btn {
+	border: 2px solid rgba(255, 255, 255, 0.55);
+	border-radius: 0;
+	background: rgba(8, 5, 8, 0.7);
+	box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.55);
+}
+
+.title.pix .title-btn.cur {
+	border-color: #fff;
+	background: rgba(40, 16, 24, 0.85);
+}
