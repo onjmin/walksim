@@ -2077,8 +2077,12 @@ body.shake #app {
 /* ───────── ジオラマ表示（本番。?classic で旧表示。engine/diorama.ts） ─────────
    会話は窓でなく、箱の下の字幕。立ち絵は出さない（箱の中の小さなキャラが話し手） */
 html.diorama .msg {
-	background: none;
+	/* 字幕の背景だけ、うしろ（立ち絵・箱）をぼかして暗く沈める（作者指示） */
+	background: rgba(0, 0, 0, 0.35);
+	-webkit-backdrop-filter: blur(6px);
+	backdrop-filter: blur(6px);
 	border: none;
+	border-radius: 10px;
 	box-shadow: none;
 	min-height: 0;
 	bottom: calc(9vh + var(--safe-b));

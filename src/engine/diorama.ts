@@ -10,7 +10,7 @@
 // 屋内は外周の壁1マスを除いた部屋ぜんぶが1箱。屋外は CHUNK_W×CHUNK_H マスごとの箱で、
 // 端へ歩くと隣の箱へ切り替わる（画面切り替え式）。
 
-import type { Actor, Field } from "./field";
+import { type Actor, Field, STRIP_UP } from "./field";
 import { TILE } from "./types";
 
 export const DIORAMA =
@@ -196,6 +196,16 @@ const canvas = (w: number, h: number): HTMLCanvasElement => {
 };
 
 type Ramp = [number, number, number][];
+/** 画用紙の中の四角（ソース画素）。 */
+type Rect = { x: number; y: number; w: number; h: number };
+const clipRect = (r: Rect, w: number, h: number): Rect | null => {
+	const x = Math.max(0, Math.floor(r.x));
+	const y = Math.max(0, Math.floor(r.y));
+	const x1 = Math.min(w, Math.ceil(r.x + r.w));
+	const y1 = Math.min(h, Math.ceil(r.y + r.h));
+	return x1 > x && y1 > y ? { x, y, w: x1 - x, h: y1 - y } : null;
+};
+
 /** 箱の中の座標（ソース画素）に直した灯り。 */
 type Lamp = { x: number; y: number; r: number; ramp?: Ramp };
 
@@ -230,17 +240,20 @@ const quantize = (
 	accent: Ramp,
 	lift: number,
 	lamps: Lamp[],
+	rect: Rect = { x: 0, y: 0, w, h },
 ): void => {
-	const img = g.getImageData(0, 0, w, h);
+	const r0 = clipRect(rect, w, h);
+	if (!r0) return;
+	const img = g.getImageData(r0.x, r0.y, r0.w, r0.h);
 	const d = img.data;
 	const n = ramp.length - 1;
-	for (let y = 0; y < h; y++) {
+	for (let y = r0.y; y < r0.y + r0.h; y++) {
 		// 天井から光が落ちている：奥（上）の端と手前の角が暗く、床の中ほどが明るい
 		const fy = y / h;
 		const lightY =
 			0.7 + 0.42 * Math.sin(Math.PI * Math.min(1, 0.15 + fy * 0.95));
-		for (let x = 0; x < w; x++) {
-			const i = (y * w + x) * 4;
+		for (let x = r0.x; x < r0.x + r0.w; x++) {
+			const i = ((y - r0.y) * r0.w + (x - r0.x)) * 4;
 			if (d[i + 3] < 128) {
 				d[i + 3] = 0;
 				continue;
@@ -283,7 +296,7 @@ const quantize = (
 			d[i + 3] = 255;
 		}
 	}
-	g.putImageData(img, 0, 0);
+	g.putImageData(img, r0.x, r0.y);
 };
 
 /** 描いたものの外側に1画素の輪郭（キャラを床から浮かせる。参考作品のキャラも輪郭で立っている）。 */
@@ -292,8 +305,13 @@ const outline = (
 	w: number,
 	h: number,
 	c: [number, number, number],
+	rect: Rect = { x: 0, y: 0, w, h },
 ): void => {
-	const img = g.getImageData(0, 0, w, h);
+	const r0 = clipRect(rect, w, h);
+	if (!r0) return;
+	const img = g.getImageData(r0.x, r0.y, r0.w, r0.h);
+	w = r0.w;
+	h = r0.h;
 	const d = img.data;
 	const src = new Uint8Array(w * h);
 	for (let i = 0; i < w * h; i++) src[i] = d[i * 4 + 3] > 0 ? 1 : 0;
@@ -313,14 +331,15 @@ const outline = (
 				d[i * 4 + 3] = 255;
 			}
 		}
-	g.putImageData(img, 0, 0);
+	g.putImageData(img, r0.x, r0.y);
 };
 
 /** 地形の層（下・上）の変換結果。箱・時間帯・マップが変わるまで使い回す。 */
 let terrain: {
 	key: string;
 	below: HTMLCanvasElement;
-	above: HTMLCanvasElement;
+	/** 上の層を持ち主の行ごとに（Field.aboveStrip）。箱の座標にそろえて変換ずみ。 */
+	strips: Map<number, HTMLCanvasElement>;
 	back: HTMLCanvasElement | null;
 } | null = null;
 
@@ -706,37 +725,56 @@ export const renderDiorama = (
 	if (!terrain || terrain.key !== key) {
 		const below = canvas(bw, bh);
 		const bg = below.getContext("2d", { willReadFrequently: true });
-		const above = canvas(bw, bh);
-		const ag = above.getContext("2d", { willReadFrequently: true });
-		if (!bg || !ag) return;
+		if (!bg) return;
 		bg.imageSmoothingEnabled = false;
-		ag.imageSmoothingEnabled = false;
 		bg.fillStyle = "#000";
 		bg.fillRect(0, 0, bw, bh);
 		field.drawBelow(bg, ox, oy);
 		quantize(bg, bw, bh, ox, oy, pal.ramp, pal.accent, 0, lamps);
-		field.drawAbove(ag, ox, oy);
-		quantize(ag, bw, bh, ox, oy, pal.ramp, pal.accent, 0, lamps);
+		const strips = new Map<number, HTMLCanvasElement>();
+		for (let r = box.y; r < box.y + box.h + STRIP_UP; r++) {
+			const src = field.aboveStrip(r);
+			if (!src) continue;
+			const c = canvas(bw, bh);
+			const sg = c.getContext("2d", { willReadFrequently: true });
+			if (!sg) continue;
+			sg.imageSmoothingEnabled = false;
+			const top = (r - STRIP_UP) * TILE - oy;
+			sg.drawImage(src, -ox, top);
+			quantize(sg, bw, bh, ox, oy, pal.ramp, pal.accent, 0, lamps, {
+				x: 0,
+				y: top,
+				w: bw,
+				h: src.height,
+			});
+			strips.set(r, c);
+		}
 		terrain = {
 			key,
 			below,
-			above,
+			strips,
 			back: makeBack(field, box, back, pal, lamps, bg),
 		};
 	}
 
-	// キャラは毎フレーム。背景より一段明るく浮かせる
+	// キャラは毎フレーム、背景より一段明るく浮かせて輪郭をつける。
+	// 上の層とは行の順に重ねる（北の行の木や棚はキャラの奥・同じ行と南の行の物は手前）
 	if (!actorLayer || actorLayer.width !== bw || actorLayer.height !== bh)
 		actorLayer = canvas(bw, bh);
 	const g = actorLayer.getContext("2d", { willReadFrequently: true });
 	if (!g) return;
 	g.setTransform(1, 0, 0, 1, 0, 0);
 	g.imageSmoothingEnabled = false;
-	g.clearRect(0, 0, bw, bh);
-	const sorted = [...actors].sort((a, b) => a.fy - b.fy);
-	for (const a of sorted) a.draw(g, ox, oy, time);
-	quantize(g, bw, bh, ox, oy, pal.ramp, pal.accent, 0.12, lamps);
-	outline(g, bw, bh, pal.ramp[0]);
+	const byRow = new Map<number, Actor[]>();
+	for (const a of actors) {
+		const r = Field.rowOf(a);
+		const list = byRow.get(r);
+		if (list) list.push(a);
+		else byRow.set(r, [a]);
+	}
+	const rows = [...new Set([...byRow.keys(), ...terrain.strips.keys()])].sort(
+		(p, q) => p - q,
+	);
 
 	// 床の厚み → 箱の中身 → 断面の縁
 	ctx.fillStyle = scene.slab;
@@ -745,8 +783,46 @@ export const renderDiorama = (
 	ctx.fillRect(sx - EDGE, sy + bh + SLAB - 2, bw + EDGE * 2, 2);
 	if (terrain.back) ctx.drawImage(terrain.back, sx, sy - back);
 	ctx.drawImage(terrain.below, sx, sy);
-	ctx.drawImage(actorLayer, sx, sy);
-	ctx.drawImage(terrain.above, sx, sy);
+	for (const r of rows) {
+		const strip = terrain.strips.get(r);
+		if (strip) ctx.drawImage(strip, sx, sy);
+		const list = byRow.get(r);
+		if (!list) continue;
+		for (const a of list.sort((p, q) => p.fy - q.fy || p.fx - q.fx)) {
+			// 1人ぶんの四角（半マス上に立つ・横と上に1マスの余白）だけ描いて変換する
+			const rc = clipRect(
+				{
+					x: Math.round(a.fx * TILE) - ox - TILE,
+					y: Math.round(a.fy * TILE) - oy - 2 * TILE,
+					w: 3 * TILE,
+					h: 3 * TILE + 2,
+				},
+				bw,
+				bh,
+			);
+			if (!rc) continue;
+			g.clearRect(rc.x, rc.y, rc.w, rc.h);
+			g.save();
+			g.beginPath();
+			g.rect(rc.x, rc.y, rc.w, rc.h);
+			g.clip();
+			a.draw(g, ox, oy, time);
+			g.restore();
+			quantize(g, bw, bh, ox, oy, pal.ramp, pal.accent, 0.12, lamps, rc);
+			outline(g, bw, bh, pal.ramp[0], rc);
+			ctx.drawImage(
+				actorLayer,
+				rc.x,
+				rc.y,
+				rc.w,
+				rc.h,
+				sx + rc.x,
+				sy + rc.y,
+				rc.w,
+				rc.h,
+			);
+		}
+	}
 	ctx.fillStyle = scene.cut;
 	if (field.def.outdoor) {
 		// 屋外: 地面の奥の端にだけ細い線（遠くは虚空へ溶けている）

@@ -14,6 +14,9 @@ const HIDDEN_RATIO = 0.9;
 const PROBE_W = 3 * TILE;
 const PROBE_H = 3 * TILE;
 
+/** 上の層の行ごとの絵に入れる、持ち主の行より上の行数（背の高い給水塔・池の噴水で 2）。 */
+export const STRIP_UP = 3;
+
 /** 歩く人を上へずらす量（ソース画素）。半マス。 */
 export const ACTOR_LIFT = TILE / 2;
 
@@ -132,6 +135,12 @@ export class Field {
 	private grid: TileDef[];
 	private below: HTMLCanvasElement;
 	private above: HTMLCanvasElement | null = null;
+	/**
+	 * 上の層を「持ち主のマスの行」ごとに分けたもの（行 r → その行の物のはみ出しと above）。
+	 * キャラと行の順に描き分ける（drawSorted）。歩く人は半マス上に立つので、北の行の木や棚は
+	 * キャラの奥、同じ行・南の行の物はキャラの手前になる。絵の高さは行 r の上 STRIP_UP 行ぶんまで。
+	 */
+	private strips = new Map<number, HTMLCanvasElement>();
 	/** drawHidden の下書き用。 */
 	private ghost: HTMLCanvasElement | null = null;
 	/** 隠れぐあいを測る用（キャラ1人ぶん）。 */
@@ -262,12 +271,38 @@ export class Field {
 			ctx.fillRect(px, py, TILE, TILE);
 			for (const ref of t.layers) drawRefInCell(ctx, ref, px, py, TILE, "cell");
 		});
-		if (this.above)
-			draw(this.above, (ctx, t, px, py) => {
-				for (const ref of t.layers)
-					drawRefInCell(ctx, ref, px, py, TILE, "over");
-				for (const ref of t.above ?? []) drawRefInCell(ctx, ref, px, py);
-			});
+		const paintAbove = (
+			ctx: CanvasRenderingContext2D,
+			t: TileDef,
+			px: number,
+			py: number,
+		) => {
+			for (const ref of t.layers) drawRefInCell(ctx, ref, px, py, TILE, "over");
+			for (const ref of t.above ?? []) drawRefInCell(ctx, ref, px, py);
+		};
+		if (this.above) draw(this.above, paintAbove);
+		this.strips.clear();
+		if (this.above) {
+			for (let y = 0; y < this.h; y++) {
+				const row = this.grid.slice(y * this.w, (y + 1) * this.w);
+				if (
+					!row.some(
+						(t) =>
+							t.above?.length || t.layers.some((r) => overflowsCell(r, TILE)),
+					)
+				)
+					continue;
+				const c = document.createElement("canvas");
+				c.width = this.w * TILE;
+				c.height = (STRIP_UP + 1) * TILE;
+				const ctx = c.getContext("2d");
+				if (!ctx) continue;
+				ctx.imageSmoothingEnabled = false;
+				for (let x = 0; x < this.w; x++)
+					paintAbove(ctx, row[x], x * TILE, STRIP_UP * TILE);
+				this.strips.set(y, c);
+			}
+		}
 		this.cover = null;
 		const actx = this.above?.getContext("2d");
 		if (actx) {
@@ -323,6 +358,50 @@ export class Field {
 	drawBelow(ctx: CanvasRenderingContext2D, ox: number, oy: number): void {
 		if (this.dirty) this.redraw();
 		ctx.drawImage(this.below, -ox, -oy);
+	}
+
+	/** 行 r の上の層（無ければ undefined）。絵の上端はマップの (r - STRIP_UP) 行目。 */
+	aboveStrip(r: number): HTMLCanvasElement | undefined {
+		if (this.dirty) this.redraw();
+		return this.strips.get(r);
+	}
+
+	/** キャラを並べる行（歩いている途中は近い方の行）。 */
+	static rowOf(a: Actor): number {
+		return Math.round(a.fy);
+	}
+
+	/**
+	 * 上の層とキャラを、行の順に重ねて描く（北の物はキャラの奥・同じ行と南の物は手前）。
+	 * 地形の下の層（drawBelow）のあとに呼ぶ。
+	 */
+	drawSorted(
+		ctx: CanvasRenderingContext2D,
+		actors: Actor[],
+		ox: number,
+		oy: number,
+		time: number,
+	): void {
+		if (this.dirty) this.redraw();
+		const byRow = new Map<number, Actor[]>();
+		let lo = 0;
+		let hi = this.h - 1;
+		for (const a of actors) {
+			const r = Field.rowOf(a);
+			lo = Math.min(lo, r);
+			hi = Math.max(hi, r);
+			const list = byRow.get(r);
+			if (list) list.push(a);
+			else byRow.set(r, [a]);
+		}
+		for (let r = lo; r <= hi; r++) {
+			const strip = this.strips.get(r);
+			if (strip) ctx.drawImage(strip, -ox, (r - STRIP_UP) * TILE - oy);
+			const list = byRow.get(r);
+			if (list)
+				for (const a of list.sort((p, q) => p.fy - q.fy || p.fx - q.fx))
+					a.draw(ctx, ox, oy, time);
+		}
 	}
 
 	/** 地形の上の層（キャラより手前）。 */

@@ -705,9 +705,8 @@ export class Game {
 				TILE - 3,
 			);
 		}
-		const actors = [...field.actors, this.player].sort((a, b) => a.fy - b.fy);
-		for (const a of actors) a.draw(ctx, ox, oy, this.time);
-		field.drawAbove(ctx, ox, oy);
+		// 上の層とキャラは行の順に重ねる（北の木や棚はキャラの奥・同じ行と南の物は手前）
+		field.drawSorted(ctx, [...field.actors, this.player], ox, oy, this.time);
 		// キリコだけは、本棚や掲示板の裏に回っても薄く見せる（町の人は隠れたまま）
 		field.drawHidden(ctx, [this.player], ox, oy, this.time);
 		// 雰囲気（DESIGN §3）：イベントのあと・UI の前に、色 → 暗闇 → 粒 の順で重ねる
