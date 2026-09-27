@@ -141,6 +141,11 @@ export class Field {
 	 * キャラの奥、同じ行・南の行の物はキャラの手前になる。絵の高さは行 r の上 STRIP_UP 行ぶんまで。
 	 */
 	private strips = new Map<number, HTMLCanvasElement>();
+	/**
+	 * 通れるマス（扉など）のはみ出しの行ごとの絵。同じ行の人より先に描く（扉のマスに乗った人が
+	 * 扉にめり込まないように）。通れないマス（木・棚）の strips は人のあと（葉が頭にかぶさる）。
+	 */
+	private stripsPass = new Map<number, HTMLCanvasElement>();
 	/** drawHidden の下書き用。 */
 	private ghost: HTMLCanvasElement | null = null;
 	/** 隠れぐあいを測る用（キャラ1人ぶん）。 */
@@ -282,25 +287,28 @@ export class Field {
 		};
 		if (this.above) draw(this.above, paintAbove);
 		this.strips.clear();
+		this.stripsPass.clear();
+		const overflows = (t: TileDef) =>
+			!!t.above?.length || t.layers.some((r) => overflowsCell(r, TILE));
 		if (this.above) {
 			for (let y = 0; y < this.h; y++) {
 				const row = this.grid.slice(y * this.w, (y + 1) * this.w);
-				if (
-					!row.some(
-						(t) =>
-							t.above?.length || t.layers.some((r) => overflowsCell(r, TILE)),
-					)
-				)
-					continue;
-				const c = document.createElement("canvas");
-				c.width = this.w * TILE;
-				c.height = (STRIP_UP + 1) * TILE;
-				const ctx = c.getContext("2d");
-				if (!ctx) continue;
-				ctx.imageSmoothingEnabled = false;
-				for (let x = 0; x < this.w; x++)
-					paintAbove(ctx, row[x], x * TILE, STRIP_UP * TILE);
-				this.strips.set(y, c);
+				for (const [pass, map] of [
+					[false, this.strips],
+					[true, this.stripsPass],
+				] as const) {
+					if (!row.some((t) => overflows(t) && t.passable === pass)) continue;
+					const c = document.createElement("canvas");
+					c.width = this.w * TILE;
+					c.height = (STRIP_UP + 1) * TILE;
+					const ctx = c.getContext("2d");
+					if (!ctx) continue;
+					ctx.imageSmoothingEnabled = false;
+					for (let x = 0; x < this.w; x++)
+						if (row[x].passable === pass)
+							paintAbove(ctx, row[x], x * TILE, STRIP_UP * TILE);
+					map.set(y, c);
+				}
 			}
 		}
 		this.cover = null;
@@ -360,10 +368,13 @@ export class Field {
 		ctx.drawImage(this.below, -ox, -oy);
 	}
 
-	/** 行 r の上の層（無ければ undefined）。絵の上端はマップの (r - STRIP_UP) 行目。 */
-	aboveStrip(r: number): HTMLCanvasElement | undefined {
+	/**
+	 * 行 r の上の層（無ければ undefined）。絵の上端はマップの (r - STRIP_UP) 行目。
+	 * pass=true は通れるマス（扉など。同じ行の人より先に描く）、false は通れないマス（人のあと）。
+	 */
+	aboveStrip(r: number, pass = false): HTMLCanvasElement | undefined {
 		if (this.dirty) this.redraw();
-		return this.strips.get(r);
+		return (pass ? this.stripsPass : this.strips).get(r);
 	}
 
 	/** キャラを並べる行（歩いている途中は近い方の行）。 */
@@ -395,7 +406,9 @@ export class Field {
 			else byRow.set(r, [a]);
 		}
 		for (let r = lo; r <= hi; r++) {
-			// 同じ行では 人 → その行の物のはみ出し の順（幹の横に立つと木の葉が頭にかぶさる）
+			// 同じ行では 通れる物（扉）のはみ出し → 人 → 通れない物（木・棚）のはみ出し
+			const back = this.stripsPass.get(r);
+			if (back) ctx.drawImage(back, -ox, (r - STRIP_UP) * TILE - oy);
 			const list = byRow.get(r);
 			if (list)
 				for (const a of list.sort((p, q) => p.fy - q.fy || p.fx - q.fx))

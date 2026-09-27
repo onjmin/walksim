@@ -495,6 +495,8 @@ let terrain: {
 	below: HTMLCanvasElement;
 	/** 上の層を持ち主の行ごとに（Field.aboveStrip）。箱の座標にそろえて変換ずみ。 */
 	strips: Map<number, HTMLCanvasElement>;
+	/** 通れるマス（扉など）のはみ出し。同じ行の人より先に描く。 */
+	stripsPass: Map<number, HTMLCanvasElement>;
 	back: HTMLCanvasElement | null;
 	/** 箱の手前の縁の物（前景）。 */
 	front: HTMLCanvasElement | null;
@@ -914,27 +916,34 @@ export const renderDiorama = (
 		field.drawBelow(bg, ox, oy);
 		quantize(bg, bw, bh, ox, oy, pal.ramp, pal.accent, 0, lamps);
 		const strips = new Map<number, HTMLCanvasElement>();
+		const stripsPass = new Map<number, HTMLCanvasElement>();
 		for (let r = box.y; r < box.y + box.h + STRIP_UP; r++) {
-			const src = field.aboveStrip(r);
-			if (!src) continue;
-			const c = canvas(bw, bh);
-			const sg = c.getContext("2d", { willReadFrequently: true });
-			if (!sg) continue;
-			sg.imageSmoothingEnabled = false;
-			const top = (r - STRIP_UP) * TILE - oy;
-			sg.drawImage(src, -ox, top);
-			quantize(sg, bw, bh, ox, oy, pal.ramp, pal.accent, 0, lamps, {
-				x: 0,
-				y: top,
-				w: bw,
-				h: src.height,
-			});
-			strips.set(r, c);
+			for (const [pass, map] of [
+				[false, strips],
+				[true, stripsPass],
+			] as const) {
+				const src = field.aboveStrip(r, pass);
+				if (!src) continue;
+				const c = canvas(bw, bh);
+				const sg = c.getContext("2d", { willReadFrequently: true });
+				if (!sg) continue;
+				sg.imageSmoothingEnabled = false;
+				const top = (r - STRIP_UP) * TILE - oy;
+				sg.drawImage(src, -ox, top);
+				quantize(sg, bw, bh, ox, oy, pal.ramp, pal.accent, 0, lamps, {
+					x: 0,
+					y: top,
+					w: bw,
+					h: src.height,
+				});
+				map.set(r, c);
+			}
 		}
 		terrain = {
 			key,
 			below,
 			strips,
+			stripsPass,
 			back: makeBack(field, box, back, pal, lamps, bg),
 			front:
 				frontKind(field) === undefined
@@ -958,9 +967,13 @@ export const renderDiorama = (
 		if (list) list.push(a);
 		else byRow.set(r, [a]);
 	}
-	const rows = [...new Set([...byRow.keys(), ...terrain.strips.keys()])].sort(
-		(p, q) => p - q,
-	);
+	const rows = [
+		...new Set([
+			...byRow.keys(),
+			...terrain.strips.keys(),
+			...terrain.stripsPass.keys(),
+		]),
+	].sort((p, q) => p - q);
 
 	// 床の厚み → 箱の中身 → 断面の縁（怪異の箱は床の厚みも断面も無く、縁が虚空に溶ける）
 	if (!fray) {
@@ -974,6 +987,8 @@ export const renderDiorama = (
 	for (const r of rows) {
 		// 同じ行では 人 → その行の物のはみ出し（木の葉・棚の上段）の順。幹の横に立つと葉が頭にかぶさる
 		const strip = terrain.strips.get(r);
+		const passStrip = terrain.stripsPass.get(r);
+		if (passStrip) ctx.drawImage(passStrip, sx, sy);
 		for (const a of (byRow.get(r) ?? []).sort(
 			(p, q) => p.fy - q.fy || p.fx - q.fx,
 		)) {
