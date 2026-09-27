@@ -1010,10 +1010,14 @@ export const renderDiorama = (
 		-1,
 		Math.min(1, ((player.fy - box.y + 0.5) / box.h) * 2 - 1),
 	);
-	const sx = placed.sx - Math.round(vx * 3);
+	// 横の視差は、キリコが手前（箱の下）にいるほど大きく、奥にいるほど小さい（作者指摘）。
+	// 遠くの人が横に数歩あるいても、眺める視点はほとんど動かない＝手前の物も流れない
+	const near = Math.max(0, Math.min(1, (player.fy - box.y + 0.5) / box.h));
+	const lateral = vx * near * near;
+	const sx = placed.sx - Math.round(lateral * 3);
 	const sy = placed.sy - Math.round(vy * 2);
-	const backDx = Math.round(vx * 2);
-	const frontDx = -Math.round(vx * 9);
+	const backDx = Math.round(lateral * 2);
+	const frontDx = -Math.round(lateral * 9);
 	const back = backHeight(field, box);
 	const bw = box.w * TILE;
 	const bh = box.h * TILE;
