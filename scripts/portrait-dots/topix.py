@@ -1,4 +1,4 @@
-"""清書したべた塗りの立ち絵 → ドット絵（背景抜き・面積平均の縮小・色数を減らす・1ドットの輪郭）。"""
+"""清書したべた塗りの立ち絵 → ドット絵（背景抜き・部分ごとに1色・いちばん多い色での縮小・色数を減らす・1ドットの輪郭）。"""
 import sys
 import numpy as np
 from PIL import Image
@@ -10,7 +10,7 @@ S = os.environ.get('WORK', os.path.join(os.getcwd(), 'work')) + '/'
 BODY = int(sys.argv[1]) if len(sys.argv) > 1 else 150
 # 2つめ以降の引数はキャラ id（省略時は work/ の *_ai.png 全部）
 NAMES = sys.argv[2:]
-COLORS = 12
+COLORS = 16
 
 
 def cut_bg(rgb):
@@ -114,58 +114,128 @@ def flatten(rgb, fg):
         _, (iy, ix) = ndi.distance_transform_edt(~big, return_indices=True)
         out[rest] = out[iy[rest], ix[rest]]
     out[line] = (20, 16, 18)
-    return mono_eyes(out, fg, line)
+    return mono_eyes(rgb, out, fg, line, seg, sizes)  # (塗った絵, 目のところ)
 
 
-def mono_eyes(out, fg, line):
+def mono_eyes(rgb, out, fg, line, seg, sizes):
     """
-    目を単色にする（作者指示: 目の配色は繊細で AI が間違えるので、白目や光を描かない）。
-    白っぽい小さな塊（白目・瞳の光）で、背景に触れていないものを、まわりでいちばん多い色で塗る。
+    目を1色にする（作者指示: 目の配色は繊細で AI が間違えるので単色に）。
+    清書の白っぽい小さな塊（白目。塗り分けで虹彩の色に飲まれていることもあるので元の絵で探す）を種に、となり合う小さな塊（虹彩の濃淡）をまとめて「目」とし、
+    その中（瞳・光も穴埋めで含める）を、白くない塊のうちいちばん広い色の1色で塗る。目の輪郭の線は残す。
     服・エプロン・毛皮のような大きな白い部分は残す（体の面積の 0.6% 以上）。
     """
-    whiteish = (out.min(axis=2) > 185) & (out.max(axis=2) - out.min(axis=2) < 45) & fg & ~line
-    lab, n = ndi.label(whiteish)
-    if n == 0:
-        return out
+    def white(a):
+        return (a.min(axis=2) > 185) & (a.max(axis=2) - a.min(axis=2) < 45) & fg & ~line
+
     limit = fg.sum() * 0.006
-    ring = np.ones((3, 3), bool)
+    nearbg = ndi.binary_dilation(~fg, iterations=3)
+    size_of = np.zeros(seg.max() + 1)
+    size_of[1:] = sizes
+    small = fg & ~line & (size_of[seg] < limit)  # seg 0 は小さなかけら
+    lab, n = ndi.label(white(rgb) & small)
+    done = np.zeros(fg.shape, bool)
     for r in range(1, n + 1):
         m = lab == r
-        if m.sum() >= limit:
+        if m.sum() < 20 or (m & (nearbg | done)).any():
+            continue  # 背景に触れている＝縁取りの白など、または処理済みの目
+        # まわりの大きな塊（肌・髪）の色。眼鏡のレンズの中の肌のように、これに近い色の塊は目に入れない
+        near = ndi.binary_dilation(m, iterations=10) & fg & ~line & ~small
+        skin = np.unique(out[near].reshape(-1, 3), axis=0).astype(float)
+        eye = m
+        for _ in range(2):  # 線をまたいで となりの小さな塊（虹彩の外側→内側）を足す
+            ids = np.unique(seg[ndi.binary_dilation(eye, iterations=4) & small])
+            for i in ids[ids > 0]:
+                if i in seg[eye]:
+                    continue
+                c = out[seg == i][0].astype(float)
+                if len(skin) and np.linalg.norm(skin - c, axis=1).min() < 60:
+                    continue
+                if not ndi.binary_erosion(seg == i, iterations=3).any():
+                    continue  # 細い塊＝眼鏡のふちなど（虹彩は丸くて太い）
+                eye = eye | ((seg == i) & small & ~nearbg)
+        # 虹彩（白でも肌でもない色）が見つからない白は目ではない（フリル・エプロンのかけら）。さわらない
+        body = eye & ~m & ~white(out)
+        if body.sum() < 20:
             continue
-        around = ndi.binary_dilation(m, ring, iterations=2) & ~m
-        if (around & ~fg).any():
-            continue  # 背景に触れている＝縁取りの白など
-        cand = around & ~line & ~whiteish
-        if not cand.any():
-            cand = around & ~whiteish
-        if not cand.any():
-            continue
-        cols, counts = np.unique(out[cand].reshape(-1, 3), axis=0, return_counts=True)
-        out[m] = cols[counts.argmax()]
-    return out
+        # 白は虹彩のそばだけ目に入れる（眼鏡のレンズの白まで塗らない）。
+        # 塊どうしのあいだの線・瞳・光も目の中として埋める（外側の輪郭は残る）
+        eye = body | (m & ndi.binary_dilation(body, iterations=12))
+        eye = ndi.binary_fill_holes(eye | ndi.binary_closing(eye, iterations=3)) & fg
+        if eye.sum() > limit * 3:
+            continue  # 大きすぎる＝目ではないものを拾った
+        cols, counts = np.unique(out[body].reshape(-1, 3), axis=0, return_counts=True)
+        out[eye] = cols[counts.argmax()]
+        done |= eye
+    return out, done
+
+
+def downscale(rgb, fg, line, eyes, oh, ow):
+    """
+    ドットへ縮小する。面積平均（BOX）だと線と面の境目に中間色（ぼかし）が出てドット絵として汚いので、
+    1ドットごとに元の四角の中でいちばん多い色をそのまま使う（色は塗りの色だけ・混ぜない）。
+    細い線が消えないよう、線が四角の 30% 以上なら線の色にする。ただし目（mono_eyes で1色にしたところ）が
+    25% 以上なら目の色を先にする（小さな目が線に埋もれないように）。
+    """
+    h, w = fg.shape
+    ys = np.linspace(0, h, oh + 1).round().astype(int)
+    xs = np.linspace(0, w, ow + 1).round().astype(int)
+    cols, idx = np.unique(rgb.reshape(-1, 3), axis=0, return_inverse=True)
+    idx = idx.reshape(h, w)
+    q = np.zeros((oh, ow, 3), np.uint8)
+    alpha = np.zeros((oh, ow), bool)
+    eye_dot = np.zeros((oh, ow), bool)
+    for i in range(oh):
+        for j in range(ow):
+            f = fg[ys[i]:ys[i+1], xs[j]:xs[j+1]]
+            if f.mean() <= 0.5:
+                continue
+            alpha[i, j] = True
+            e = eyes[ys[i]:ys[i+1], xs[j]:xs[j+1]]
+            if e.mean() >= 0.25:
+                q[i, j] = rgb[ys[i]:ys[i+1], xs[j]:xs[j+1]][e][0]
+                eye_dot[i, j] = True
+                continue
+            l = line[ys[i]:ys[i+1], xs[j]:xs[j+1]]
+            if l.mean() >= 0.3:
+                q[i, j] = (20, 16, 18)
+                continue
+            sel = idx[ys[i]:ys[i+1], xs[j]:xs[j+1]][f & ~l]
+            q[i, j] = cols[np.bincount(sel).argmax()] if sel.size else (20, 16, 18)
+    return q, alpha, eye_dot
+
+
+def reduce_colors(q, alpha, eye_dot, k):
+    """
+    色数を k に減らす。目の色と、多い順の色を残し、残りはいちばん近い色へ（新しい中間色は作らない）。
+    目は数ドットしかないので、多い順だけだと髪や肌の色に飲まれて消える。
+    """
+    body = q[alpha]
+    cols, counts = np.unique(body, axis=0, return_counts=True)
+    if len(cols) <= k:
+        return q
+    eye_cols = np.unique(q[eye_dot], axis=0)
+    counts = counts + np.array([(c == eye_cols).all(axis=1).any() for c in cols]) * body.shape[0]
+    keep = cols[np.argsort(-counts)[:k]].astype(float)
+    d = np.linalg.norm(body[:, None, :].astype(float) - keep[None], axis=2)
+    q = q.copy()
+    q[alpha] = keep[d.argmin(axis=1)].astype(np.uint8)
+    return q
 
 
 def pix(name):
     rgb = np.array(Image.open(S + f'{name}_ai.png').convert('RGB'))
     fg = cut_bg(rgb)
-    rgb = flatten(rgb, fg)
+    rgb, eyes = flatten(rgb, fg)
     ys, xs = np.nonzero(fg)
     rgb = rgb[ys.min():ys.max()+1, xs.min():xs.max()+1]
     fg = fg[ys.min():ys.max()+1, xs.min():xs.max()+1]
+    eyes = eyes[ys.min():ys.max()+1, xs.min():xs.max()+1]
     h, w = fg.shape
     k = BODY / h
     oh, ow = BODY, max(1, round(w * k))
-    a = fg.astype(np.float32)
-    pre = np.concatenate([rgb * a[..., None], a[..., None] * 255], -1).astype(np.uint8)
-    small = np.array(Image.fromarray(pre, 'RGBA').resize((ow, oh), Image.BOX)).astype(np.float32)
-    al = small[..., 3] / 255
-    col = np.where(al[..., None] > 0, small[..., :3] / np.maximum(al[..., None], 1e-6), 0)
-    alpha = al > 0.5
-    # 色数を減らす（体の画素だけで k-means 相当＝PIL の quantize）
-    tmp = Image.fromarray(np.clip(col, 0, 255).astype(np.uint8), 'RGB')
-    q = tmp.quantize(COLORS, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')
-    q = np.array(q)
+    line = (rgb.max(axis=2) < 70) & fg
+    q, alpha, eye_dot = downscale(rgb, fg, line, eyes, oh, ow)
+    q = reduce_colors(q, alpha, eye_dot, COLORS)
     # 外周に1ドットの輪郭（体の外側のふち）
     edge = alpha & ~ndi.binary_erosion(alpha, np.ones((3, 3)))
     q[edge] = (q[edge] * 0.35).astype(np.uint8)

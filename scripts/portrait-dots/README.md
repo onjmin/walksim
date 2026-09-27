@@ -8,8 +8,9 @@ C:/_own/git/ComfyUI/agent/README.md）で「同じポーズ・髪型・服・表
 2. `bash scripts/portrait-dots/run.sh`（`ONLY="kiriko teto"` で一部だけ）— キャラごとの色の指示つきで清書（1枚 約40秒）。
    **色は各キャラの公式サイトの設定・公式立ち絵に合わせる**（run.sh の各行に出典。キリコは肌が山吹色）。
    床の影が出たら「床の影や地面は描かない」を強める／seed を変える
-3. `python scripts/portrait-dots/topix.py 150 [id…]` — 白地を抜き、各部分を1色に塗りつぶし（AI が足す目のハイライトやグラデーションを確実に消す）、全身 150 ドットに面積平均で縮小、
-   12色に減色、外周に1ドットの輪郭。`work/<id>_pix.png` を public/portraits-dot/<id>.png へ
+3. `python scripts/portrait-dots/topix.py 150 [id…]` — 白地を抜き、各部分を1色に塗りつぶし（AI が足す目のハイライトやグラデーションを確実に消す）、
+   目は白目・瞳・光ごと虹彩の1色に（作者指示: 目の配色は繊細なので単色）、全身 150 ドットに縮小（面積平均は線と面の境に中間色のぼかしが出るので、
+   1ドットごとにいちばん多い塗りの色をそのまま使う）、目の色を残して16色に減色、外周に1ドットの輪郭。`work/<id>_pix.png` を public/portraits-dot/<id>.png へ
 4. ゲームは表示のときに場面の色を 45% かける（engine/diorama.ts の tintPortrait）
 
 作者が自分でドット立ち絵を描いたら、同じ名前で public/portraits-dot/ に置けば差し替わる。
