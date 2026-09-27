@@ -2,8 +2,11 @@
 // docs/content-briefs.md「日常レイヤー」。30×20・outdoor（TOD_PRESETS が tint/outside を乗せる）・
 // BGM null（ヒグラシ・チャイム・電車などの生活音が音楽のかわり）。
 //
-// 同一マップが flags.tod（"yu"|"shinya"|"asa"）で三つの顔を持つ：
+// 同一マップが flags.tod（"yu"|"yoru"|"shinya"|"asa"）で四つの顔を持つ：
 //   夕方  … 生きた町。NPC 7体・時計は 17:XX・東端は工事の囲い（お知らせ掲示＝不穏の種①）
+//   宵    … 晩ごはんのあとの任意の散歩（docs/nostalgia.md P0-1）。NPC 0体・時計は 20:XX
+//           （地区を回るたびに進む＝yoruClock）・街灯がつく。文は におい・音・点いた灯り だけ
+//           （消えた窓・減った人は書かない）。自販機の赤い札・コンビニの牛乳・自分の窓のあかり
 //   深夜  … 無人（NPC 0体・必達）。時計は全部 2:00（2つ目で s.note("nisen")）。
 //           囲いが駅の入口に変わっている（触れると hub へ）。違和感はこの3系統だけ
 //   朝    … 光と音が戻る。NPC 5体・セリフ全差し替え・setup/payoff の対（§4）。
@@ -30,6 +33,14 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
+import {
+	kanShinya,
+	kanTick,
+	NIKKI_TITLE,
+	nikkiSummary,
+	yoruAkubi,
+	yoruClock,
+} from "../nostalgia";
 import { SPR } from "../sprites";
 import { base, basePx, field, TOWN } from "../tiles";
 
@@ -107,7 +118,7 @@ const rows = [
 	"    ..x...x                   ", // y4  裏どおり。だんボール (6,4)・ねこ (7,4)・ビールケース (10,4)
 	"aaaa.......                   ", // y5  アパートの屋根・裏どおり
 	"AAAA.nnnnnn aaaa              ", // y6  路地 (4,5)-(4,9)
-	"(w(w.^^^^^^ AAAA (((((( zzz   ", // y7  コンビニ (17-22)・とこや (24-26)
+	"(w(w.^^^^^^ AAAA (((((( zzz   ", // y7  キリコの部屋の窓 (3,7)（(4,7) から）・コンビニ (17-22)・とこや (24-26)
 	"(w(w.%iiii% %WW% (w((w( ZZZ   ", // y8  店主 (7,8)
 	"))d).%<==>%P%tt%x)ccoc)p]j]!f ", // y9  アパートのドア (2,9)・カウンター・電器屋の窓 (13,9)・お知らせ (27,9)
 	"!::::::::::::::::::::::::::::E", // y10 大どおり。開始 (24,10)・hub からの戻り (27,10)・駅の入口 (28,10)
@@ -118,8 +129,8 @@ const rows = [
 	"  ,,,zzzzz,,,nnnnn,,,,,,      ", // y15 南の住宅
 	"  ,,,ZZZZZ,,,^^^^^,,,,,,      ", // y16
 	"  ,,,[[[[[,,,(((((,,,,,,      ", // y17
-	"  ,,,]m]j],,,)c)o),,,,,,      ", // y18 すずきさん家 (8,18)・たなかさん家 (16,18)
-	"  .....................x      ", // y19 うらどおり。みぞ (1,19)・ものおき (23,19)
+	"  ,,,]m]j],,,)c)o),,,,,,      ", // y18 みぞ (2,18)（(3,18) から）・すずきさん家 (8,18)・たなかさん家 (16,18)
+	"  .....................x      ", // y19 うらどおり。ものおき (23,19)
 ];
 
 // ── モブの歩行グラ（同梱の RPGEN DQ 風） ──
@@ -235,7 +246,14 @@ const tenshu = async (s: Story): Promise<void> => {
 	await s.say(null, "まいど。\n気をつけて　お帰り", { name: "店主" });
 };
 
-/** 朝の店主（夕方の買い物の payoff。プレイヤーの選択でひとことが変わる）。 */
+/** 宵にコンビニで牛乳を買って、朝の店主にツッコまれる人（あんぱんの人だけ。nostalgia.md P0-11）。 */
+const gyunyuBoke = (s: Story): boolean =>
+	!!(s.flag("got_dinner_pan") && s.flag("got_gyunyu"));
+
+/**
+ * 朝の店主（夕方の買い物の payoff。プレイヤーの選択でひとことが変わる）。
+ * 宵・夕のフラグがあれば1往復だけ足す（牛乳 > 延長。一度に一つ。フラグの無い人は現行のまま）。
+ */
 const tenshuAsa = async (s: Story): Promise<void> => {
 	if (!s.flag("seen_tenshu_asa")) {
 		s.set("seen_tenshu_asa");
@@ -251,6 +269,11 @@ const tenshuAsa = async (s: Story): Promise<void> => {
 			await s.say(null, "おはようさん。\nあんぱん、どうだった？", {
 				name: "店主",
 			});
+			if (gyunyuBoke(s)) {
+				await s.say("kiriko", "ぎゅうにゅうは、ゆうべ\nコンビニで　買ったンゴ");
+				await s.say(null, "……うちで　買いなよ", { name: "店主" });
+				return;
+			}
 			await s.say("kiriko", "ぎゅうにゅうが\nなかったンゴ……");
 			await s.say(null, "はは。じゃあ　きょうは\nぎゅうにゅうを　買いな", {
 				name: "店主",
@@ -258,6 +281,20 @@ const tenshuAsa = async (s: Story): Promise<void> => {
 			return;
 		}
 		await s.say(null, "おはようさん。\nきょうは　早いんだね", { name: "店主" });
+		return;
+	}
+	// 2回目: ゆうべの延長（部屋のテレビで中継の打ち切りを見た人。牛乳の1往復を出した人には出さない）
+	if (
+		s.flag("seen_chukei_end") &&
+		!s.flag("seen_tenshu_asa2") &&
+		!gyunyuBoke(s)
+	) {
+		s.set("seen_tenshu_asa2");
+		await s.say(null, "ゆうべの延長、\n見たかい", { name: "店主" });
+		await s.say("kiriko", "中継、きれたンゴ");
+		await s.say(null, "うちの　ラジオは\nさいごまで　やってたよ", {
+			name: "店主",
+		});
 		return;
 	}
 	await s.say(null, "よく　ねむれた顔だ。\n……いや、ねぶそくか？", {
@@ -289,9 +326,13 @@ const endingAtKakoi = async (s: Story): Promise<void> => {
 	lines.push(
 		s.flag("seen_kaeri") === "train" ? "終電で　帰った" : "あるいて　帰った",
 	);
+	// 先頭に「きのうの　にっき」（宵の一行・消しゴムのあと・まっさら のどれか。1〜2行・数は出さない）
 	await s.ending({
 		summary: {
-			sections: [{ title: "こんやの　きろく", lines }],
+			sections: [
+				{ title: NIKKI_TITLE, lines: nikkiSummary(s) },
+				{ title: "こんやの　きろく", lines },
+			],
 		},
 	});
 };
@@ -304,8 +345,12 @@ export const street: MapDef = {
 	outside: "#0d0b09",
 	tiles,
 	rows,
-	// 光源（docs/night-fx.md §2）。街灯・自販機・コンビニは深夜のみ（夕方は「まだついていない」）、
-	// 民家・商店の窓明かりは夕方のみ（深夜の民家は消えている＝無人の記号）
+	// 光源（docs/night-fx.md §2）。街灯・自販機・コンビニは宵と深夜（夕方は「まだついていない」）、
+	// 民家・商店の窓明かりは夕方と宵（深夜の民家は消えている＝無人の記号）。
+	// ただしシャッターの下りた店（商店 (7,8)＝shop_front・電器屋 (13,9)＝denki_tv）は宵には点けない。
+	// 深夜に灯る窓は、キリコの部屋 (3,7) のモニターの青だけ（宵は電気のつけっぱなし。nostalgia.md P0-5）。
+	// アパートのはしの列は、宵は (3,7) の一灯だけ（下の (3,8) は夕方だけ。重ねない）。
+	// 1画面の同時点灯は8灯まで（nostalgia.md §5）: 横長の画面（20×11マス）で (4,7) に立っても、宵は8灯
 	lights: [
 		{ x: 1, y: 12, r: 3, color: "#ffdf9e", only: "yoru,shinya" },
 		{ x: 11, y: 12, r: 3, color: "#ffdf9e", only: "yoru,shinya" },
@@ -313,18 +358,22 @@ export const street: MapDef = {
 		{ x: 19, y: 12, r: 1.5, color: "#eef4ff", only: "yoru,shinya" },
 		{ x: 19, y: 9, r: 4, color: "#cfe4ff", only: "yoru,shinya" },
 		{ x: 21, y: 9, r: 2, color: "#cfe4ff", only: "yoru,shinya" },
-		{ x: 7, y: 8, r: 2, only: "yu,yoru" },
-		{ x: 13, y: 9, r: 2, color: "#cfe4ff", only: "yu,yoru" },
+		{ x: 7, y: 8, r: 2, only: "yu" },
+		{ x: 13, y: 9, r: 2, color: "#cfe4ff", only: "yu" },
 		{ x: 25, y: 8, r: 2, only: "yu,yoru" },
 		{ x: 1, y: 8, r: 2, only: "yu,yoru" },
-		{ x: 3, y: 8, r: 2, only: "yu,yoru" },
+		{ x: 3, y: 8, r: 2, only: "yu" },
 		{ x: 19, y: 9, r: 3, color: "#cfe4ff", only: "yu,yoru" },
 		{ x: 8, y: 18, r: 2, only: "yu,yoru" },
 		{ x: 16, y: 18, r: 2, only: "yu,yoru" },
+		{ x: 3, y: 7, r: 1.5, only: "yoru" },
+		{ x: 3, y: 7, r: 1.5, color: "#cfe4ff", only: "shinya" },
 	],
-	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。深夜は無音のまま）
+	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。宵・深夜は鳴らさない）。
+	// 深夜は手の缶が一段さめる（kanTick。歩くだけでは「ぬるい」で止まる。文は出さない）
 	onEnter: async (s) => {
 		lastWave = "";
+		kanTick(s);
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.8 });
 		else if (t === "asa") s.se("suzume", { volume: 0.8 });
@@ -344,6 +393,20 @@ export const street: MapDef = {
 				await s.wait(1600);
 				await s.narrate("――チャイムが、\n鳴りおわった。");
 				await s.say("kiriko", "はらへったンゴ。晩ごはん\n買って、帰るンゴ");
+			},
+		},
+		// 宵（晩ごはんのあと、アパートから出てきたところ。4地区目あたりであくび＝yoruAkubi）
+		{
+			id: "arrive_yoru",
+			x: 3,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: (st) => st.flags.tod === "yoru",
+			run: async (s) => {
+				await s.wait(500);
+				await s.narrate("どこかの家の、ふろの\nにおいがする。");
+				await yoruAkubi(s);
 			},
 		},
 		{
@@ -758,6 +821,12 @@ export const street: MapDef = {
 					await s.narrate("秒しんが、うごいている。");
 					return;
 				}
+				// 宵は地区を回るたびに数分ずつ進む（20:05〜20:47）
+				if (t === "yoru") {
+					await s.narrate(`まちの時計。――${yoruClock(s)}。`);
+					await s.narrate("文字盤を、街灯が\nてらしている。");
+					return;
+				}
 				await s.narrate("まちの時計。――17:03。");
 				await s.narrate("ハトが、うえに\nとまっている。");
 			},
@@ -778,6 +847,12 @@ export const street: MapDef = {
 				if (t === "asa") {
 					await s.narrate("サインポールが、\nまわりだした。");
 					await s.narrate("おくの時計は――7:05。");
+					return;
+				}
+				// 宵は店じまい（時計は見せない。時計塔だけが宵の時刻を持つ）
+				if (t === "yoru") {
+					await s.narrate("とこやの　まど。\n『本日終了』の札。");
+					await s.narrate("おくで、ほうきの\n音がしている。");
 					return;
 				}
 				await s.narrate("とこやの　まど。サインポールが\nまわっている。");
@@ -802,6 +877,11 @@ export const street: MapDef = {
 					await s.narrate("『あさごはん　あります』の\nのぼりが　出ている。");
 					return;
 				}
+				// 宵のレジには店員の背中（文だけ。人のスプライトは出さない。時計は見せない）
+				if (t === "yoru") {
+					await s.narrate("おでんの　ゆげ。レジに、\n店員さんの　せなか。");
+					return;
+				}
 				await s.narrate("コンビニのまど。おでんの\nゆげで、くもっている。");
 				await s.narrate("レジのおくの時計は\n――17:08。");
 			},
@@ -819,6 +899,26 @@ export const street: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("ドアが開いて、パンの\nにおいがした。");
+					return;
+				}
+				// 宵は牛乳が買える（店員は出さない。朝の店主のツッコミ＝tenshuAsa へ。P0-11）
+				if (t === "yoru") {
+					if (s.flag("got_gyunyu")) {
+						await s.narrate("じどうドアの　おくから、\nおでんの　におい。");
+						return;
+					}
+					await s.narrate("じどうドアの　むこうに、\n牛乳の　棚。");
+					const i = await s.choose(["＞＞1 牛乳を　買う", "＞＞2 見るだけ"], {
+						cancel: 1,
+					});
+					if (i !== 0) return;
+					s.se("item", { volume: 0.8 });
+					s.set("got_gyunyu");
+					await s.narrate(
+						"牛乳パックを、ひとつ\n買った。てのひらが、つめたい。",
+					);
+					if (s.flag("got_dinner_pan"))
+						await s.say("kiriko", "（あんぱんには、\nこれンゴ）");
 					return;
 				}
 				await s.narrate("じどうドア。『ポイント\n2ばい』のシールつき。");
@@ -840,10 +940,19 @@ export const street: MapDef = {
 					await s.narrate("ならんだテレビが、あさの\n体操を　やっている。");
 					return;
 				}
+				// 宵はシャッターのすきまから実況（延長の段には関係なく、聞こえるだけ。P0-2）
+				if (t === "yoru") {
+					await s.narrate(
+						"電器屋は、シャッター。\nすきまから、実況の声が　もれる。",
+					);
+					await s.say("kiriko", "（店じまいのあとも、\nやきうンゴ）");
+					return;
+				}
 				await s.narrate("ならんだテレビが、ぜんぶ\nおなじ夕方のニュース。");
 				await s.narrate("画面のすみに――17:04。");
 			},
 		},
+		// 貼り紙の下の貼り紙（時間帯を問わず同じ。二度目で下の紙に気づく。P0-8）
 		{
 			id: "denki_bill",
 			x: 14,
@@ -851,7 +960,18 @@ export const street: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("はり紙。『テレビ\nおやすくします』");
-				await s.narrate("日づけは、先月だ。");
+				if (!s.flag("seen_denki_bill")) {
+					s.set("seen_denki_bill");
+					await s.narrate("日づけは、先月だ。");
+					await s.say(
+						"kiriko",
+						"（ここ、むかしは\n駄菓子屋だった気がするンゴ）",
+					);
+					return;
+				}
+				await s.narrate("はり紙の下に、もう一枚。\n『テレビ　修理します』");
+				await s.narrate("その下に、もう一枚。\n『ラジオ　修理します』");
+				await s.say("kiriko", "……ずっと、電器屋\nだったンゴ");
 			},
 		},
 		// 店先（夕方は店主がいるのでカウンターにゆずる）
@@ -869,6 +989,7 @@ export const street: MapDef = {
 				await s.narrate("シャッターが、\nおりている。");
 			},
 		},
+		// 掲示板（時間帯を問わず同じ。二度目で去年の紙に気づく。P0-8）
 		{
 			id: "board_ev",
 			x: 7,
@@ -876,8 +997,17 @@ export const street: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("町内の掲示板。");
-				await s.narrate("『ゴミは　朝8時までに』");
-				await s.narrate("『なつまつりは　おわりました』\nの紙も、まだある。");
+				if (!s.flag("seen_board_st")) {
+					s.set("seen_board_st");
+					await s.narrate("『ゴミは　朝8時までに』");
+					await s.narrate("『なつまつりは　おわりました』\nの紙も、まだある。");
+					return;
+				}
+				await s.narrate(
+					"『なつまつりは　おわりました』\nの紙の下に、もう一枚。",
+				);
+				await s.narrate("去年の、おなじ紙だ。");
+				await s.say("kiriko", "……二回ぶん、\nおわってるンゴ");
 			},
 		},
 		{
@@ -934,12 +1064,19 @@ export const street: MapDef = {
 			run: async (s) => {
 				s.se("hum", { volume: 0.6 });
 				const t = s.flag("tod");
+				// 深夜はあたたかい缶が一本だけ買える（手の缶は、地区を移るたびにさめていく。P0-6）
 				if (t === "shinya") {
 					await s.narrate("ひくく、うなっている。\nあかりは、ついたまま。");
+					await kanShinya(s);
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("『あたたか～い』の札が\nふえている。");
+					return;
+				}
+				// 宵は端の一列だけ赤い札（深夜の缶の前ぶれ。札の字は朝の文とそろえる）
+				if (t === "yoru") {
+					await s.narrate("はしの一列だけ、\nあかい札。『あたたか～い』");
 					return;
 				}
 				await s.narrate("じはんき。つめたいのしか\n入っていない。");
@@ -981,6 +1118,10 @@ export const street: MapDef = {
 					await s.narrate("けさも、もう\n水がまいてある。");
 					return;
 				}
+				if (t === "yoru") {
+					await s.narrate("花だん。しめった　つちの\nにおいが　する。");
+					return;
+				}
 				await s.narrate("花だん。水をまいたばかりで\nつちの　においがする。");
 			},
 		},
@@ -997,6 +1138,10 @@ export const street: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("街灯。もう、\nきえている。");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("街灯。いつのまにか、\nついていた。");
 					return;
 				}
 				await s.narrate("街灯。まだ、\nついていない。");
@@ -1117,6 +1262,11 @@ export const street: MapDef = {
 					await s.narrate("みそしるのにおいと、\nテレビの音がする。");
 					return;
 				}
+				if (t === "yoru") {
+					await s.narrate("まどのおくで、\nお皿を　洗う音。");
+					await s.narrate("カレーの　においが、\nすこし　のこっている。");
+					return;
+				}
 				await s.narrate("まどのおく、カレーの\nにおいがする。");
 			},
 		},
@@ -1173,13 +1323,51 @@ export const street: MapDef = {
 					await s.narrate("犬の鳴き声。\n……げんきだ。");
 					return;
 				}
+				// 宵は実況が聞こえるだけ（延長の段には関係なく。P0-2）
+				if (t === "yoru") {
+					await s.narrate("おくで、やきうの　実況。\n……まだ　延長している。");
+					return;
+				}
 				await s.narrate("おくで、犬が水をのむ\n音がする。");
 			},
 		},
+		// キリコの部屋の窓（アパートのはし。路地 (4,7) から左向き。スプライトは無し。P0-5）。
+		// 宵は電気のつけっぱなし、深夜はモニターの青（どちらもキリコ本人のしわざ。窓の中に人影は描かない）。
+		// 朝は、夕方の店主のカーテンの話（seen_tenshu2）を聞いた人にだけ出る
+		// （フラグの無い人の朝は現行と同一＝P0-11・§5。見た目のスプライトは無いので、隠れても変わらない）
+		{
+			id: "my_win",
+			x: 3,
+			y: 7,
+			trigger: "talk",
+			when: (st) => st.flags.tod !== "asa" || !!st.flags.seen_tenshu2,
+			run: async (s) => {
+				const t = s.flag("tod");
+				if (t === "yoru") {
+					await s.narrate("はしの窓に、あかり。");
+					await s.say("kiriko", "……でんき、\nつけっぱなしンゴ");
+					return;
+				}
+				if (t === "shinya") {
+					await s.narrate("はしの窓だけ、あおく\nひかっている。");
+					await s.say("kiriko", "……モニター、\nけしわすれたンゴ");
+					return;
+				}
+				if (t === "asa") {
+					// 夕方の店主の「朝、カーテンが　しまったままだった」を聞いた人だけ（when）
+					await s.narrate("はしの窓。カーテンが、\nちゃんと　あいている。");
+					await s.say("kiriko", "これで　店主に\nばれないンゴ");
+					return;
+				}
+				await s.narrate("アパートの　はしの窓。");
+				await s.say("kiriko", "あそこが、吾輩の\nへやンゴ");
+			},
+		},
+		// うらどおりの西はし、sumire 行き (2,19) の北どなり（踏まずに調べられるように）
 		{
 			id: "mizo",
-			x: 1,
-			y: 19,
+			x: 2,
+			y: 18,
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("みぞを、水が\nながれていく音がする。");

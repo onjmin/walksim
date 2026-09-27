@@ -5,9 +5,12 @@
 //
 // 時間帯の顔（flags.tod）:
 //   夕方 … 窓明かり・干しぶとん・「ごはんよー」の声・買い物帰り・なわとびの子・
-//           回覧板・ふとんをとりこむばあちゃん。怪異ゼロ（必達）
+//           回覧板（サインらん）・ふとんをとりこむばあちゃん。怪異ゼロ（必達）
+//   宵   … どの窓からもナイターの実況・外灯に羽虫・せっけんのにおい。NPC 0体
+//           （docs/nostalgia.md P0-1。書くのは におい・音・点いた灯り だけ）
 //   深夜 … NPC 0体必達。脇道の怪異はここの担当2つだけ:
-//           kyusuito（給水塔の水音）／shuukaijo（集会所の張り紙が一枚多い）
+//           kyusuito（給水塔の水音）／shuukaijo（集会所の張り紙が一枚多い）。
+//           ノスタルジー層は A棟の階段のいちばん上（座れる場所）と、じはんきの缶だけ
 //   朝   … ごみ出し・体そうおわりのじいちゃん・会釈の人。回覧板が次の家へ、
 //           かさが消える、ミニトマトが一つぶへる——小さな payoff の束
 //
@@ -26,6 +29,7 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
+import { kanHeld, kanLine, kanShinya, kanTick, yoruAkubi } from "../nostalgia";
 import { base, basePx, field, PROPS, TOWN } from "../tiles";
 
 // ── タイル ──
@@ -190,6 +194,29 @@ const taisoBelt = (x: number, y: number): EventDef => ({
 	run: taisoAto,
 });
 
+/**
+ * 深夜の座れる場所: A棟の階段を、いちばん上まで（docs/nostalgia.md P0-7）。
+ * 足音を三つ → 暗転（のぼりきるまで）→ 見わたし → とおくに自分の窓（P0-5）。何も起きない。
+ * 文は暗転が明けてから出す（暗転 .fade は吹き出しより上に重なるので、暗いあいだの文は見えない）。
+ * 缶を持っていれば、かぞえる1行のかわりに缶の1行（吹き出しは既存文を入れて5まで）。
+ * 給水塔の水音（kyusuito）には触れない。
+ */
+const ichibanUe = async (s: Story): Promise<void> => {
+	s.set("seen_danchi_ue");
+	for (let n = 0; n < 3; n++) {
+		s.se("stairs", { volume: 0.5 });
+		await s.wait(400);
+	}
+	await s.fadeOut(700, "#04060f");
+	await s.wait(400);
+	await s.fadeIn(700);
+	await s.narrate("いちばん上の　おどりばに、\nすわった。");
+	if (!kanHeld(s)) await s.narrate("町の灯りを、\nひとつずつ　かぞえた。");
+	await s.narrate("とおくに、アパートの\nあおい窓が　ひとつ。");
+	await s.say("kiriko", "……あれ、吾輩の\nへやンゴ？");
+	if (kanHeld(s)) await kanLine(s);
+};
+
 export const danchi: MapDef = {
 	id: "danchi",
 	name: "すみれ台団地",
@@ -228,9 +255,11 @@ export const danchi: MapDef = {
 		// じはんき
 		{ x: 25, y: 8, r: 1.5, color: "#eef4ff", only: "yoru,shinya" },
 	],
-	// 入るたびに環境音を一波（夕＝ヒグラシ／朝＝スズメ。深夜は無音のまま）
+	// 入るたびに環境音を一波（夕＝ヒグラシ／朝＝スズメ。宵・深夜は無音のまま）。
+	// 深夜は手の缶が一段さめる（kanTick。文は出さない）
 	onEnter: async (s) => {
 		lastWave = "";
+		kanTick(s);
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.8 });
 		else if (t === "asa") s.se("suzume", { volume: 0.8 });
@@ -248,6 +277,20 @@ export const danchi: MapDef = {
 				await s.wait(500);
 				await s.narrate("窓のあかりが、\nひとつ、またひとつ。");
 				await s.narrate("どの窓にも、晩ごはんの\n時間が来ている。");
+			},
+		},
+		{
+			// 宵（P0-1）。ナイターは段に関係なく「実況が聞こえる」だけ（P0-2）
+			id: "arrive_yoru",
+			x: 3,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: (st) => st.flags.tod === "yoru",
+			run: async (s) => {
+				await s.wait(500);
+				await s.narrate("どの窓からも、\nおなじ実況が　きこえる。");
+				await yoruAkubi(s);
 			},
 		},
 		{
@@ -321,8 +364,12 @@ export const danchi: MapDef = {
 					await s.narrate("給水塔のタンクに、\nあさの空が　うつっている。");
 					return;
 				}
+				// 宵は夕日のかわりに、棟の窓あかりをせおう（水の音は深夜の kyusuito だけのもの。
+				// 人影めいた「立っている」は使わず、夕方と同じ「かげ」にそろえる）
 				await s.narrate(
-					"給水塔。夕日をせおって、\nまっくろな　かげになっている。",
+					t === "yoru"
+						? "給水塔。棟の窓あかりを\nせおって、まっくろな　かげになっている。"
+						: "給水塔。夕日をせおって、\nまっくろな　かげになっている。",
 				);
 				await s.narrate("見上げると、くびが\nいたくなる高さだ。");
 			},
@@ -398,6 +445,11 @@ export const danchi: MapDef = {
 					await s.narrate("ガラスに『体そうの会』の\n紙。すこし　やけている。");
 					return;
 				}
+				if (t === "yoru") {
+					// しょうぎの会は夕方まで（灯りも yu だけ）。宵は におい だけ置く
+					await s.narrate("窓のすきまから、お茶の\nにおいが　すこしする。");
+					return;
+				}
 				await s.narrate("窓のなか、しょうぎの駒の\n音がしている。");
 			},
 		},
@@ -441,12 +493,29 @@ export const danchi: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					// 座れる場所（P0-7）。2回目からは短い1行だけ
+					if (s.flag("seen_danchi_ue")) {
+						s.se("stairs", { volume: 0.4 });
+						await s.narrate("いちばん上の　おどりばで、\nすこし　町を見た。");
+						return;
+					}
 					await s.narrate("A棟の階段。電灯が、\n各階に　ひとつずつ。");
+					const i = await s.choose(
+						["＞＞1 いちばん上まで", "＞＞2 やめておく"],
+						{ cancel: 1 },
+					);
+					if (i === 0) await ichibanUe(s);
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate(
 						"けさの新聞が、一部だけ\n階段のすみに　のこっている。",
+					);
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate(
+						"A棟の階段。いちばん上の\nおどりばまで、電灯が　ついている。",
 					);
 					return;
 				}
@@ -468,6 +537,12 @@ export const danchi: MapDef = {
 					await s.narrate("一階の窓。みそしるの\nにおいがする。");
 					return;
 				}
+				if (t === "yoru") {
+					await s.narrate(
+						"一階の窓。カレーのにおいに、\nせっけんの　においが　まざる。",
+					);
+					return;
+				}
 				await s.narrate("一階の窓。カレーの\nにおいが　もれている。");
 			},
 		},
@@ -480,6 +555,9 @@ export const danchi: MapDef = {
 				const t = s.flag("tod");
 				if (t === "asa") {
 					await s.narrate("回覧板が、なくなっている。\nもう、つぎの家だ。");
+					// ゆうべサインしていれば一言（P0-9）
+					if (s.flag("seen_kairan_sign"))
+						await s.say("kiriko", "（吾輩の字も、\nいっしょに　行ったンゴ）");
 					return;
 				}
 				if (t === "shinya") {
@@ -488,6 +566,21 @@ export const danchi: MapDef = {
 				}
 				await s.narrate("郵便受けの上に、回覧板。\n『秋まつりの　おしらせ』");
 				await s.narrate("ひもで、ボールペンが\nむすんである。");
+				// サインらん（P0-9）。回覧板の人の「こどもは　サインでいいの」のあと、夕方だけ書ける
+				if (s.flag("seen_kairan_sign")) {
+					await s.narrate(
+						"サインらんの　いちばん下に、\nななめの　『きりこ』。",
+					);
+					return;
+				}
+				if (t !== "yu" || !s.flag("seen_kairan_danchi")) return;
+				await s.narrate("サインらんの　いちばん下が、\nまだ　あいている。");
+				const i = await s.choose(["＞＞1 サインする", "＞＞2 やめておく"], {
+					cancel: 1,
+				});
+				if (i !== 0) return;
+				s.set("seen_kairan_sign");
+				await s.narrate("『きりこ』と　書いた。\n字が、すこし　ななめだ。");
 			},
 		},
 
@@ -515,6 +608,12 @@ export const danchi: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("めざましの音。……まだ\n止められていない。");
+					return;
+				}
+				// 宵は延長の段に関係なく「実況」だけ（P0-2。テレビ・中継の語は使わない＝
+				// 部屋のテレビの中継が打ち切られたあとも、食いちがわない）
+				if (t === "yoru") {
+					await s.narrate("B棟の一階。窓から、\nやきうの　実況。");
 					return;
 				}
 				await s.narrate("B棟の一階。テレビの\n野球中けいの声。");
@@ -728,6 +827,10 @@ export const danchi: MapDef = {
 					await s.narrate("外灯は、もう\nきえている。");
 					return;
 				}
+				if (t === "yoru") {
+					await s.narrate("中庭の外灯に、\n羽虫が　あつまりはじめた。");
+					return;
+				}
 				await s.narrate("中庭の外灯。\nまだ、ついていない。");
 			},
 		},
@@ -773,6 +876,8 @@ export const danchi: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("じはんき。この明かりだけが\nついている。");
+					// 『あったか～い』の缶（P0-6。一晩に一本。持っていれば いまの温度を1行）
+					await kanShinya(s);
 					return;
 				}
 				await s.narrate("じはんき。おしるこの\nボタンが、もう　ある。");
@@ -793,7 +898,12 @@ export const danchi: MapDef = {
 					await s.narrate("すずめの声が、\n上から　ふってくる。");
 					return;
 				}
-				await s.narrate("大きなクスノキ。はっぱの\nすきまから、夕日。");
+				// 宵は夕日のかわりに、外灯(29,7)のあかり
+				await s.narrate(
+					t === "yoru"
+						? "大きなクスノキ。はっぱの\nすきまから、外灯のあかり。"
+						: "大きなクスノキ。はっぱの\nすきまから、夕日。",
+				);
 			},
 		},
 
@@ -827,7 +937,15 @@ export const danchi: MapDef = {
 			sprite: PROPS.sign,
 			trigger: "talk",
 			fixedDir: true,
+			// 二度目で下の層（来なかった未来の点線）に気づく（P0-8。時間帯を問わず同じ文）
 			run: async (s) => {
+				if (s.flag("seen_annaizu2")) {
+					await s.narrate("案内図のすみに、点線の\n四角。『D棟（予定）』");
+					await s.narrate("点線は、南のひろばに\nかさなっている。");
+					await s.say("kiriko", "……ラジオ体そうの\nばしょ、なくなるンゴ？");
+					return;
+				}
+				s.set("seen_annaizu2");
 				await s.narrate("団地の案内図。棟が三つ、\nならんで書いてある。");
 				await s.narrate("『げんざい地』のシールが、\nはがれかけている。");
 			},
@@ -910,6 +1028,10 @@ export const danchi: MapDef = {
 					return;
 				}
 				await s.narrate("三輪車が、ころんと\nたおれている。");
+				if (t === "yoru") {
+					await s.say("kiriko", "（もちぬしは、いまごろ\nおふろンゴ）");
+					return;
+				}
 				await s.say("kiriko", "（もちぬしは、\nばんごはん中ンゴ）");
 			},
 		},

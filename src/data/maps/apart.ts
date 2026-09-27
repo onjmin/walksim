@@ -2,8 +2,10 @@
 // docs/style-everyday.md。12×8・室内（outdoor なし）・BGM null。
 // 徹底して普通に作る。時間帯の差分は生活の痕跡だけ：
 //   夕方 … どこかの部屋のテレビの音・となりの不在票（ぜんぶ日常）
+//   宵   … せんたくきの音・502 からナイターの実況・階段の窓にまちの灯り
+//           （docs/nostalgia.md P0-1・P0-2。人は出さない。延長の段は数えない＝どの回でも「実況」だけ）
 //   深夜 … 違和感は「蛍光灯の明滅」ただ一つ（style-everyday §5: apart は微差1個まで）
-//   朝   … 不在票が取り込まれている・牛乳が届いている（生活が続いている payoff）
+//   朝   … 不在票が取り込まれている・牛乳が届いている・朝刊のスポーツらん（生活が続いている payoff）
 //
 // 座標凍結v2: キリコの部屋のドア (2,2)→room(5,8)／room からの戻り (2,3)／
 // 階段 (10,6)→street(2,10)／street からの戻り (10,5)。
@@ -12,6 +14,7 @@
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
 import { warp } from "../helpers";
+import { numFlag, yoruAkubi } from "../nostalgia";
 import { base, INDOOR } from "../tiles";
 
 // INDOOR に足すもの:
@@ -60,7 +63,7 @@ export const apart: MapDef = {
 	tiles,
 	rows,
 	events: [
-		// ── 着いたとき（夕方: 生活音／深夜: 蛍光灯の明滅。どちらも一度だけ） ──
+		// ── 着いたとき（夕方: 生活音／宵: せんたくき／深夜: 蛍光灯の明滅。どれも一度だけ） ──
 		{
 			id: "arrive_yu",
 			x: 0,
@@ -72,6 +75,20 @@ export const apart: MapDef = {
 				await s.wait(400);
 				await s.narrate("どこかの部屋から、\nテレビの音がしている。");
 				await s.narrate("さかなを　やく においも、\nすこし。");
+			},
+		},
+		// 宵は部屋から出た最初の一回（apart は宵の段 yoruStep に数えない。あくびの判定だけ通す）
+		{
+			id: "arrive_yoru",
+			x: 2,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: (st) => st.flags.tod === "yoru",
+			run: async (s) => {
+				await s.wait(400);
+				await s.narrate("どこかの部屋で、\nせんたくきが　まわっている。");
+				await yoruAkubi(s);
 			},
 		},
 		{
@@ -169,6 +186,13 @@ export const apart: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("うちの郵便受けに、\n朝刊が　ささっている。");
+					// ゆうべのナイターの結果（nostalgia.md P0-2。数字を言い切るのはここ1か所だけ）。
+					// スポーツらんもキリコの一言も、部屋のテレビで中継を見た人にだけ
+					// （P0-11・§5: フラグの無い人の朝は現行と同一。前ぶりの無い人に結果だけを見せない）
+					if (numFlag(s, "seen_tv_yoru") > 0 || s.flag("seen_chukei_end")) {
+						await s.narrate("スポーツらん。延長12回、\nひきわけ、だった。");
+						await s.say("kiriko", "……ねてて　正解ンゴ");
+					}
 					return;
 				}
 				await s.narrate("うちの郵便受け。ピザやの\nチラシが　二枚。");
@@ -206,6 +230,12 @@ export const apart: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("502ごう室。みそしるの\nにおいがする。");
+					return;
+				}
+				// 宵は、部屋のテレビと同じナイター（nostalgia.md P0-2。延長の段には関係なく「実況」だけ）
+				if (t === "yoru") {
+					await s.narrate("502ごう室。ドアごしに、\nナイターの　実況。");
+					await s.narrate("ときどき、ぽんと\nひざを　たたく音。");
 					return;
 				}
 				await s.narrate("502ごう室。テレビの音が\nもれている。");
@@ -260,6 +290,11 @@ export const apart: MapDef = {
 					await s.narrate("あたらしい牛乳が、\n一本入っている。");
 					return;
 				}
+				// 宵の文に「からっぽ」を出さない（nostalgia.md P0-1 の受け入れ条件）
+				if (t === "yoru") {
+					await s.narrate("ふたに、配達の　シール。");
+					return;
+				}
 				await s.narrate("――からっぽだ。");
 			},
 		},
@@ -311,6 +346,11 @@ export const apart: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("あさの光が、かいだんに\nさしこんでいる。");
+					return;
+				}
+				// 宵は灯りだけ（夕やけの文に落とさない。nostalgia.md P0-1）
+				if (t === "yoru") {
+					await s.narrate("かいだんの窓から、\nまちの灯りが　点々。");
 					return;
 				}
 				await s.narrate("かいだんの窓から、夕やけ。\nまちが、あかね色だ。");

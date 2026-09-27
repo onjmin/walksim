@@ -5,6 +5,9 @@
 //
 // 座標凍結v3: ekimae の乗車演出 → (3,10) 着地／駅の talk (2,9) → 乗車演出 → ekimae(5,9)。
 // たいやきを買っている（got_taiyaki）と、帰りの車窓の一言が変わる。
+// ポケットの紙もの（nostalgia.md P0-9）: たいやきのおつりに福引券が一まい（got_fukubikiken）。
+// 福引きの係は留守のままで、券は朝の枕元で見つかる（room bed）。回せなくても罰も催促も無い。
+// 貼り紙の下の貼り紙（P0-8）: テナント募集は、二度目に看板の跡が見える（seen_tenant）。
 //
 // 経路: 一本目のアーケード(y10-12)と二本目(y16-18)を、東の路地(x30-33)と西の路地(x0)で
 // つないだ回遊ループ。純喫茶と金物屋のあいだ (7,13)-(7,15) は、黒く見えるが通れる
@@ -324,9 +327,10 @@ export const tonarimachi: MapDef = {
 				await s.narrate("いちばん上は、はしごが\nないと　とどかない。");
 			},
 		},
+		// 窓 (6,9) と戸 (8,9) のあいだ（どちらの前もあけておく）
 		{
 			id: "record_wagon",
-			x: 6,
+			x: 7,
 			y: 10,
 			sprite: PROPS.crate,
 			trigger: "talk",
@@ -340,7 +344,7 @@ export const tonarimachi: MapDef = {
 		...sceneBelt(
 			"record_owari",
 			[
-				[7, 10],
+				[6, 10],
 				[8, 10],
 				[9, 10],
 			],
@@ -658,14 +662,21 @@ export const tonarimachi: MapDef = {
 				await s.narrate("八百屋の店さき。だいこんが\nそろって　白い。");
 			},
 		},
+		// 二度目で、前の店の看板の跡に気づく（P0-8。変わるのではなく、気づく）
 		{
 			id: "tenant",
 			x: 27,
 			y: 15,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("シャッターに『テナント\n募集』の紙。");
-				await s.narrate("……ここだけ、通りの音が\nとおくなる。");
+				if (!s.flag("seen_tenant")) {
+					s.set("seen_tenant");
+					await s.narrate("シャッターに『テナント\n募集』の紙。");
+					await s.narrate("……ここだけ、通りの音が\nとおくなる。");
+					return;
+				}
+				await s.narrate("シャッターの上の　かべに、\n看板のかたちの　こい色。");
+				await s.narrate("字は、ない。\nねじの穴が、四つ。");
 			},
 		},
 		{
@@ -742,15 +753,28 @@ export const tonarimachi: MapDef = {
 				await s.narrate("とまっているのに、\nいそがしそうな自転車だ。");
 			},
 		},
+		// 福引券（たいやきのおつり）をもっていると、キリコの一言が変わる（P0-9）。
+		// 留守を一度見ていれば「まだ　もどらない」。seen_fukubiki はそのためだけのフラグ
 		{
 			id: "fukubiki",
 			x: 10,
 			y: 18,
 			trigger: "talk",
 			run: async (s) => {
+				const mata = !!s.flag("seen_fukubiki");
+				s.set("seen_fukubiki");
 				await s.narrate("『福引き』ののぼりと、\nガラガラの抽選器。");
-				await s.narrate("係の人は、いま\n留守のようだ。");
-				await s.say("kiriko", "（一回だけ回したい\nンゴ……がまん）");
+				if (!s.flag("got_fukubikiken")) {
+					await s.narrate("係の人は、いま\n留守のようだ。");
+					await s.say("kiriko", "（一回だけ回したい\nンゴ……がまん）");
+					return;
+				}
+				await s.narrate(
+					mata
+						? "係の人は、まだ\nもどらない。"
+						: "係の人は、いま\n留守のようだ。",
+				);
+				await s.say("kiriko", "（券だけ、もって\nかえるンゴ）");
 			},
 		},
 		{
@@ -837,6 +861,9 @@ export const tonarimachi: MapDef = {
 							"あつあつの　たいやきを、\n紙ぶくろに　入れてくれた。",
 						);
 						s.set("got_taiyaki");
+						// ポケットの紙もの（P0-9）。福引き (10,18) と朝の枕元（room bed）で読む
+						s.set("got_fukubikiken");
+						await s.narrate("おつりと　いっしょに、\n福引券を　一まい。");
 						await s.say(null, "あちち、のうちに\nおたべ", {
 							name: "たいやき屋",
 						});

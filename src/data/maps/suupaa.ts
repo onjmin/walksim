@@ -7,6 +7,8 @@
 // 買いもの: 惣菜のコロッケ（半額シール）をかごに入れ、レジのばあちゃんで会計。
 // はらわずに出ようとすると　キリコが立ち止まる。朝の搬入 payoff（開店前のトラック・
 // 『みなみ』と書かれた箱）は ekimae 側と対になっている。
+// 会計のレシートはポケットへ（nostalgia.md P0-9。朝の机で見つかる＝room desk。
+// 新しいフラグは無く、got_korokke／seen_kaikei を流用する）。
 //
 // 座標凍結v3: 入口からの着地 (10,12)／出口 touch (10,13) → ekimae (10,5)。
 
@@ -54,13 +56,15 @@ const baachan = async (s: Story): Promise<void> => {
 		await s.say(null, "はい、コロッケ半額ね。\nあぶら、まだあったかいよ", {
 			name: "レジのばあちゃん",
 		});
+		// 買ったことは item の音とばあちゃんの「半額ね」で伝わる（レシートの1行を足して5吹き出しに収める）
 		s.se("item", { volume: 0.8 });
-		await s.narrate("コロッケを、買った。");
 		await s.say(null, "はしっこ、ひとつ\nおまけしといた", {
 			name: "レジのばあちゃん",
 		});
 		await s.say("kiriko", "……ばあちゃん、それ\n店的に　いいンゴ？");
 		await s.say(null, "いいの、いいの", { name: "レジのばあちゃん" });
+		// ポケットの紙もの（P0-9）。朝の机で見つかるレシートに、おまけは載っていない
+		await s.narrate("レシートを、ポケットに\nおしこんだ。");
 		return;
 	}
 	if (!s.flag("seen_baa")) {

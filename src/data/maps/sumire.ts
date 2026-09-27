@@ -1,14 +1,21 @@
 // すみれ町（住宅街の本体）。docs/content-briefs.md「日常の町 拡張」・docs/style-everyday.md。
 // 40×24・outdoor・BGM null（生活音だけ）。walksim の本体＝日常。怪異は脇道のおまけ。
 //
-// 三つの顔（flags.tod）:
+// 四つの顔（flags.tod）:
 //   夕方  … 生きた住宅街。NPC 6体（たいそう帰り・塾かばん・ベビーカー・井戸端×2・うちみず）。
 //           歯科に灯り・家々の窓明かり。怪異ゼロ（必達）
+//   宵    … NPC 0体（docs/nostalgia.md P0-1）。家々の窓にテレビの音・公園の外灯がつく。
+//           文は「におい・音・点いた灯り」だけ（減った人・消えた窓は書かない）。
+//           やまだ家のピアノは、また　おなじところでつっかえる（seen_piano_yu・P0-11）。
+//           こんどう家からナイターの実況（延長の段には関係なく「実況」だけ・P0-2）
 //   深夜  … 無人（NPC 0体・必達）。脇道の怪異は4つだけ:
 //           blanko（公園）/ pool（校門）/ seisanki（パーキング）/ denwa（おおた家）。
-//           どれも進行と無関係・説明しない・死なない
+//           どれも進行と無関係・説明しない・死なない。
+//           ひみつきちに しゃがめる（seen_kichi_shinya・P0-7）。じはんきで温かい缶が一本買え、
+//           地区を移るたびに冷める（onEnter の kanTick・P0-6）。どちらも怪異ではない
 //   朝    … NPC 4体（登校の子・ごみ出し・たいそうへ行くじいさん・歯科のそうじ）。
-//           貼り紙『みつかりました』・グローブの回収など、小さな payoff
+//           貼り紙『みつかりました』・グローブの回収・ピアノの「こえた」など、小さな payoff
+// 二度目で下の層が見える: 校門のプレート（『80』のふちから『70』。seen_gate_plate・P0-8）。
 //
 // 座標凍結v3: 東 touch (38,3)→street(3,19)（street からの着地は (37,3)）／
 //   南 touch (5,23)→kawara(5,2)（着地 (5,22)）／西 touch (0,12)→danchi(30,12)（着地 (1,12)）
@@ -26,6 +33,7 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, OBJ, warp } from "../helpers";
+import { kanHeld, kanLine, kanShinya, kanTick, yoruAkubi } from "../nostalgia";
 import { SPR } from "../sprites";
 import { base, basePx, field, PROPS, TOWN } from "../tiles";
 
@@ -122,8 +130,8 @@ const rows = [
 	"    f__f^^^^^^,,ZZZZZ |x,,,,*,| ,,,,,,, ", // y15 坂の段差
 	"    f::f(w((w(,,[m[m[ |,,,,x,,| ,T,,T,, ", // y16
 	"    f::f)c)o)c,,]j]m] |,,,,,,,| ,,,,,,, ", // y17 やまだ家の戸 (11,17)・おおた家の戸 (17,17)
-	"    f::f|||,,,,x,,,,P ||||||||| ||||||| ", // y18 物干し (9,18)・犬小屋 (15,18)・うえ木 (20,18)
-	"    f__f|||||||||||||                   ", // y19
+	"    f::f||,,,,,,,,,,P ||||||||| ||||||| ", // y18 物干し (9,18)（(10,18) から）・うえ木 (20,18)
+	"    f__f|||||||x|||||                   ", // y19 犬小屋 (15,19)（(15,18) から）
 	"    f::f                                ", // y20 坂道
 	"    f::!                                ", // y21 かわらのみち の看板 (7,21)
 	"    f:f                                 ", // y22 着地 (5,22)
@@ -229,9 +237,11 @@ export const sumire: MapDef = {
 		{ x: 32, y: 13, r: 3, color: "#ffdf9e", only: "yoru,shinya" }, // 大どおりの街灯（東）
 		{ x: 18, y: 11, r: 1.5, color: "#eef4ff", only: "yoru,shinya" }, // じはんき
 	],
-	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。深夜は無音のまま）
+	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。宵・深夜は無音のまま）。
+	// 深夜は、手の中の缶が一段さめる（kanTick・文は出さない。nostalgia.md P0-6）
 	onEnter: async (s) => {
 		lastWave = "";
+		kanTick(s);
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.8 });
 		else if (t === "asa") s.se("suzume", { volume: 0.8 });
@@ -248,6 +258,20 @@ export const sumire: MapDef = {
 			run: async (s) => {
 				await s.wait(500);
 				await s.narrate("どこかの家から、\nピアノの音がする。");
+			},
+		},
+		{
+			// 宵（nostalgia.md P0-1）。4地区目あたりで、あくびが一度だけ（yoruAkubi）
+			id: "arrive_yoru",
+			x: 3,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: (st) => st.flags.tod === "yoru",
+			run: async (s) => {
+				await s.wait(500);
+				await s.narrate("あちこちの窓から、\nテレビの　笑い声。");
+				await yoruAkubi(s);
 			},
 		},
 		{
@@ -318,12 +342,19 @@ export const sumire: MapDef = {
 						await s.narrate("チャイムの　ためし鳴らしが\n一度だけ　聞こえた。");
 						return;
 					}
+					if (t === "yoru") {
+						await s.narrate("校門は、しまっている。");
+						await s.narrate("職員室のほうから、\nコピー機の　音。");
+						return;
+					}
 					await s.narrate("校門は、もう\nしまっている。");
 					await s.narrate("校庭のすみで、ボールの\n音が　まだしている。");
 				},
 			}),
 		),
 		{
+			// 二度目で下の層に気づく（nostalgia.md P0-8。時間帯を問わず同じ文。
+			// 変わるのではなく、気づく——1文字ちがいの張り紙＝yellow の技法とは混ぜない）
 			id: "gate_plate",
 			x: 7,
 			y: 5,
@@ -331,6 +362,14 @@ export const sumire: MapDef = {
 			run: async (s) => {
 				await s.narrate("門柱のプレート。\n『すみれ小学校』。");
 				await s.narrate("よこに、小さく\n『創立80周年』。");
+				if (!s.flag("seen_gate_plate")) {
+					s.set("seen_gate_plate");
+					return;
+				}
+				await s.narrate(
+					"『80』のシールの　ふちから、\n『70』が　のぞいている。",
+				);
+				await s.say("kiriko", "つぎは、この上に\n『90』ンゴね");
 			},
 		},
 		{
@@ -347,6 +386,10 @@ export const sumire: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("せんせいが、ライン引きを\nおしている。");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("フェンスごしの校庭。\nどこかで、虫が　鳴いている。");
 					return;
 				}
 				await s.narrate("フェンスごしの校庭。\n白線が、半分きえている。");
@@ -509,6 +552,10 @@ export const sumire: MapDef = {
 						await s.narrate("くさりに、朝つゆが\nついている。");
 						return;
 					}
+					if (t === "yoru") {
+						await s.narrate("ブランコ。外灯で、くさりが\nひかっている。");
+						return;
+					}
 					await s.narrate("ブランコ。くさりが\nまだ　あたたかい。");
 				},
 			}),
@@ -586,6 +633,10 @@ export const sumire: MapDef = {
 					await s.narrate("外灯は、もう\nきえている。");
 					return;
 				}
+				if (t === "yoru") {
+					await s.narrate("公園の外灯。じじ、と\n鳴りながら　ついている。");
+					return;
+				}
 				await s.narrate("公園の外灯。\nまだ、ついていない。");
 			},
 		},
@@ -650,6 +701,8 @@ export const sumire: MapDef = {
 			}),
 		),
 		{
+			// 深夜は、灯っている自販機で温かい缶が一本買える（nostalgia.md P0-6。
+			// 買ったあとは、いまの温度を1行。のみほしたあとは何も足さない）
 			id: "vending",
 			x: 18,
 			y: 11,
@@ -659,6 +712,7 @@ export const sumire: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("じはんき。うなりと、\nあかり。");
+					await kanShinya(s);
 					return;
 				}
 				if (t === "asa") {
@@ -686,6 +740,12 @@ export const sumire: MapDef = {
 					await s.narrate("あかりは、まだない。\nスリッパが、ならべてある。");
 					return;
 				}
+				if (t === "yoru") {
+					// 診療は18時まで（灯りは夕方だけ）。宵は においだけ。
+					// 閉まった建物の中からの水の音は書かない（すぐ北の校門＝深夜の pool と同じ文法になる）
+					await s.narrate("まどの　すきまから、\n歯医者の　においが　する。");
+					return;
+				}
 				await s.narrate("まちあいしつに、あかり。");
 				await s.narrate("『歯みがきカレンダー』の\n紙が、はってある。");
 			},
@@ -698,7 +758,8 @@ export const sumire: MapDef = {
 			run: async (s) => {
 				await s.narrate("『すみれ歯科』");
 				const t = s.flag("tod");
-				if (t === "shinya") {
+				// 宵も、もう診療時間の外（18時まで）
+				if (t === "shinya" || t === "yoru") {
 					await s.narrate("『じかんがい』の札が\nかかっている。");
 					return;
 				}
@@ -768,6 +829,10 @@ export const sumire: MapDef = {
 					await s.narrate("カーブミラーに、あさの空が\nまるく　うつっている。");
 					return;
 				}
+				if (t === "yoru") {
+					await s.narrate("カーブミラーに、街灯が\nまるく　うつっている。");
+					return;
+				}
 				await s.narrate("カーブミラーに、\n夕やけが　うつっている。");
 			},
 		},
@@ -796,6 +861,8 @@ export const sumire: MapDef = {
 		),
 
 		// ── やまだ家（ピアノの家） ──
+		// 夕方と宵に、おなじところでつっかえるのを聞いておくと（seen_piano_yu）、
+		// 朝はそこを「こえた」になる（nostalgia.md P0-11。うまくなった、とは書かない）
 		{
 			id: "yamada_door",
 			x: 11,
@@ -809,7 +876,18 @@ export const sumire: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					if (s.flag("seen_piano_yu")) {
+						await s.narrate("ピアノの音。きのう\nつっかえたところ――");
+						await s.narrate("……こえた。");
+						return;
+					}
 					await s.narrate("けさは、テレビの\n天気よほうの音。");
+					return;
+				}
+				s.set("seen_piano_yu");
+				if (t === "yoru") {
+					await s.narrate("なかから、ピアノ。\nまた、おなじところで――");
+					await s.narrate("……つっかえた。");
 					return;
 				}
 				await s.narrate("なかから、ピアノの\nれんしゅうの音。");
@@ -900,7 +978,7 @@ export const sumire: MapDef = {
 		{
 			id: "kennel",
 			x: 15,
-			y: 18,
+			y: 19,
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
@@ -948,6 +1026,15 @@ export const sumire: MapDef = {
 					await s.narrate("あまどを　あける音が、\nいま　した。");
 					return;
 				}
+				if (t === "yoru") {
+					// 部屋のテレビと同じナイター（nostalgia.md P0-2）。延長の段には関係なく「実況」だけ。
+					// 回・点数・チーム名は言わない（数字を言い切るのは apart の朝刊の1か所だけ）
+					await s.narrate("窓のおくから、ナイターの\n実況が　きこえる。");
+					await s.narrate(
+						"『打った、大きい――』\nのあと、家じゅうで　ためいき。",
+					);
+					return;
+				}
 				await s.narrate("窓のおく、やきゅう中継の\n音がする。");
 			},
 		},
@@ -972,6 +1059,9 @@ export const sumire: MapDef = {
 		},
 
 		// ── 空き地（柵の一枚（26,13）だけ、見た目のまま通れる＝隠し） ──
+		// 深夜は、ひみつきちに しゃがめる（nostalgia.md P0-7。座れる3か所のひとつ）。
+		// 数秒なにも起きず、音がひとつ増えて、ボケで閉じる。何も起きない・ノートにも書かない。
+		// 2回目からは短い1行だけ（seen_kichi_shinya。左右の板で共用）
 		...[24, 25].map(
 			(x): EventDef => ({
 				id: `kichi_board_${x}`,
@@ -979,6 +1069,30 @@ export const sumire: MapDef = {
 				y: 14,
 				trigger: "talk",
 				run: async (s) => {
+					if (s.flag("tod") === "shinya") {
+						if (s.flag("seen_kichi_shinya")) {
+							await s.narrate("ひみつきちに　しゃがんで、\nすこし　外を見た。");
+							return;
+						}
+						await s.narrate("『ひみつきち　だいほんぶ』。");
+						const i = await s.choose(["＞＞1 しゃがむ", "＞＞2 やめておく"], {
+							cancel: 1,
+						});
+						if (i !== 0) return;
+						s.set("seen_kichi_shinya");
+						await s.narrate("ひみつきちに、しゃがんだ。\n……ひざが、つかえる。");
+						await s.wait(2500);
+						await s.narrate("板のすきまから、外灯が\nひとつだけ　見える。");
+						// 手に缶があれば、じはんきのうなりの代わりに缶の1行（一段さめる）
+						if (kanHeld(s)) {
+							await kanLine(s);
+						} else {
+							s.se("hum", { pan: -0.5, volume: 0.25 });
+							await s.narrate("とおくで、じはんきが\nひくく　うなっている。");
+						}
+						await s.say("kiriko", "（メンバーに、\nなった気がするンゴ）");
+						return;
+					}
 					await s.narrate("板に、マジックで\n『ひみつきち　だいほんぶ』。");
 					await s.narrate("したに、小さく\n『メンバーぼしゅう中』。");
 					await s.say("kiriko", "……入りたいンゴ");
@@ -1043,6 +1157,10 @@ export const sumire: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("手すりのむこう、川が\nあさの色で　ひかっている。");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("手すりのむこう、川に\n街灯が　ゆれている。");
 					return;
 				}
 				await s.narrate("手すりのむこう、川が\nひかっている。");

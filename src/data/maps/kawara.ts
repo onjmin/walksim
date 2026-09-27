@@ -4,8 +4,12 @@
 //
 // 時間帯の顔（flags.tod）:
 //   夕方 … 川面のきらめき・ヒグラシ。NPC 4体（つりの人=3層会話・ランニングの人=周回・
-//           ハーモニカの子・水きりの子）。川しもの鉄橋を電車がわたる（定時音は正常の側に置く）
-//   深夜 … NPC 0体必達。音だけの川。脇道の怪異はここの担当2つだけ:
+//           ハーモニカの子・水きりの子）。川しもの鉄橋を電車がわたる（定時音は正常の側に置く）。
+//           水ぎわで一度だけ蚊にさされる（ka_a/b/c・seen_ka。寝る前と朝の一行は room bed）
+//   宵   … NPC 0体（docs/nostalgia.md P0-1）。土手の街灯と常夜灯がつき、川の音がちかい。
+//           文は「におい・音・点いた灯り」だけ（減った人・消えた窓は書かない）。つりのバケツだけ残っている
+//   深夜 … NPC 0体必達。音だけの川。土手のふみあとに すわれる（P0-7）・対岸から自分のアパートのあたり（P0-5）。
+//           手の中の缶は、地区を移るたびに冷める（onEnter の kanTick・P0-6）。脇道の怪異はここの担当2つだけ:
 //           modoribashi（渡り切る直前の気配。ふりむいても誰もいない・わたりきれば何もない）
 //           komainu は朝の担当（夕方に狛犬を調べたフラグがある人だけ、朝に差分の一言）
 //   朝   … きらめきがもどる・スズメ。NPC 3体（つりの人・ランニングの人=周回・犬のさんぽの人）。
@@ -16,7 +20,7 @@
 //
 // 経路: 一本道にしない（土手道⇄石段の神社⇄水ぎわ⇄戻り橋の対岸）。
 // 対岸は行き止まりだが「見るもの」を置く（花火のもえかす・川ごしの町）。
-// 隠し: 対岸の西はし、ススキが一株だけ通れる（h・無印）→ 水きり石の穴場。
+// 隠し: 対岸の西はし、ススキ（h・無印）が見た目のまま通れる → 水きり石の穴場。
 // 二度目で変わる: 絵馬かけ・ご神木・水きり石（かりたあと）。
 
 import type {
@@ -28,6 +32,7 @@ import type {
 } from "../../engine/defs";
 import type { Dir } from "../../engine/types";
 import { npc, warp } from "../helpers";
+import { kanHeld, kanLine, kanTick, yoruAkubi } from "../nostalgia";
 import { base, FIELD, field, PROPS, TOWN } from "../tiles";
 
 // ── タイル ──
@@ -87,7 +92,7 @@ const rows = [
 	"     :                        ZZZ       ", // y3
 	"     :                      ..[j[...    ", // y4  狛犬 (29,4)(33,4)・社の戸 (31,4)
 	"     :                      Y.......    ", // y5  ご神木 (28,5)・さいせん箱 (30,5)・絵馬かけ (34,5)
-	"iiii,:,,,,,,,,,,,,,,,,,,,,,,.G...G..    ", // y6  田んぼ・かかし (1,6)・常夜灯 (29,6)(33,6)
+	"iiii,:,,,,,,,,,,,,,,,,,,,,,,G....G..    ", // y6  田んぼ・かかし (1,6)・常夜灯 (28,6)(33,6)。(29,6) から狛犬の前 (29,5) へ
 	"iiii,:,,L,,,,,,,,,,,,,,,L,,,,,,=,,,,,,, ", // y7  街灯 (8,7)(24,7)・きょり標 (12,7)・石段 (31,7)
 	",,::::::::::::::::::::::::::::::::::::: ", // y8  土手の道。street への出口 (38,8)・着地 (37,8)
 	",,,,,,,,,,,,=,,b,,b,,,b,,,,b,,,,,,,,,,, ", // y9  土手の斜面とススキ・ハーモニカの子 (25,9)
@@ -96,7 +101,7 @@ const rows = [
 	"~~~~~~~~~~~~~~~~~~~~#~~~~~~~~~~~~~~~~~~ ", // y12 川と戻り橋 (x20)・銘板 (21,12)
 	"~~~~~~~~~~~~~~~~~~~~#~~~~~~~~~~~~~~~~~~ ", // y13 橋の上から (19,13)
 	"~~~~~~~~~~~~~~~~~~~~#~~~~~~~~~~~~~~~~~~ ", // y14 わたりきる直前 (20,14)
-	"            ,,,h,,b,,,b,                ", // y15 対岸（行き止まり）。花火のあと (21,15)・隠しの h (15,15)
+	"            ,,,h,,h,,,b,                ", // y15 対岸（行き止まり）。花火のあと (21,15)・隠しの h (18,15)(15,15)
 ];
 
 // ── モブの歩行グラ ──
@@ -163,6 +168,25 @@ const sagiBelt = (x: number, y: number): EventDef => ({
 	},
 });
 
+/**
+ * 夕方の水ぎわで、蚊（nostalgia.md P0-10。帯3つのどれかで一日一回だけ・seen_ka）。
+ * からだの一行なので、郷愁の文とは吹き出しを分けておく。
+ */
+const kaBelt = (id: string, x: number): EventDef => ({
+	id,
+	x,
+	y: 11,
+	trigger: "touch",
+	through: true,
+	when: (st) => st.flags.tod === "yu" && !st.flags.seen_ka,
+	run: async (s) => {
+		s.set("seen_ka");
+		await s.narrate("……ぷうん、と　耳もとで\n音がした。");
+		await s.narrate("うでを、蚊に　さされた。");
+		await s.say("kiriko", "（夕方の川は、\nこれがあるンゴ）");
+	},
+});
+
 /** 狛犬の一言（夕方に見たフラグがある人だけ、朝に差分が出る）。 */
 const komainu = async (s: Story, which: "a" | "b"): Promise<void> => {
 	const t = s.flag("tod");
@@ -192,12 +216,19 @@ const komainu = async (s: Story, which: "a" | "b"): Promise<void> => {
 	await s.narrate("こまいぬ。くらくて、\nかおが　見えない。");
 };
 
-/** 常夜灯（(29,6)(33,6) で共用。夜にひが入る＝だれかが世話をしている。説明しない）。 */
+/** 常夜灯（(28,6)(33,6) で共用。夜にひが入る＝だれかが世話をしている。説明しない）。 */
 const jouyatou = async (s: Story): Promise<void> => {
 	const t = s.flag("tod");
 	if (t === "shinya") {
 		await s.narrate("石どうろうに、ひが\n入っている。");
 		await s.narrate("ちいさな　ほのおが、\nしずかに　ゆれている。");
+		return;
+	}
+	if (t === "yoru") {
+		// 宵は、ともしたばかり（深夜＝ちいさな ほのお・朝＝においだけ へつづく）。
+		// 「いつのまにか」は書かない（この地区では戻り橋の怪異の言い回し）
+		await s.narrate("石どうろうに、ひが\n入っている。");
+		await s.narrate("ろうそくは、まだ　ながい。");
 		return;
 	}
 	if (t === "asa") {
@@ -208,11 +239,15 @@ const jouyatou = async (s: Story): Promise<void> => {
 	await s.narrate("石どうろう。あたらしい\nろうそくが、立ててある。");
 };
 
-/** 土手の街灯（(8,7)(24,7) で共用）。 */
+/** 土手の街灯（(8,7)(24,7) で共用。lights は yoru,shinya で点く）。 */
 const gaitou = async (s: Story): Promise<void> => {
 	const t = s.flag("tod");
 	if (t === "shinya") {
 		await s.narrate("街灯のあかりに、羽虫が\nあつまっている。");
+		return;
+	}
+	if (t === "yoru") {
+		await s.narrate("土手の街灯。まるい　あかりが\n道に　おちている。");
 		return;
 	}
 	if (t === "asa") {
@@ -220,6 +255,34 @@ const gaitou = async (s: Story): Promise<void> => {
 		return;
 	}
 	await s.narrate("土手の街灯。まだ、\nついていない。");
+};
+
+/**
+ * 深夜、土手のしゃめんに すわる（fumiato。nostalgia.md P0-7。seen_suwari_kawara）。なにも起きない。
+ * 目をとじる → 暗転して、目をあける → カエルがふえてくる → 草のつめたさ（缶があれば缶の1行に替える）。
+ * 文は暗転の前とあとにだけ出す（暗転 .fade は吹き出しより上に重なるので、暗いあいだの文は見えない）。
+ * 無音は暗転の 2.7 秒だけ。深夜の電車・トラックの音は鳴らさない。
+ * 2回目からは選ばずに短い1行だけ（缶があれば缶の1行。danchi・sumire の座る場所とそろえる）。
+ */
+const suwaru = async (s: Story): Promise<void> => {
+	if (s.flag("seen_suwari_kawara")) {
+		if (kanHeld(s)) await kanLine(s);
+		else await s.narrate("しゃめんに　すわって、\nすこし　川の音を　きいた。");
+		return;
+	}
+	const i = await s.choose(["＞＞1 すわる", "＞＞2 やめておく"], {
+		cancel: 1,
+	});
+	if (i !== 0) return;
+	s.set("seen_suwari_kawara");
+	await s.narrate("しゃめんに　すわって、\n目を　とじた。");
+	await s.fadeOut(900, "#04060f");
+	await s.wait(900);
+	await s.fadeIn(900);
+	await s.narrate("カエルの声が、ひとつ、\nまたひとつ　ふえてくる。");
+	if (kanHeld(s)) await kanLine(s);
+	else await s.narrate("しゃめんの草が、\n夜つゆで　つめたい。");
+	await s.say("kiriko", "……よし。もうすこし\nあるくンゴ");
 };
 
 export const kawara: MapDef = {
@@ -234,12 +297,14 @@ export const kawara: MapDef = {
 	lights: [
 		{ x: 8, y: 7, r: 3, color: "#ffdf9e", only: "yoru,shinya" },
 		{ x: 24, y: 7, r: 3, color: "#ffdf9e", only: "yoru,shinya" },
-		{ x: 29, y: 6, r: 2, color: "#ffcc88", only: "yoru,shinya" }, // 常夜灯
+		{ x: 28, y: 6, r: 2, color: "#ffcc88", only: "yoru,shinya" }, // 常夜灯
 		{ x: 33, y: 6, r: 2, color: "#ffcc88", only: "yoru,shinya" },
 	],
-	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。深夜は無音のまま）
+	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。宵・深夜は無音のまま）。
+	// 深夜は、手の中の缶が地区ひとつぶん冷める（nostalgia.md P0-6。文は出さない）
 	onEnter: async (s) => {
 		lastWave = "";
+		kanTick(s);
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.8 });
 		else if (t === "asa") s.se("suzume", { volume: 0.8 });
@@ -257,6 +322,20 @@ export const kawara: MapDef = {
 				await s.wait(500);
 				await s.narrate("川のにおいがする。");
 				await s.narrate("水面が、夕日で\nちかちかしている。");
+			},
+		},
+		// 宵（nostalgia.md P0-1。座標は y0 の空き。4地区目あたりで あくび）
+		{
+			id: "arrive_yoru",
+			x: 3,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: (st) => st.flags.tod === "yoru",
+			run: async (s) => {
+				await s.wait(500);
+				await s.narrate("川の音が、夕方より\nちかく　きこえる。");
+				await yoruAkubi(s);
 			},
 		},
 		{
@@ -298,6 +377,10 @@ export const kawara: MapDef = {
 		// 朝の水ぎわ（しらさぎ）
 		sagiBelt(12, 11),
 		sagiBelt(20, 11),
+		// 夕方の水ぎわ（蚊。どれか一つで一日一回）
+		kaBelt("ka_a", 11),
+		kaBelt("ka_b", 16),
+		kaBelt("ka_c", 24),
 
 		// ── 川しもの鉄橋（夕方に一度・定時音を正常の側に置く） ──
 		...([34, 35] as const).map((x, i) => ({
@@ -383,11 +466,15 @@ export const kawara: MapDef = {
 					return;
 				}
 				await s.narrate("橋の上は、川かぜの\nとおり道だ。");
+				if (t === "yoru") {
+					await s.narrate("土手の上に、街灯が\nふたつ　ついている。");
+					return;
+				}
 				await s.narrate("きらめきが、川しもまで\nつづいている。");
 			},
 		},
 
-		// ── 川面（夕=きらめき／深夜=音だけ／朝=きらめき） ──
+		// ── 川面（夕=きらめき／宵・深夜=音だけ／朝=きらめき） ──
 		{
 			id: "kawa_a",
 			x: 10,
@@ -397,6 +484,10 @@ export const kawara: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("水の音だけが、する。\nながれは、見えない。");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("水面は　くろい。\nさざなみが、岸を　たたく音。");
 					return;
 				}
 				if (t === "asa") {
@@ -625,7 +716,7 @@ export const kawara: MapDef = {
 		},
 		{
 			id: "touro_a",
-			x: 29,
+			x: 28,
 			y: 6,
 			trigger: "talk",
 			run: jouyatou,
@@ -676,6 +767,10 @@ export const kawara: MapDef = {
 					await s.narrate("ススキの穂が、しろい。\n夜のほうが、よく見える。");
 					return;
 				}
+				if (t === "yoru") {
+					await s.narrate("ススキの　ねもとで、\n虫が　鳴きはじめた。");
+					return;
+				}
 				if (t === "asa") {
 					await s.narrate("ススキに、朝つゆ。\nさわると　つめたい。");
 					return;
@@ -690,9 +785,13 @@ export const kawara: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("土手のくさに、ふみあと。\n近道の　あとらしい。");
-				if (s.flag("tod") === "asa") {
+				const t = s.flag("tod");
+				if (t === "asa") {
 					await s.narrate("……けさの分が、もう\nついている。");
+					return;
 				}
+				// 深夜だけ、ここに すわれる（座れる場所は町に3か所だけ）
+				if (t === "shinya") await suwaru(s);
 			},
 		},
 		{
@@ -716,9 +815,17 @@ export const kawara: MapDef = {
 			fixedDir: true,
 			when: (st) => st.flags.tod !== "shinya",
 			run: async (s) => {
-				if (s.flag("tod") === "asa") {
+				const t = s.flag("tod");
+				if (t === "asa") {
 					await s.narrate(
 						"バケツの中に、ちいさいのが\n一ぴき。……リリースサイズだ。",
+					);
+					return;
+				}
+				// 宵はバケツだけが残っている（つりの人のことは書かない。深夜は丸いあとだけ＝tsuri_ato）
+				if (t === "yoru") {
+					await s.narrate(
+						"つりのバケツ。ときどき、\nぱしゃ、と　水が　はねる。",
 					);
 					return;
 				}
@@ -737,12 +844,14 @@ export const kawara: MapDef = {
 		},
 
 		// ── 対岸（行き止まりの見るもの＋ススキ h のむこうの隠し） ──
+		// 足もとの物なので踏んで通れる（東どなりの taigan_view を (21,15) から調べる）
 		{
 			id: "hanabi_ato",
 			x: 21,
 			y: 15,
 			sprite: base(2, 190),
 			trigger: "talk",
+			through: true,
 			fixedDir: true,
 			run: async (s) => {
 				await s.narrate("花火の　もえかす。");
@@ -758,6 +867,17 @@ export const kawara: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("川ごしの町。街灯が、\nぽつ、ぽつ、と　あるだけだ。");
+					// 帰る場所のあたり（nostalgia.md P0-5）。一度だけ。窓が見えたとは言わない
+					if (s.flag("seen_taigan_shinya")) return;
+					s.set("seen_taigan_shinya");
+					await s.say("kiriko", "……うちの　アパート、\nあのへんンゴ？");
+					await s.narrate("街灯の　ならびの、どこか。");
+					await s.say("kiriko", "（電気、けして\nきたっけ）");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("川ごしの町。窓の灯りが、\nならんで　ともっている。");
+					await s.say("kiriko", "（どれが　どの家か、\nさっぱりンゴ）");
 					return;
 				}
 				if (t === "asa") {
@@ -773,6 +893,11 @@ export const kawara: MapDef = {
 			y: 15,
 			trigger: "talk",
 			run: async (s) => {
+				// 宵は音だけ（宵の文に「だれも」を出さない。nostalgia.md P0-1 の受け入れ条件）
+				if (s.flag("tod") === "yoru") {
+					await s.narrate("こっち岸のススキが、\n川かぜで　さわさわ　鳴る。");
+					return;
+				}
 				await s.narrate("こっち岸のススキは、\nだれにも　刈られていない。");
 			},
 		},

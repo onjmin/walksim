@@ -12,8 +12,11 @@
 //   選択肢は、固定の pick のほかに、選び方の組み合わせを幅優先でたどる（1組 MAX_PATHS 本まで）。
 //   2周目は、ほかのスクリプトが set した値（文字列・数）をフラグに入れて走らせる。
 // - フラグの約束（DESIGN §7）: スクリプトが set するフラグが、決めた接頭辞・名前に収まっているか
+// - 到達性: 入口（warp の着地点・開始位置など）から歩いて、talk イベントを向いて調べられるか
+//   （背の高い物の裏・カウンター越しは engine と同じ規則。くわしくは下の「到達性」）
 // エラーがあれば終了コード 1。
 
+import { readFileSync } from "node:fs";
 import { createServer } from "vite";
 
 const MAX_COLS = 22; // 1行あたりの全角文字数の目安
@@ -49,6 +52,16 @@ const VOICE_MODELS = [
 // tod は時間帯（DESIGN §4: "yu"|"yoru"|"shinya"|"asa"）。
 const FLAG_OK =
 	/^(done:|hide:|seen_|got_|rule_|note_|found_|gate_open$|clear$|ending_ready$|ending_seen$|keep_clear$|flashlight$|debug$|tod$)/;
+// 到達性の検査から外す talk イベント（"マップ イベントid" → 理由）。
+// わざと歩いて行けない場所に置いたものだけを、理由を書いて足す。
+// 無いイベント・歩いて調べられるようになったものは警告する（消し忘れ防止）。
+const REACH_OK = {
+	// village.ts「八尺様（遠景。…話しかけられる距離には来ない）」
+	"village hass1": "八尺様①は田の向こうの遠景",
+	"village hass3": "八尺様③は用水路の向こうの遠景",
+	// kakolog2.ts「ムッジェ（柵の向こうの赤い気配。近づくと一度だけ声）」
+	"kakolog2 mujje": "柵のむこうの気配。声は柵の手前の帯 mujje_tr_* が出す",
+};
 
 const server = await createServer({
 	server: { middlewareMode: true, hmr: false, ws: false },
@@ -56,6 +69,35 @@ const server = await createServer({
 	logLevel: "error",
 	optimizeDeps: { noDiscovery: true, include: [] },
 });
+
+/**
+ * engine/assets.ts の画像読み込み（new Image）を Node で動かすための代わり。大きさだけ読む。
+ * public/ の PNG は IHDR から幅・高さを読む。CDN の画像（sp: の RPGEN 単体スプライト）は読まず、
+ * 読み込み中のままにする（大きさ不明＝overflowsCell は「はみ出さない」。いま使っている sp: はどれも 16x16）。
+ */
+class NodeImage {
+	width = 0;
+	height = 0;
+	onload = null;
+	onerror = null;
+	set src(url) {
+		const base = server.config.base;
+		if (!url.startsWith(base)) return;
+		try {
+			const file = new URL(
+				`../public/${url.slice(base.length)}`,
+				import.meta.url,
+			);
+			const png = readFileSync(file);
+			this.width = png.readUInt32BE(16);
+			this.height = png.readUInt32BE(20);
+			queueMicrotask(() => this.onload?.());
+		} catch {
+			queueMicrotask(() => this.onerror?.());
+		}
+	}
+}
+globalThis.Image ??= NodeImage;
 
 // 同じ警告・エラーは1回だけ出す（note は最初の1回の例として添える）
 const errors = new Map();
@@ -260,6 +302,10 @@ try {
 	const usedNotes = new Set();
 	/** 2周目で入れる値（フラグ名 → 1周目にスクリプトが set した文字列・数）。 */
 	const typedDomain = new Map();
+	/** warp の着地点（マップ id → "x,y" の集合）。到達性の入口に使う。 */
+	const landings = new Map();
+	/** warp を呼んだことのあるスクリプト（where）。踏むと飛ばされるタッチイベントの判定に使う。 */
+	const warpers = new Set();
 	/** 2周目の組 i で、フラグ k に入れる値（set されたことのない真偽のフラグは true）。 */
 	const typedOf = (k, i) => {
 		const vals = typedDomain.get(k) ?? null;
@@ -404,12 +450,19 @@ try {
 			},
 			warp: async (to, x, y, _dir, opt) => {
 				tick();
+				warpers.add(where);
 				if (opt?.se && !data.sfx[opt.se])
 					err(`${where}: ワープの効果音 "${opt.se}" が無い`, note);
 				if (!maps[to]) err(`${where}: ワープ先のマップ "${to}" が無い`, note);
 				else {
 					if (!passable(to, x, y))
 						err(`${where}: ワープ先 ${to} (${x},${y}) が通れないマス`, note);
+					// デバッグルームの近道（debug.ts の cp_*）の着地点は、到達性の入口に数えない
+					// （本物の出入口が無くなっても、近道の着地点から「歩いて行ける」ことになってしまう）
+					if (!where.startsWith("map debug ")) {
+						if (!landings.has(to)) landings.set(to, new Set());
+						landings.get(to).add(`${x},${y}`);
+					}
 					state.mapId = to;
 					state.x = x;
 					state.y = y;
@@ -631,6 +684,152 @@ try {
 	}
 	if (!data.bgm[data.titleBgm]) err(`titleBgm "${data.titleBgm}" が無い`);
 	if (!data.bgm[data.endingBgm]) err(`endingBgm "${data.endingBgm}" が無い`);
+
+	// ── 到達性：入口から歩いて、talk イベントを向いて調べられるか ──
+	// 入口は、スクリプトの warp の着地点（上で走らせたときに集めた。デバッグルームの近道の着地点は除く）・
+	// 開始位置・デバッグルームの入口・
+	// メニューの「めをさます」（ui/menu.ts が room (2,4) へ送る。スクリプトの外なのでここで足す）。
+	// 入口から、通れる地形を幅優先でたどる。人・置物は engine の Actor と同じく
+	// 「見た目があって through でない」ものが塞ぐ。warp を呼ぶタッチイベントのマスは、踏んだら
+	// 飛ばされるので、そこで止まる（その先へは進めず、そこに立って調べることもできない）。
+	// 調べ方は engine/game.ts の talkFront と同じ: となりのマスから、そちらを向いて調べる。
+	// 背の高い物（engine/field.ts の hasBack）は、北どなりから下向きには調べられない。
+	// 目の前がカウンター（tile.counter）でそこに talk イベントが無ければ、その向こうまで届く。
+	// when は時間帯ごとに分けず、いちばん歩きやすい形で見る: when・once のあるもの（出たり消えたり
+	// するもの）とうろうろ歩く人は、塞がない・飛ばさない・カウンターを遮らないとみなす。
+	// 調べる側の talk イベントは、when があっても（いつか出るものとして）すべて調べる。
+	// 見ないもの: when で時間帯ごとに出る人による塞がり（例: 朝の street の男の子 (14,10) が
+	// 電器屋のはり紙 (14,9) の前に立つ）と、warp 以外の touch の帯を踏めるかどうか。
+	const { Actor, Field } = await server.ssrLoadModule("/src/engine/field.ts");
+	const { preloadImages } = await server.ssrLoadModule("/src/engine/assets.ts");
+	const spriteOf = (ref) =>
+		ref?.startsWith("char:") ? (data.cast[ref.slice(5)]?.walk ?? "") : ref;
+	// hasBack が大きさを見る画像（切り出し指定の無い public/ の画像）を先に読んでおく
+	const refs = new Set();
+	for (const m of Object.values(maps)) {
+		for (const t of Object.values(m.tiles))
+			for (const r of [...t.layers, ...(t.above ?? [])]) refs.add(r);
+		for (const e of m.events ?? []) if (e.sprite) refs.add(spriteOf(e.sprite));
+	}
+	await preloadImages(
+		[...refs].filter((r) => r?.startsWith("pub:") && !r.includes("#")),
+	);
+	const DIRS = [
+		[0, -1, "up"],
+		[1, 0, "right"],
+		[0, 1, "down"],
+		[-1, 0, "left"],
+	];
+	const entries = new Map(landings);
+	const addEntry = (mapId, x, y) => {
+		if (!entries.has(mapId)) entries.set(mapId, new Set());
+		entries.get(mapId).add(`${x},${y}`);
+	};
+	addEntry(st.mapId, st.x, st.y);
+	if (data.debug) addEntry(data.debug.mapId, data.debug.x, data.debug.y);
+	addEntry("room", 2, 4); // ui/menu.ts「めをさます」
+	for (const [id, m] of Object.entries(maps)) {
+		const g = grids[id];
+		const inside = (x, y) => x >= 0 && y >= 0 && x < g.w && y < g.h;
+		const key = (x, y) => y * g.w + x;
+		const field = {
+			tileAt: (x, y) =>
+				(inside(x, y) && m.tiles[g.grid[y][x]]) || {
+					layers: [],
+					passable: false,
+				},
+		};
+		const events = m.events ?? [];
+		/** 塞ぐマス（いつもそこにいる、見た目つきの通れない人・置物）。 */
+		const blocked = new Set();
+		/** 踏むと飛ばされるマス（いつもある、warp を呼ぶタッチイベント）。 */
+		const stops = new Set();
+		/** いつもそこにいる talk イベントのマス（カウンターの上なら、カウンター越しの調べを遮る）。 */
+		const talkAlways = new Set();
+		for (const e of events) {
+			if (e.when || e.once) continue;
+			const sprite = spriteOf(e.sprite) ?? "";
+			if (!e.wander && !(e.through ?? !sprite)) blocked.add(key(e.x, e.y));
+			if (e.trigger === "touch" && warpers.has(`map ${id} ${e.id}`))
+				stops.add(key(e.x, e.y));
+			if (e.trigger === "talk") talkAlways.add(key(e.x, e.y));
+		}
+		const starts = [...(entries.get(id) ?? [])].map((p) =>
+			p.split(",").map(Number),
+		);
+		const talks = events.filter((e) => e.trigger === "talk" && e.run);
+		if (!starts.length) {
+			if (talks.length)
+				err(
+					`map ${id}: 到達性: 入口が無い（どこからも warp されていない・開始位置でもない）`,
+				);
+			continue;
+		}
+		// 入口から歩いて立てるマス
+		const stand = new Set();
+		const seen = new Set();
+		const queue = [];
+		for (const [x, y] of starts) {
+			seen.add(key(x, y));
+			queue.push([x, y, true]);
+		}
+		for (let head = 0; head < queue.length; head++) {
+			const [x, y, entry] = queue[head];
+			if (!entry && stops.has(key(x, y))) continue; // 踏んだら飛ばされる
+			stand.add(key(x, y));
+			for (const [dx, dy] of DIRS) {
+				const nx = x + dx;
+				const ny = y + dy;
+				if (!inside(nx, ny) || seen.has(key(nx, ny))) continue;
+				if (!field.tileAt(nx, ny).passable || blocked.has(key(nx, ny)))
+					continue;
+				seen.add(key(nx, ny));
+				queue.push([nx, ny, false]);
+			}
+		}
+		const canStand = (x, y) => inside(x, y) && stand.has(key(x, y));
+		for (const e of talks) {
+			const actor = new Actor(
+				e.id,
+				e.x,
+				e.y,
+				e.dir ?? "down",
+				spriteOf(e.sprite) ?? "",
+				e,
+			);
+			const back = Field.prototype.hasBack.call(field, actor);
+			const ok = DIRS.some(([dx, dy, dir]) => {
+				// となりのマス (px,py) から dir を向いて調べる
+				const px = e.x - dx;
+				const py = e.y - dy;
+				if (canStand(px, py) && !(dir === "down" && back)) return true;
+				// カウンター越し（(px,py) がカウンターなら、その手前から）
+				return (
+					!!field.tileAt(px, py).counter &&
+					!talkAlways.has(key(px, py)) &&
+					canStand(px - dx, py - dy)
+				);
+			});
+			const allowed = REACH_OK[`${id} ${e.id}`];
+			if (ok && allowed)
+				warn(
+					`到達性: REACH_OK の "${id} ${e.id}" は歩いて調べられる（外してよい）`,
+				);
+			else if (!ok && !allowed)
+				err(
+					`map ${id}: 到達性: talk イベント ${e.id} (${e.x},${e.y}) を調べられない（入口から歩いて立てる、そちらを向けるとなりのマスが無い）`,
+				);
+		}
+	}
+	for (const k of Object.keys(REACH_OK)) {
+		const [mapId, evId] = k.split(" ");
+		if (
+			!(maps[mapId]?.events ?? []).some(
+				(e) => e.id === evId && e.trigger === "talk",
+			)
+		)
+			warn(`到達性: REACH_OK の "${k}" が talk イベントに無い`);
+	}
 } catch (e) {
 	err(`読み込みに失敗: ${e?.stack ?? e}`);
 } finally {

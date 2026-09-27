@@ -5,9 +5,12 @@
 //
 // 時間帯の顔（flags.tod）:
 //   夕方 … トラックの風・バス待ちの人・部活帰り・スタンド営業中（店員の3層会話・洗車機の場面）
+//   宵   … NPC 0体（docs/nostalgia.md P0-1）。トラックはライトをつけて通る・街灯がつく。
+//           スタンドは営業をおえて、事務所のあかりとラジオのナイター中継だけ（P0-2。延長がつづく）
 //   深夜 … NPC 0体必達。スタンドも消灯。脇道の怪異はここの担当2つだけ:
 //           famiresu（割れた窓の奥で一瞬だけ灯り。once・二度目はない）
 //           hodokyo（歩道橋の上。車は来ないのにライトだけが流れる）
+//           灯っている自販機 (31,11) で、あたたかい缶が一本買える（P0-6。缶は nostalgia.ts が持つ）
 //   朝   … 始発前後のバス停・ジョギングの人・水をまく店員（夕の「空気はタダ」の payoff）
 //
 // 座標凍結v3: 東 (39,10)→street(1,11)・street からの着地 (38,10)／
@@ -30,6 +33,7 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
+import { kanShinya, kanTick, yoruAkubi } from "../nostalgia";
 import { base, basePx, PROPS, TOWN } from "../tiles";
 
 // ── タイル ──
@@ -117,14 +121,15 @@ const wave = (id: string, pan: number) => async (s: Story) => {
 	if (t === "yu") s.se("higurashi", { pan, volume: 0.8 });
 	else if (t === "asa") s.se("suzume", { pan, volume: 0.8 });
 };
-/** 夕方だけ、トラックの走行音が遠くを通る帯（国道の環境音。深夜は必ず無音）。 */
+/** 夕方と宵に、トラックの走行音が遠くを通る帯（国道の環境音。深夜は必ず無音）。 */
 let lastTruck = "";
 const truck = (id: string, pan: number) => async (s: Story) => {
 	if (lastTruck === id) return;
 	lastTruck = id;
-	if (s.flag("tod") === "yu") s.se("train", { pan, volume: 0.35 });
+	const t = s.flag("tod");
+	if (t === "yu" || t === "yoru") s.se("train", { pan, volume: 0.35 });
 };
-/** 見えない環境音の帯（歩道 y10 の1マス）。 */
+/** 見えない環境音の帯（歩道 y10 の1マス）。宵はトラックだけが鳴る（ヒグラシ・スズメは鳴らない）。 */
 const belt = (
 	id: string,
 	x: number,
@@ -135,9 +140,16 @@ const belt = (
 	y: 10,
 	trigger: "touch",
 	through: true,
-	when: (st: GameState) => st.flags.tod === "yu" || st.flags.tod === "asa",
+	when: (st: GameState) =>
+		st.flags.tod === "yu" || st.flags.tod === "yoru" || st.flags.tod === "asa",
 	run,
 });
+
+/**
+ * 歩道橋の階段（同じマップの中のワープ）の着地点。ワープのたびに onEnter が走るので、
+ * ここに降りたときは「地区を移った」に数えない（深夜の缶が、橋の昇り降りだけで冷めないように）。
+ */
+const HODO_LANDING = ["25,2", "24,10", "27,2", "28,7"];
 
 /** 歩道橋の上からの国道（tod で顔が変わる。深夜が hodokyo の担当）。 */
 const hodokyoView = async (s: Story): Promise<void> => {
@@ -158,6 +170,11 @@ const hodokyoView = async (s: Story): Promise<void> => {
 	}
 	s.se("train", { pan: -0.4, volume: 0.4 });
 	await s.narrate("歩道橋の上。トラックが、\n下を　とおりぬけていく。");
+	if (t === "yoru") {
+		// 宵は西日のかわりに、ついた街灯の列（P0-1）
+		await s.narrate("街灯のオレンジが、国道の\nずっと先まで　つづいている。");
+		return;
+	}
 	await s.narrate("国道は、西日のほうへ\nまっすぐ　のびている。");
 };
 
@@ -242,6 +259,8 @@ export const kokudo: MapDef = {
 	onEnter: async (s) => {
 		lastWave = "";
 		lastTruck = "";
+		// 深夜の缶は、地区を移るたびに冷める（P0-6。歩道橋の昇り降りは数えない）
+		if (!HODO_LANDING.includes(`${s.state.x},${s.state.y}`)) kanTick(s);
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.7 });
 		else if (t === "asa") s.se("suzume", { volume: 0.7 });
@@ -260,6 +279,22 @@ export const kokudo: MapDef = {
 				s.se("train", { pan: -0.5, volume: 0.4 });
 				await s.wait(600);
 				await s.narrate("大きなトラックが、風を\nつれて　とおりすぎた。");
+			},
+		},
+		// 宵（P0-1）。夕方とおなじトラックが、こんどはライトをつけて通る
+		{
+			id: "arrive_yoru",
+			x: 3,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: (st) => st.flags.tod === "yoru",
+			run: async (s) => {
+				await s.wait(500);
+				s.se("train", { pan: -0.5, volume: 0.5 });
+				await s.wait(600);
+				await s.narrate("トラックが、ライトを\nつけて　とおりすぎる。");
+				await yoruAkubi(s);
 			},
 		},
 		{
@@ -422,9 +457,10 @@ export const kokudo: MapDef = {
 		},
 
 		// ── ファミレス前（歩道橋でしか来られない側） ──
+		// 営業時間のはり紙 (10,5) の前 (10,6) はあけておく
 		{
 			id: "akikan",
-			x: 10,
+			x: 11,
 			y: 6,
 			sprite: PROPS.crate,
 			trigger: "talk",
@@ -546,6 +582,11 @@ export const kokudo: MapDef = {
 					await s.narrate("つぎのバスまで、\nもうすこし　ある。");
 					return;
 				}
+				if (t === "yoru") {
+					// 宵（P0-1）。深夜の「とっくに、行ったあと」の手前
+					await s.narrate("時こく表。さいしゅうは\n22時10分。……まだ、ある。");
+					return;
+				}
 				await s.narrate("バスていの時こく表。\nつぎは、17時41分。");
 				await s.narrate("ガラスが、夕日で\nオレンジ色だ。");
 			},
@@ -560,6 +601,8 @@ export const kokudo: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("じはんき。国道の夜に、\nこの明かりだけが　ある。");
+					// 『あったか～い』の缶（P0-6）。一晩に一本・持っていれば いまの温度
+					await kanShinya(s);
 					return;
 				}
 				if (t === "asa") {
@@ -603,11 +646,16 @@ export const kokudo: MapDef = {
 					await s.narrate("街灯。もう、きえている。");
 					return;
 				}
+				if (t === "yoru") {
+					// 宵（P0-1）。夕方の「まだ、ついていない」の続き（「いつのまにか」は怪異の言い回しなので使わない）
+					await s.narrate("せの高い街灯。オレンジ色に\nついている。");
+					return;
+				}
 				await s.narrate("せの高い街灯。まだ、\nついていない。");
 			},
 		},
 
-		// ── ガソリンスタンド（夕は営業・深夜は消灯。生きた店の記号） ──
+		// ── ガソリンスタンド（夕は営業・宵は店じまいで事務所だけ・深夜は消灯。生きた店の記号） ──
 		// 夕方、前庭にふみこむと洗車機のテスト運転（音の場面。once）
 		...[6, 7, 8, 9, 10].map(
 			(x): EventDef => ({
@@ -684,6 +732,12 @@ export const kokudo: MapDef = {
 						);
 						return;
 					}
+					if (t === "yoru") {
+						await s.narrate(
+							"洗車機。ブラシから、\nぽた、ぽた、と　しずくの音。",
+						);
+						return;
+					}
 					s.se("hum", { volume: 0.5 });
 					await s.narrate(
 						"洗車機。ゴウン、ゴウン、と\nブラシが　まわっている。",
@@ -706,6 +760,12 @@ export const kokudo: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("給油機。けさは、まだ\nだれも来ていない。");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate(
+						"給油機。蛍光灯の　あかりが、\nつるりと　うつっている。",
+					);
 					return;
 				}
 				await s.narrate("給油機。よくみがかれて、\n夕日が　うつっている。");
@@ -738,6 +798,16 @@ export const kokudo: MapDef = {
 					await s.narrate("まどガラスが、ふきたてで\nぴかぴかだ。");
 					return;
 				}
+				if (t === "yoru") {
+					// 宵（P0-2）。部屋のテレビが中継を打ち切ったあとも、ここのラジオは延長をやっている
+					if (s.flag("seen_chukei_end")) {
+						await s.narrate("事務所に、あかり。\nラジオは、まだ　延長だ。");
+						await s.say("kiriko", "……ここに、ラジオ\nあったンゴ");
+						return;
+					}
+					await s.narrate("事務所に、あかり。\nラジオが、延長の　実況。");
+					return;
+				}
 				await s.narrate("事務所のまど。ラジオの\nナイター中けいの声。");
 			},
 		},
@@ -754,6 +824,12 @@ export const kokudo: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("『準備中』の札。\nもうすぐ、ひっくりかえる。");
+					return;
+				}
+				if (t === "yoru") {
+					// 宵（P0-1）。札はもう裏がえっている。においは夕方のまま
+					await s.narrate("『本日の営業は\nおわりました』の札。");
+					await s.narrate("あぶらのにおいが、\nまだ　のこっている。");
 					return;
 				}
 				await s.narrate("『営業中』の札。\nあぶらのにおいがする。");
@@ -774,6 +850,10 @@ export const kokudo: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("エサの皿。あたらしいのが\n入っている。");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("エサの皿を、ねこが\nぴちゃぴちゃ　なめている。");
 					return;
 				}
 				await s.narrate("草のかげに、エサの皿。\nきれいに　からっぽだ。");
