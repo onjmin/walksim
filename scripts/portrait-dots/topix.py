@@ -9,6 +9,10 @@ from skimage.morphology import skeletonize
 import os
 S = os.environ.get('WORK', os.path.join(os.getcwd(), 'work')) + '/'
 BODY = int(sys.argv[1]) if len(sys.argv) > 1 else 150
+# 上半身だけを切り抜く（作者指示 2026-09-28: キャラによって頭身が違うので、全身の高さをそろえると
+# 頭の大きさがばらばらになる）。キャラごとの腰の位置（全身の高さに対する割合。清書を見て決めた）。
+# ここで切り、上半身を BODY ドットの高さにする。載っていないキャラは全身のまま
+UPPER = {'kiriko': 0.43, 'teto': 0.45, 'roze': 0.48, 'rei': 0.49, 'shiyo': 0.46, 'zero': 0.50, 'rino': 0.48, 'aru': 0.43}
 # 2つめ以降の引数はキャラ id（省略時は work/ の *_ai.png 全部）
 NAMES = sys.argv[2:]
 COLORS = 16
@@ -263,12 +267,18 @@ def pix(name):
     fg = cut_bg(rgb)
     if not COLOR:
         ys, xs = np.nonzero(fg)
-        rgb = rgb[ys.min():ys.max()+1, xs.min():xs.max()+1]
-        fg = fg[ys.min():ys.max()+1, xs.min():xs.max()+1]
+        cut = ys.min() + round((ys.max() + 1 - ys.min()) * UPPER.get(name, 1))
+        fg = fg[ys.min():cut]
+        rgb = rgb[ys.min():cut]
+        xs = np.nonzero(fg.any(axis=0))[0]
+        rgb = rgb[:, xs.min():xs.max()+1]
+        fg = fg[:, xs.min():xs.max()+1]
         oh = BODY
         ow = max(1, round(fg.shape[1] * BODY / fg.shape[0]))
         q, alpha = pix_white(rgb, fg, oh, ow)
-        edge = alpha & ~ndi.binary_erosion(alpha, np.ones((3, 3)))
+        # 外周に1ドットの輪郭（切り口の下端には付けない）
+        padded = np.vstack([alpha, alpha[-1:]])
+        edge = alpha & ~ndi.binary_erosion(padded, np.ones((3, 3)))[:-1]
         q[edge] = LINE
         im = Image.fromarray(np.dstack([q, alpha.astype(np.uint8) * 255]), 'RGBA')
         im.save(S + f'{name}_pix.png')

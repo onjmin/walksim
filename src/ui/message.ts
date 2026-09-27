@@ -324,7 +324,10 @@ class PortraitSlot {
 			// 切り口はメッセージ窓の裏に隠れ、下端は CSS でぼかす。
 			// 大きさと位置は CSS で決める（全身の高さをそろえ、頭の中心を枠の中央に、切り口を枠の下端に）。
 			const { canvas, top, body } = art;
-			const crop = Math.min(1, Math.max(0.2, p.crop ?? DEFAULT_CROP));
+			// ドット立ち絵は上半身だけに切り抜いてある（キャラごとに腰で。scripts/portrait-dots）ので全部見せる
+			const crop = DIORAMA
+				? 1
+				: Math.min(1, Math.max(0.2, p.crop ?? DEFAULT_CROP));
 			const cut = Math.max(1, Math.round(top + body * crop));
 			const view = el("canvas", { class: "portrait-img" });
 			// ジオラマ表示ではドット立ち絵（portraits-dot）に場面の色をかける。縦横比は元のまま
