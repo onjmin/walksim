@@ -39,9 +39,88 @@ def cut_bg(rgb):
     return fg
 
 
+def _split(pix, spread=38.0, kmax=5):
+    """色の並び pix（N×3）を、どの群も spread 以内の広がりになるまで k 平均で割る。群の番号を返す。"""
+    labels = np.zeros(len(pix), int)
+    centers = [pix.mean(axis=0)]
+    for k in range(2, kmax + 1):
+        dist = np.linalg.norm(pix - np.array(centers)[labels], axis=1)
+        if np.percentile(dist, 90) <= spread:
+            break
+        # いちばん遠い点を新しい中心に足して、数回だけ割り当て直す
+        centers.append(pix[np.argmax(dist)])
+        c = np.array(centers, float)
+        for _ in range(8):
+            d = np.linalg.norm(pix[:, None, :] - c[None, :, :], axis=2)
+            labels = d.argmin(axis=1)
+            for j in range(len(c)):
+                if (labels == j).any():
+                    c[j] = pix[labels == j].mean(axis=0)
+        centers = list(c)
+    return labels
+
+
+def flatten(rgb, fg):
+    """
+    各部分を1色で塗る（作者指示: 単色化）。清書の AI は指示しても目のハイライトやグラデーション
+    （イージング）を足すので、ここで確実に消す。
+      1. 線（ほぼ黒）で囲まれた部分に分ける（線のすき間で漏れないよう、分けるときだけ線を太らせる）
+      2. 部分の中の色が はっきり分かれていれば（漏れでつながった顔と髪など）k 平均で割る。
+         1つの色の濃淡の範囲（グラデーション）なら割らない
+      3. 割れた群ごとに、つながった塊を中央値の1色で塗る
+      4. 小さなかけら（瞳の光・線のすき間）は、いちばん近い大きな塊の色に
+    """
+    line = (rgb.max(axis=2) < 70) & fg
+    wall = ndi.binary_dilation(line, iterations=2)
+    area = fg & ~wall
+    lab, n = ndi.label(area, structure=[[0, 1, 0], [1, 1, 1], [0, 1, 0]])
+    out = rgb.copy()
+    seg = np.zeros(lab.shape, int)  # 最終の塊の番号
+    nxt = 1
+    flat = rgb.reshape(-1, 3).astype(float)
+    for r in range(1, n + 1):
+        m = lab == r
+        cnt = int(m.sum())
+        if cnt < 40:
+            continue
+        pix = rgb[m].astype(float)
+        sub = _split(pix[:: max(1, cnt // 4000)]) if cnt > 200 else np.zeros(1, int)
+        if sub.max() == 0:
+            seg[m] = nxt
+            nxt += 1
+            continue
+        # 割った中心で全画素を割り当て直し、群ごとにつながった塊に分ける
+        k = sub.max() + 1
+        samp = pix[:: max(1, cnt // 4000)]
+        cen = np.array([samp[sub == j].mean(axis=0) for j in range(k)])
+        full = np.linalg.norm(pix[:, None, :] - cen[None], axis=2).argmin(axis=1)
+        grp = np.zeros(lab.shape, int)
+        grp[m] = full + 1
+        for j in range(1, k + 1):
+            cl, cn = ndi.label(grp == j)
+            for c in range(1, cn + 1):
+                seg[cl == c] = nxt
+                nxt += 1
+    ids = np.arange(1, nxt)
+    sizes = ndi.sum(seg > 0, seg, ids) if nxt > 1 else np.array([])
+    for ch in range(3):
+        med = ndi.median(rgb[..., ch], seg, ids) if nxt > 1 else []
+        lut = np.zeros(nxt)
+        lut[1:] = med
+        out[..., ch] = np.where(seg > 0, lut[seg], rgb[..., ch])
+    big = np.isin(seg, ids[sizes >= 60])
+    rest = fg & ~line & ~big
+    if rest.any() and big.any():
+        _, (iy, ix) = ndi.distance_transform_edt(~big, return_indices=True)
+        out[rest] = out[iy[rest], ix[rest]]
+    out[line] = (20, 16, 18)
+    return out
+
+
 def pix(name):
     rgb = np.array(Image.open(S + f'{name}_ai.png').convert('RGB'))
     fg = cut_bg(rgb)
+    rgb = flatten(rgb, fg)
     ys, xs = np.nonzero(fg)
     rgb = rgb[ys.min():ys.max()+1, xs.min():xs.max()+1]
     fg = fg[ys.min():ys.max()+1, xs.min():xs.max()+1]
