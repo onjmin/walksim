@@ -130,6 +130,7 @@ export const cast: Record<string, CharDef> = {
 		id: "shiyo",
 		name: "シヨ",
 		walk: "pub:sprites/shiyo.png",
+		portrait: { src: "portraits/shiyo.png", side: "right" },
 		color: "#cfa236",
 		voice: { model: "shiyo" },
 	}),
@@ -149,6 +150,7 @@ export const cast: Record<string, CharDef> = {
 		id: "zero",
 		name: "ゼロ",
 		walk: "pub:sprites/zero.png",
+		portrait: { src: "portraits/zero.png", side: "right" },
 		color: "#8ab0e8",
 	}),
 	/**
