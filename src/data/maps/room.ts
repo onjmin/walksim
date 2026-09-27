@@ -213,6 +213,11 @@ export const room: MapDef = {
 	outside: "#1b1410",
 	tiles,
 	rows,
+	// 屋内の通常表示では使わない（tod の灯りは屋外だけ）。ジオラマ表示（?diorama）の差し色の源
+	lights: [
+		{ x: 9, y: 3, r: 1.5, color: "#cfe4ff" }, // モニター
+		{ x: 5, y: 6, r: 1.6 }, // 蓄音機
+	],
 	events: [
 		// ── 夕方の帰宅（auto once）。晩ごはんを机に・スレは賑やか・日が落ちて tod="yoru" ──
 		// street 側が先に "yoru" へ送っていても取りこぼさないよう、夕方と夜の両方で受ける

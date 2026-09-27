@@ -91,6 +91,11 @@ export type MapDef = {
 	 * 加算の光だまりを描く（docs/night-fx.md §2）。r はタイル半径。color 省略時は暖色 #ffcc88。
 	 * 定番: 窓 #ffcc88 r2 / 街灯 #ffdf9e r3 / コンビニ #cfe4ff r4 / 自販機 #eef4ff r1.5。
 	 */
+	/**
+	 * ジオラマ表示（?diorama）の箱の区切り（マス）。プレイヤーのいるマスを含む箱が画面に出る。
+	 * 省略時は屋内=部屋ぜんぶ・屋外=12×8 マスごと（engine/diorama.ts）。
+	 */
+	boxes?: { x: number; y: number; w: number; h: number }[];
 	lights?: {
 		x: number;
 		y: number;

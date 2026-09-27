@@ -2073,3 +2073,43 @@ body.shake #app {
 	grid-template-columns: repeat(2, 1fr);
 	max-height: calc(var(--app-h) * 0.48);
 }
+
+/* ───────── ジオラマ表示（?diorama。engine/diorama.ts） ─────────
+   会話は窓でなく、箱の下の字幕。立ち絵は出さない（箱の中の小さなキャラが話し手） */
+html.diorama .msg {
+	background: none;
+	border: none;
+	box-shadow: none;
+	min-height: 0;
+	bottom: calc(9vh + var(--safe-b));
+	padding: 6px 10px;
+	text-align: center;
+	text-shadow:
+		0 0 2px #000,
+		0 0 6px #000;
+}
+
+html.diorama .msg-name {
+	position: static;
+	display: block;
+	margin: 0 auto 2px;
+	padding: 0;
+	background: none;
+	border: none;
+	font-size: 12px;
+	opacity: 0.75;
+}
+
+html.diorama .msg.narration .msg-text {
+	color: #cfd6e0;
+}
+
+html.diorama .msg-next {
+	position: static;
+	display: inline-block;
+	margin-left: 6px;
+}
+
+html.diorama .portrait-layer {
+	display: none;
+}

@@ -628,7 +628,7 @@ export class Game {
 		if (!field) return;
 		const { width, height } = this.screen;
 		if (DIORAMA) {
-			const p = boxPlacement(boxFor(field, this.player), width, height);
+			const p = boxPlacement(field, boxFor(field, this.player), width, height);
 			this.camX = p.camX;
 			this.camY = p.camY;
 			return;

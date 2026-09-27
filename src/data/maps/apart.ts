@@ -62,6 +62,8 @@ export const apart: MapDef = {
 	outside: "#14120e",
 	tiles,
 	rows,
+	// ジオラマ表示（?diorama）の差し色の源（屋内の通常表示では使わない）
+	lights: [{ x: 5, y: 4, r: 2.6, color: "#eef4ff" }], // 蛍光灯
 	events: [
 		// ── 着いたとき（夕方: 生活音／宵: せんたくき／深夜: 蛍光灯の明滅。どれも一度だけ） ──
 		{
