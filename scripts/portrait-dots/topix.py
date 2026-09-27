@@ -10,7 +10,7 @@ S = os.environ.get('WORK', os.path.join(os.getcwd(), 'work')) + '/'
 BODY = int(sys.argv[1]) if len(sys.argv) > 1 else 150
 # 2つめ以降の引数はキャラ id（省略時は work/ の *_ai.png 全部）
 NAMES = sys.argv[2:]
-COLORS = 14
+COLORS = 12
 
 
 def cut_bg(rgb):
