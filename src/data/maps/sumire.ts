@@ -214,7 +214,7 @@ const denwaHint = (x: number, y: number): EventDef => ({
 
 export const sumire: MapDef = {
 	id: "sumire",
-	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	// ジオラマ表示の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
 	boxes: [
 		{ x: 1, y: 0, w: 14, h: 7 }, // 小学校
 		{ x: 15, y: 3, w: 11, h: 4 }, // 坂の上の道

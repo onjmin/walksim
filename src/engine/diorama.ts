@@ -1,4 +1,4 @@
-// ジオラマ表示（試作。URL に ?diorama を付けたときだけ）。
+// ジオラマ表示（本番の表示。URL に ?classic を付けると旧来のタイル敷き詰め表示）。
 //
 // 目標の絵作り: 黒い虚空に「断面の箱」がひとつ浮かび、その中だけが少色のドット絵になっている画面
 // （参考: 🔷 / コインランドリーで寝ちゃった / クロマグロがとんでくる / Dequivsia）。
@@ -15,7 +15,7 @@ import { TILE } from "./types";
 
 export const DIORAMA =
 	typeof location !== "undefined" &&
-	new URLSearchParams(location.search).has("diorama");
+	!new URLSearchParams(location.search).has("classic");
 
 // 会話を画面下の字幕にする（style.css の html.diorama）
 if (DIORAMA) document.documentElement.classList.add("diorama");

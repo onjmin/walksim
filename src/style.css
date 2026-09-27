@@ -2074,7 +2074,7 @@ body.shake #app {
 	max-height: calc(var(--app-h) * 0.48);
 }
 
-/* ───────── ジオラマ表示（?diorama。engine/diorama.ts） ─────────
+/* ───────── ジオラマ表示（本番。?classic で旧表示。engine/diorama.ts） ─────────
    会話は窓でなく、箱の下の字幕。立ち絵は出さない（箱の中の小さなキャラが話し手） */
 html.diorama .msg {
 	background: none;

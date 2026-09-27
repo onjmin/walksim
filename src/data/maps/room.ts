@@ -205,7 +205,7 @@ export const room: MapDef = {
 	outside: "#1b1410",
 	tiles,
 	rows,
-	// 屋内の通常表示では使わない（tod の灯りは屋外だけ）。ジオラマ表示（?diorama）の差し色の源
+	// ?classic の屋内では使わない（tod の灯りは屋外だけ）。ジオラマ表示の差し色の源
 	lights: [
 		{ x: 9, y: 3, r: 1.5, color: "#cfe4ff" }, // モニター
 		{ x: 5, y: 6, r: 1.6 }, // 蓄音機

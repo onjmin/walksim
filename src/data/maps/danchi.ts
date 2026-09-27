@@ -219,7 +219,7 @@ const ichibanUe = async (s: Story): Promise<void> => {
 
 export const danchi: MapDef = {
 	id: "danchi",
-	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	// ジオラマ表示の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
 	boxes: [
 		{ x: 0, y: 0, w: 15, h: 8 }, // A棟
 		{ x: 15, y: 0, w: 17, h: 8 }, // B棟

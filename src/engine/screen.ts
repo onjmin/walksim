@@ -11,7 +11,7 @@ import { onViewportChange, viewport } from "./viewport";
 /** 画面の短辺に入れたいマス数の目安。 */
 const TILES_ON_SHORT_SIDE =
 	typeof location !== "undefined" &&
-	new URLSearchParams(location.search).has("diorama")
+	!new URLSearchParams(location.search).has("classic")
 		? 13
 		: 11;
 
