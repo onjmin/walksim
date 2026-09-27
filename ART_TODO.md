@@ -13,15 +13,13 @@
 |---|---|---|---|
 | ★★★ | `tsukuyomi.png` | つくよみちゃん | 村の神社の巫女として登場。公式デザイン準拠（黒髪ボブ・白い着物・赤袴。公式: https://tyc.rei-yumesaki.net/ ） |
 | ★★★ | `nemurin.png` | ネムリン | 夢のハブの案内人。彡(o￣〜￣o).｡o○ ナイトキャップ・寝間着・眠そう。二軍wiki進拠 |
-| ★★★ | `rino.png` | 春音リノ | 過去ログの地層の食堂の女将。45歳・伊勢・カーキ。公式: https://harunerino.vercel.app/ |
-| ★★ | `aru.png` | 響化アル | 長めのマッシュの少年・18歳・科学部（公式: https://hibikaaru.wixsite.com/aruofficial ） |
 | ★★ | `myaumyau.png` | ミャウミャウ | 紙袋を被った152cmの人影・白基調。**公式にデザイン未確定のキャラ**なので自由。ゲーム内では「会うたび姿が違う」ので1枚でも3差分でも可 |
 | ★ | `ushiro.png` | 君野うしろ | 赤〜赤紫ツインテール・茶色の服。**後ろ姿の立ち絵**という手もあり（名前が「君の、うしろ」なので） |
 | ★ | `ai.png` | 優音アイ | 描きかけ・輪郭線だけのスケッチ風で出すキャラなので、**あえて未完成の絵**が正解。アイボリーのウルフカット |
 | ★ | `onchan.png` | おんちゃん | (o'ω'n)。安全地帯の主。顔文字キャラなので任意 |
 
 済み（rpg から流用）: kiriko.png / roze.png / rei.png / teto.png
-済み（roguelike と共通）: shiyo.png / zero.png
+済み（roguelike と共通）: shiyo.png / zero.png / rino.png / aru.png
 
 ## 2. 歩行グラ（差し替え任意。現在は自動生成ドット絵）
 
