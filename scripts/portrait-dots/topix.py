@@ -114,6 +114,35 @@ def flatten(rgb, fg):
         _, (iy, ix) = ndi.distance_transform_edt(~big, return_indices=True)
         out[rest] = out[iy[rest], ix[rest]]
     out[line] = (20, 16, 18)
+    return mono_eyes(out, fg, line)
+
+
+def mono_eyes(out, fg, line):
+    """
+    目を単色にする（作者指示: 目の配色は繊細で AI が間違えるので、白目や光を描かない）。
+    白っぽい小さな塊（白目・瞳の光）で、背景に触れていないものを、まわりでいちばん多い色で塗る。
+    服・エプロン・毛皮のような大きな白い部分は残す（体の面積の 0.6% 以上）。
+    """
+    whiteish = (out.min(axis=2) > 185) & (out.max(axis=2) - out.min(axis=2) < 45) & fg & ~line
+    lab, n = ndi.label(whiteish)
+    if n == 0:
+        return out
+    limit = fg.sum() * 0.006
+    ring = np.ones((3, 3), bool)
+    for r in range(1, n + 1):
+        m = lab == r
+        if m.sum() >= limit:
+            continue
+        around = ndi.binary_dilation(m, ring, iterations=2) & ~m
+        if (around & ~fg).any():
+            continue  # 背景に触れている＝縁取りの白など
+        cand = around & ~line & ~whiteish
+        if not cand.any():
+            cand = around & ~whiteish
+        if not cand.any():
+            continue
+        cols, counts = np.unique(out[cand].reshape(-1, 3), axis=0, return_counts=True)
+        out[m] = cols[counts.argmax()]
     return out
 
 

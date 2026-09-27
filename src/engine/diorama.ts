@@ -648,6 +648,8 @@ export const tintPortrait = (
  * 箱の座標（左上が 0,0・下端が箱の床の手前の縁）で描いた画用紙を返す。
  */
 const FRONT_SCALE = 2;
+/** 手前の縁の物の画用紙を、箱より左右に広げる幅（視差でずらしても電線の端が見えないように）。 */
+const FRONT_MARGIN = 24;
 const makeFront = (
 	field: Field,
 	box: Box,
@@ -656,7 +658,8 @@ const makeFront = (
 ): HTMLCanvasElement | null => {
 	const bw = box.w * TILE;
 	const bh = box.h * TILE;
-	const c = canvas(bw, bh);
+	const fw = bw + FRONT_MARGIN * 2;
+	const c = canvas(fw, bh);
 	const g = c.getContext("2d", { willReadFrequently: true });
 	if (!g) return null;
 	g.imageSmoothingEnabled = false;
@@ -665,7 +668,12 @@ const makeFront = (
 		g.save();
 		g.scale(FRONT_SCALE, FRONT_SCALE);
 		// 下端を箱の床の手前の縁より少し下に（手前に立っている）
-		drawRefInCell(g, ref, x / FRONT_SCALE, bh / FRONT_SCALE - TILE + 4);
+		drawRefInCell(
+			g,
+			ref,
+			(x + FRONT_MARGIN) / FRONT_SCALE,
+			bh / FRONT_SCALE - TILE + 4,
+		);
 		g.restore();
 	};
 	if (kind === "poles") {
@@ -680,8 +688,8 @@ const makeFront = (
 		const armY = bh - FRONT_SCALE * 29;
 		for (let wire = 0; wire < 2; wire++) {
 			const y0 = armY + wire * 4;
-			for (let x = 0; x < bw; x++) {
-				const t = Math.abs(x - px) / bw;
+			for (let x = 0; x < fw; x++) {
+				const t = Math.abs(x - FRONT_MARGIN - px) / bw;
 				g.fillRect(x, Math.round(y0 + t * t * 26 + wire), 1, 1);
 			}
 		}
@@ -699,16 +707,16 @@ const makeFront = (
 	// 影に沈める（場面の色で一段暗く）＋輪郭
 	quantize(
 		g,
-		bw,
+		fw,
 		bh,
-		box.x * TILE,
+		box.x * TILE - FRONT_MARGIN,
 		box.y * TILE,
 		pal.ramp,
 		pal.accent,
 		-0.28,
 		[],
 	);
-	outline(g, bw, bh, pal.ramp[0]);
+	outline(g, fw, bh, pal.ramp[0]);
 	return c;
 };
 
@@ -1007,7 +1015,7 @@ export const renderDiorama = (
 		ctx.beginPath();
 		ctx.rect(sx, 0, bw, sy + bh + SLAB);
 		ctx.clip();
-		ctx.drawImage(terrain.front, sx + frontDx, sy);
+		ctx.drawImage(terrain.front, sx + frontDx - FRONT_MARGIN, sy);
 		ctx.restore();
 	}
 	ctx.fillStyle = scene.cut;

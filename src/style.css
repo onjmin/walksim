@@ -2162,3 +2162,9 @@ html.diorama .portrait-img.dots {
 	border-color: #fff;
 	background: rgba(40, 16, 24, 0.85);
 }
+
+/* ジオラマ表示の立ち絵は、ふわっと浮き上がる出方（イージング）をやめて一瞬で出す（作者指示） */
+html.diorama .portrait {
+	transition: none;
+	transform: none;
+}
