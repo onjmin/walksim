@@ -32,6 +32,7 @@ import { base, basePx, PROPS, TOWN } from "../tiles";
 // ── タイル ──
 //   M  駅の改札（もどりの talk）  i  店の中の床（レコード店・たいやき屋）
 //   < = >  カウンター  o j  しまった戸  d  あいている戸
+//   R  レコード店のあいている戸（下半分）  r  その上半分（店の中の床）
 //   c  下段の窓（白壁）  t  下段の窓（レンガ）  u  すきま（黒く見えるが通れる＝無印の隠し）
 const PAVE = base(3, 46);
 const WIN_LOW_WHITE = basePx(48, 1382);
@@ -77,6 +78,14 @@ const tiles: Record<string, TileDef> = {
 		color: "#e8e8e8",
 		passable: true,
 	},
+	// レコード店の戸は上下2マスに分けて描く。16x32 の d のままだと、上半分が店の中 (8,8) で
+	// キャラより手前に描かれ、そこに立つキリコが足ぶみのたびに点滅してしまう。
+	R: {
+		layers: [base(1, 60), base(7, 78)],
+		color: "#e8e8e8",
+		passable: true,
+	},
+	r: { layers: [PAVE, base(7, 77)], color: "#9a9a9a", passable: true },
 	c: {
 		layers: [base(1, 60), WIN_LOW_WHITE],
 		color: "#e8e8e8",
@@ -102,8 +111,8 @@ const rows = [
 	"                                    ", // y5
 	"                                    ", // y6
 	"aaaaannnnn nnnnn nnnnn nnnnnnnnnnn  ", // y7  駅とアーケード一本目の屋根
-	"AAAAA(iii( (w(w( (w(w( %W%W%%iiii%  ", // y8  レコード店の中 (6-8,8)・たいやき屋の中 (30,8)
-	")cM)))c)d).)d)c).)j)t).#t#t#%<==>%  ", // y9  改札 (2,9)・くぼみ (10,9)(16,9)(22,9)
+	"AAAAA(iir( (w(w( (w(w( %W%W%%iiii%  ", // y8  レコード店の中 (6-8,8)・たいやき屋の中 (30,8)
+	")cM)))c)R).)d)c).)j)t).#t#t#%<==>%  ", // y9  改札 (2,9)・くぼみ (10,9)(16,9)(22,9)
 	"..................................  ", // y10 着地 (3,10)
 	"..................................  ", // y11
 	"..L.......Bb....p............L....  ", // y12 丸ポスト (6,12)・電話ボックス (20,12)

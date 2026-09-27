@@ -27,25 +27,32 @@ const DEFAULTS: Settings = {
 	bgmVolume: 40,
 	seVolume: 60,
 	voiceVolume: 80,
-	textMs: 18,
+	textMs: 12,
 	pad: true,
 };
 
 /**
  * 既定値を変えたときに上げる。v3 より古い保存値は音量を、v4 より古くて文字の速さが
- * 前の「ふつう」（28）のままなら文字の速さを、新しい既定値に戻す。
+ * 前の「ふつう」（28）のままなら文字の速さを、v5 より古くて文字の速さが
+ * 前の「ふつう」（18）のままなら文字の速さを、新しい既定値に戻す。
  */
-const VERSION = 4;
+const VERSION = 5;
 
 const load = (): Settings => {
 	try {
 		const raw = localStorage.getItem(KEY);
 		if (raw) {
 			const saved = JSON.parse(raw) as Partial<Settings> & { v?: number };
-			if ((saved.v ?? 1) < VERSION) {
+			// 音量を戻すのは v3 より古い保存値だけ（版を上げるたびに音量を消さない）
+			if ((saved.v ?? 1) < 3) {
 				delete saved.bgmVolume;
 				delete saved.seVolume;
 				delete saved.voiceVolume;
+			}
+			if ((saved.v ?? 1) < 5 && saved.textMs !== undefined) {
+				// 旧スケールの値を新スケールへ丸める（45→28、18→12、12→7）
+				const map: Record<number, number> = { 45: 28, 28: 28, 18: 12, 12: 7 };
+				saved.textMs = map[saved.textMs] ?? saved.textMs;
 			}
 			return { ...DEFAULTS, ...saved };
 		}

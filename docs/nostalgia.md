@@ -208,7 +208,7 @@
   - room.ts pc(9,3) の yoru: `seen_chukei_end` なら中継終了のスレ2行に差し替える（顔文字の住民だけ。実在のチーム名・選手名は書かない）
   - kokudo gs_window(2,12) の yoru: `seen_chukei_end` の前後で文言を変える。後なら「ラジオ、あったンゴ」で回収する
   - danchi arrive_yoru、sumire kondo_win、street denki_tv・h2_door、apart d502 は、段に関係なく「実況が聞こえる」だけにする
-  - apart mybox(2,6) の asa: 既存の朝刊の文のあとにスポーツ欄を1行足す。`seen_tv_yoru` か `seen_chukei_end` があるときだけキリコの一言を足す
+  - apart mybox(3,2) の asa: 既存の朝刊の文のあとにスポーツ欄を1行足す。`seen_tv_yoru` か `seen_chukei_end` があるときだけキリコの一言を足す
   - street tenshuAsa の2回目: `seen_chukei_end && !seen_tenshu_asa2` なら延長の1往復を足す
   - 数字を断定するのは朝刊の「延長12回、ひきわけ」1か所だけ。歓声の SE は足さない
 - **文例**
@@ -524,7 +524,7 @@ P1 共通の受け入れ条件: P0 と同じ（validate・lint 通過、文例�
 | 地区 | yu（夕方） | yoru（宵） | shinya（深夜） | asa（朝） |
 |---|---|---|---|---|
 | room | ― | **tv(7,3) 延長の段・pc(9,3) スレ（P0-2）**／**window(3,2) 誘い（P0-1）**／**bed(1,4) 遠い音・かゆみ（P0-3,10）**／**diary(2,6) 一行（P0-4）** | **diary ページとポエム（P0-4）**／**desk(2,3) 缶（P0-6）** | **diary 消しゴム（P0-4）**／**desk レシート（P0-9）**／**bed かゆみ・福引券（P0-9,10）** |
-| apart | ― | **arrive_yoru・win_st(11,5)・d502(5,2)（P0-1,2）** | ―（蛍光灯のみ・増やさない） | **mybox(2,6) 朝刊（P0-2）** |
+| apart | ― | **arrive_yoru・win_st(11,5)・d502(5,2)（P0-1,2）** | ―（蛍光灯のみ・増やさない） | **mybox(3,2) 朝刊（P0-2）** |
 | street | **denki_bill(14,9)・board_ev(7,12)（P0-8）**／**my_win(3,7)（P0-5）**／P1-7 はがき tenshu(7,8)→h2_door(16,18) | **arrive_yoru・clock_tower(13,12)・lamp_ev(11,12)・barber(24,9)・conbini_win(18,9)・conbini_door(20,9) 牛乳・denki_tv(13,9)・vending_ev(19,12)・h1_win(6,18)・h2_door(16,18)・my_win（P0-1,2,5,11）**／P1-1 窓の消灯・P1-2 補充の人(20,12)・犬(7,13) | **my_win 青い窓（P0-5）**／**vending_ev(19,12) 缶（P0-6）**／**onEnter kanTick**／P1-9 flower_ev(5,12) | **tenshuAsa(7,10) 牛乳・延長（P0-2,11）**／**my_win カーテン（P0-5）**／P1-2 犬の首輪・P1-7 はがき |
 | sumire | **gate_plate(7,5)（P0-8）**／**yamada_door(11,17) seen_piano_yu（P0-11）**／P1-8 uchimizu(14,17)・denchu_fuda(32,13) | **arrive_yoru・park_lamp(21,8)・yamada_door・kondo_win(35,10)（P0-1,2,11）** | **kichi_board(24,14)(25,14) しゃがむ（P0-7）**／**vending(18,11) 缶（P0-6）** | **yamada_door こえた（P0-11）** |
 | kawara | **ka 帯(11,11)(16,11)(24,11)（P0-10）**／P1-4 harmonica(25,9) | **arrive_yoru・lamp_w(8,7)/lamp_e(24,7)・taigan_view(22,15)（P0-1）** | **fumiato(26,9) すわる（P0-7）**／**taigan_view アパートの灯り（P0-5）** | P1-4 ハーモニカ帯 (22,7)〜(22,11) |
@@ -580,6 +580,7 @@ codebase-map.json の到達性調査による。validate は到達性を調べ�
    komainu の朝の差分（`seen_komainu_yu`）が片方の狛犬で取れない状態を解消する。
 4. **sumire 公園の西のポケット**: (21,8)(21,9)(22,9) が孤立しており、park_sign(21,10)・bench_22(22,10)・blanko 帯(22,9) に届かない。
    → 外灯 L・park_lamp・lights を (22,8) から (21,8) に移し、(22,8) を床にする。
+   **実施済み**（rpg エンジンの取り込みで、ブランコの北どなりが裏になり、左のブランコ swing_23(23,9) を (22,9) からしか調べられなくなったため先に直した）。
 5. **sumire おおた家の前**: y18 x16〜19 が犬小屋 x(15,18) で孤立しており、oota_door(17,17)・oota_win(19,17)・ueki(20,18) に届かない（ノート denwa が取れない）。
    → 犬小屋の x と kennel を (15,19)（生けがき1マスと入れ替え）へ下げ、(15,18) を床にする。
 6. **sumire 物干し monohoshi(9,18)** が生けがきの中にある。→ rows の y18 の x10 を '|' から ',' にし、(10,18) から左向きで調べられるようにする。

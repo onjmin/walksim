@@ -16,9 +16,15 @@ import { base, INDOOR } from "../tiles";
 
 // INDOOR に足すもの:
 //   D  キリコの部屋のドア（通れる。warp を置く）   q  となりの部屋のしまった戸
-//   B  郵便受け（本棚のチップで代用）   u  かさ立て（壺で代用）   >  下り階段
+//   B  郵便受け（本棚のチップで代用。北の壁ぎわに立てて廊下から表を調べる）
+//   u  かさ立て（壺で代用）   >  下り階段
 const tiles: Record<string, TileDef> = {
 	...INDOOR,
+	B: {
+		layers: [base(1, 78), base(3, 104, 1, 2)],
+		color: "#e8e4dc",
+		passable: false,
+	},
 	D: {
 		layers: [base(1, 78), base(7, 61, 1, 2)],
 		color: "#e8e4dc",
@@ -34,11 +40,11 @@ const tiles: Record<string, TileDef> = {
 const rows = [
 	"############", // y0
 	"#HHHHHHHHHH#", // y1
-	"#hDhhqhhqhh#", // y2  キリコの部屋 (2,2)・502 (5,2)・503 (8,2)・掲示 (6,2)
+	"#hDBBqhhqhh#", // y2  キリコの部屋 (2,2)・郵便受け (3,2)(4,2)・502 (5,2)・503 (8,2)・掲示 (6,2)
 	"#..........#", // y3  room からの戻り (2,3)・マット (2,3)・牛乳箱 (5,3)
 	"#..........#", // y4  蛍光灯 (5,4)・てんじょうのしみ (8,4)
 	"#..........#", // y5  street からの戻り (10,5)・窓 (11,5)
-	"#uBB######>#", // y6  かさ立て (1,6)・郵便受け (2,6)(3,6)・消火器 (4,6)・階段 (10,6)
+	"#u########>#", // y6  かさ立て (1,6)・消火器 (4,6)・階段 (10,6)
 	"############", // y7
 ];
 
@@ -152,8 +158,8 @@ export const apart: MapDef = {
 		},
 		{
 			id: "mybox",
-			x: 2,
-			y: 6,
+			x: 3,
+			y: 2,
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
@@ -170,8 +176,8 @@ export const apart: MapDef = {
 		},
 		{
 			id: "nbox",
-			x: 3,
-			y: 6,
+			x: 4,
+			y: 2,
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
