@@ -1,6 +1,6 @@
 // タイトル「夕方の日常」— 変ニ長調のローファイ。エレピの7th（付点4分の刻み）・フレットレス・
 // 柔らかい矩形波の旋律（ディレイ）・オルゴールのきらめき。make-bgm.mjs の生成品
-#inst=retro_game#volume=22#reverb=34#reverbdecay=22#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Electric Piano 1#t0width=118#t0rev=24#t0eqhi=-3#t1inst=Fretless Bass#t1rev=6#t1eqhi=-4#t2inst=Lead 1 (square)#t2rev=18#t2pan=58#t2dly=22#t2eqhi=-6#t3inst=Music Box#t3rev=30#t3pan=78#t3dly=30;
+#inst=retro_game#volume=57#reverb=34#reverbdecay=22#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Electric Piano 1#t0width=118#t0rev=24#t0eqhi=-3#t1inst=Fretless Bass#t1rev=6#t1eqhi=-4#t2inst=Lead 1 (square)#t2rev=18#t2pan=58#t2dly=22#t2eqhi=-6#t3inst=Music Box#t3rev=30#t3pan=78#t3dly=30;
 @0t74v62[o3f+o3a+o4c+o4f]4.[o3f+o3a+o4c+o4f]4.[o3f+o3a+o4c+o4f]4[o3fo3g+o4co4d+]4.[o3fo3g+o4co4d+]4.[o3fo3g+o4co4d+]4[o3d+o3f+o3a+o4c+o4f]4.[o3d+o3f+o3a+o4c+o4f]4.[o3d+o3f+o3a+o4c+o4f]4[o3g+o4c+o4d+o4f+]4.[o3g+o4c+o4d+o4f+]4.[o3g+o4c+o4d+o4f+]4[o3f+o3a+o4c+o4f]4.[o3f+o3a+o4c+o4f]4.[o3f+o3a+o4c+o4f]4[o3fo3g+o4co4d+]4.[o3fo3g+o4co4d+]4.[o3fo3g+o4co4d+]4[o3a+o4c+o4fo4g+]4.[o3a+o4c+o4fo4g+]4.[o3a+o4c+o4fo4g+]4[o3d+o3f+o3a+o4c+]4.[o3d+o3f+o3a+o4c+]8[o3g+o4co4d+o4f+]4[o3g+o4co4d+o4f+]4;
 @1t74v70o2f+2.o3c+4o2f2.o3c4o2d+2.o2a+4o2g+2.o2d+4o2f+2.o3c+4o2f2.o3c4o2a+2.o2f4o2d+2o2g+2;
 @2t74v44r4o5f8o5g+8o5a+4.o5g+8o5f2r4o5d+8o5f8o5c+4.o5d+8o5f4o5f+8o5f8o5d+2.r4r8o4a+8o5c+8o5d+8o5f4o5g+4o5g+4.o5f8o5d+2o5c+4o5f4o5d+4.o5c+8o5d+2r2;

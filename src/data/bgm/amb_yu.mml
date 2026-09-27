@@ -1,5 +1,5 @@
 // 日常・夕方（生活音の下にごく薄く）— ヘ長調。ビブラフォンの分散和音と暖かいパッド
-#inst=retro_game#volume=12#reverb=38#reverbdecay=26#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Vibraphone#t0rev=30#t0dly=18#t1inst=Pad 2 (warm)#t1rev=20#t1eqhi=-6;
+#inst=retro_game#volume=90#reverb=38#reverbdecay=26#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Vibraphone#t0rev=30#t0dly=18#t1inst=Pad 2 (warm)#t1rev=20#t1eqhi=-6;
 @0t66v50o3a+4o4f4o4a4o4d4o4g2r2o3g4o4d4o4f4o3a+4o4a+2r2o3a+4o4f4o4a4o4d4o4g2r2o3g4o4d4o4f4o3a+4o4a+2r2;
 @1t66v38[o3a+o4do4fo4a]1[o3ao4co4eo4g]1[o3go3a+o4do4f]1[o4co4fo4go4a+]1[o3a+o4do4fo4a]1[o3ao4co4eo4g]1[o3go3a+o4do4f]1[o4co4fo4go4a+]1;
 #end;

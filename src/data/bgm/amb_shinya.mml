@@ -1,6 +1,6 @@
 // 日常・深夜（無人の町）— ニ短調。長いパッドと、2小節に1音だけこだまする矩形波。
 // 町の音が消えた静けさを埋めない（ほとんど鳴っていない）
-#inst=retro_game#volume=11#reverb=44#reverbdecay=34#reverbpredelay=40#mastercomp=20#fadeout=15#mode=simple#t0inst=Pad 2 (warm)#t0rev=30#t0eqhi=-8#t1inst=Lead 1 (square)#t1rev=30#t1pan=40#t1dly=40#t1eqhi=-8;
+#inst=retro_game#volume=93#reverb=44#reverbdecay=34#reverbpredelay=40#mastercomp=20#fadeout=15#mode=simple#t0inst=Pad 2 (warm)#t0rev=30#t0eqhi=-8#t1inst=Lead 1 (square)#t1rev=30#t1pan=40#t1dly=40#t1eqhi=-8;
 @0t54v34[o3do3fo3ao4co4e]1[o2a+o3do3fo3ao4e]1[o2go2a+o3do3fo3a]1[o2ao3do3eo3g]1[o3do3fo3ao4co4e]1[o2a+o3do3fo3ao4e]1[o2go2a+o3do3fo3a]1[o2ao3do3eo3g]1;
 @1t54v30r2o5a4r4r1r2.o5f4r1r4o5e4r2r1r2o5d2r1;
 #end;

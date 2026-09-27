@@ -1,6 +1,6 @@
 // 過去ログの地層（地下の書庫廃墟）— イ短調。古いレコードのようなオルゴールの旋律と、
 // 合唱の低いドローン。旧 deep4（cyber_punk 16beat）の差し替え
-#inst=retro_game#volume=16#reverb=42#reverbdecay=32#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Music Box#t0rev=34#t0dly=16#t1inst=Pad 4 (choir)#t1rev=30#t1eqhi=-8;
+#inst=retro_game#volume=185#reverb=42#reverbdecay=32#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Music Box#t0rev=34#t0dly=16#t1inst=Pad 4 (choir)#t1rev=30#t1eqhi=-8;
 @0t60v46o4a4o5c4o5e2o5d4.o5c8o4b2o5c4o4a4o4g2o4a1o5e4o5f4o5e4o5d4o5c2o4b2o4a4o4b4o5c4o4e4o4a1;
 @1t60v32[o2ao3e]1[o2go3d]1[o2fo3c]1[o2eo2b]1[o2ao3e]1[o2fo3c]1[o2do2a]1[o2eo2b]1;
 #end;

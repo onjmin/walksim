@@ -1,5 +1,5 @@
 // 日常・宵（晩ごはんのあとの散歩）— 変ホ長調。チェレスタのまばらな旋律と halo のパッド
-#inst=retro_game#volume=12#reverb=40#reverbdecay=28#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Celesta#t0rev=34#t0pan=60#t0dly=26#t1inst=Pad 7 (halo)#t1rev=24#t1eqhi=-5;
+#inst=retro_game#volume=68#reverb=40#reverbdecay=28#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Celesta#t0rev=34#t0pan=60#t0dly=26#t1inst=Pad 7 (halo)#t1rev=24#t1eqhi=-5;
 @0t60v46o5g4.o5d+8o5c2r2o5d4o5f4o5d+2.r4r1o4a+4o5c4o5d+4o5g4o5f2o5d2o5c2.r4r1;
 @1t60v36[o3g+o4co4d+o4g]1[o3go3a+o4do4f]1[o3fo3g+o4co4d+o4g]1[o3a+o4d+o4fo4g+]1[o3g+o4co4d+o4g]1[o3go3a+o4do4f]1[o3fo3g+o4co4d+o4g]1[o3a+o4d+o4fo4g+]1;
 #end;

@@ -4,6 +4,7 @@
 // 旧曲（rpg・roguelike・名無し155 の曲）のうち物語に結びついた ending / secret / kowareta は残す。
 // 手打ちの MML を数えまちがえないよう、和音・旋律を「音名と長さ」の並びで書いて組み立て、
 // トラックの長さ（1ループ）が全部そろっているかをここで検算する。
+// head.volume（#volume）は dev/bgm.html で測ってそろえた値（data/bgm.ts 冒頭の表。曲を変えたら測り直す）。
 //
 // 書式: 音は "C4" "F#3" "Bb5"、和音は ["Gb3","Bb3","Db4","F4"]、休符は null。
 // 長さは MML の長さ（"1" "2" "4." "8" …）。1小節 = 192 ステップ（dtm の DEFAULT_STEPS_PER_BAR）。
@@ -117,7 +118,7 @@ const song = (name, { tempo, head, tracks, note }) => {
 	const chords = [Gbmaj7, Fm7, Ebm9, Absus, Gbmaj7, Fm7, Bbm7];
 	song("title", {
 		tempo: 74,
-		head: { volume: 22, reverb: 34, decay: 22 },
+		head: { volume: 57, reverb: 34, decay: 22 },
 		note: [
 			"タイトル「夕方の日常」— 変ニ長調のローファイ。エレピの7th（付点4分の刻み）・フレットレス・",
 			"柔らかい矩形波の旋律（ディレイ）・オルゴールのきらめき。make-bgm.mjs の生成品",
@@ -210,7 +211,7 @@ const song = (name, { tempo, head, tracks, note }) => {
 	];
 	song("amb_yu", {
 		tempo: 66,
-		head: { volume: 12, reverb: 38, decay: 26 },
+		head: { volume: 90, reverb: 38, decay: 26 },
 		note: ["日常・夕方（生活音の下にごく薄く）— ヘ長調。ビブラフォンの分散和音と暖かいパッド"],
 		tracks: [
 			{
@@ -243,7 +244,7 @@ const song = (name, { tempo, head, tracks, note }) => {
 	];
 	song("amb_yoru", {
 		tempo: 60,
-		head: { volume: 12, reverb: 40, decay: 28 },
+		head: { volume: 68, reverb: 40, decay: 28 },
 		note: ["日常・宵（晩ごはんのあとの散歩）— 変ホ長調。チェレスタのまばらな旋律と halo のパッド"],
 		tracks: [
 			{
@@ -284,7 +285,7 @@ const song = (name, { tempo, head, tracks, note }) => {
 	];
 	song("amb_shinya", {
 		tempo: 54,
-		head: { volume: 11, reverb: 44, decay: 34, predelay: 40 },
+		head: { volume: 93, reverb: 44, decay: 34, predelay: 40 },
 		note: [
 			"日常・深夜（無人の町）— ニ短調。長いパッドと、2小節に1音だけこだまする矩形波。",
 			"町の音が消えた静けさを埋めない（ほとんど鳴っていない）",
@@ -329,7 +330,7 @@ const song = (name, { tempo, head, tracks, note }) => {
 	];
 	song("amb_asa", {
 		tempo: 72,
-		head: { volume: 12, reverb: 30, decay: 18 },
+		head: { volume: 84, reverb: 30, decay: 18 },
 		note: ["日常・朝（光と音がもどる）— ト長調。カリンバの分散和音と明るいパッド"],
 		tracks: [
 			{
@@ -364,7 +365,7 @@ const song = (name, { tempo, head, tracks, note }) => {
 	const E7 = ["E2", "D3", "G#3", "B3", "E4"];
 	song("hub", {
 		tempo: 64,
-		head: { volume: 18, reverb: 40, decay: 30 },
+		head: { volume: 96, reverb: 40, decay: 30 },
 		note: [
 			"回線の間（無人駅の待合室）— イ短調。エレピのラウンジと、遠い駅のチャイム。",
 			"深夜2時の待合室。誰も来ない。旧 deep1（掘る動機の行進）の差し替え",
@@ -424,7 +425,7 @@ const song = (name, { tempo, head, tracks, note }) => {
 	const hum2 = ["C3", "C#3", "G3", "F#4"];
 	song("yellow", {
 		tempo: 50,
-		head: { volume: 16, reverb: 26, decay: 30 },
+		head: { volume: 176, reverb: 26, decay: 30 },
 		note: [
 			"黄色い部屋（Backrooms Level 0）— 蛍光灯のうなり。C と C# がぶつかる和音が途切れず鳴り、",
 			"まれにオルゴールの場違いな1音（F#）。旋律は無い。旧 deep2 の差し替え",
@@ -458,7 +459,7 @@ const song = (name, { tempo, head, tracks, note }) => {
 // 過去ログの地層：古いレコードのようなオルゴールの短調と、合唱の低いドローン（イ短調）
 song("kakolog", {
 	tempo: 60,
-	head: { volume: 16, reverb: 42, decay: 32 },
+	head: { volume: 185, reverb: 42, decay: 32 },
 	note: [
 		"過去ログの地層（地下の書庫廃墟）— イ短調。古いレコードのようなオルゴールの旋律と、",
 		"合唱の低いドローン。旧 deep4（cyber_punk 16beat）の差し替え",
@@ -496,7 +497,7 @@ song("kakolog", {
 // 夕暮れの村：都節音階（E F A B C）の箏と尺八、低い持続音。終わらない夕暮れ
 song("village", {
 	tempo: 56,
-	head: { volume: 16, reverb: 40, decay: 30 },
+	head: { volume: 188, reverb: 40, decay: 30 },
 	note: [
 		"夕暮れの村（深夜2時のはずが、ずっと夕暮れ）— 都節音階（E F A B C）の箏と尺八と、",
 		"低い持続音。旧 sad（イ短調）の差し替え",

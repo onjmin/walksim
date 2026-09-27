@@ -1,6 +1,6 @@
 // 回線の間（無人駅の待合室）— イ短調。エレピのラウンジと、遠い駅のチャイム。
 // 深夜2時の待合室。誰も来ない。旧 deep1（掘る動機の行進）の差し替え
-#inst=retro_game#volume=18#reverb=40#reverbdecay=30#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Electric Piano 2#t0width=120#t0rev=30#t0eqhi=-4#t1inst=Fretless Bass#t1rev=8#t2inst=Tubular Bells#t2rev=40#t2pan=30#t2dly=20;
+#inst=retro_game#volume=96#reverb=40#reverbdecay=30#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Electric Piano 2#t0width=120#t0rev=30#t0eqhi=-4#t1inst=Fretless Bass#t1rev=8#t2inst=Tubular Bells#t2rev=40#t2pan=30#t2dly=20;
 @0t64v54[o2ao3go3bo4co4e]2.[o2ao3go3bo4co4e]4[o2fo3eo3ao4co4e]2.[o2fo3eo3ao4co4e]4[o3do3fo3ao4co4e]2.[o3do3fo3ao4co4e]4[o2eo3do3ao3bo4e]2[o2eo3do3g+o3bo4e]2[o2ao3go3bo4co4e]2.[o2ao3go3bo4co4e]4[o2fo3eo3ao4co4e]2.[o2fo3eo3ao4co4e]4[o3do3fo3ao4co4e]2.[o3do3fo3ao4co4e]4[o2eo3do3ao3bo4e]1;
 @1t64v60o2a2.o2e4o2f2.o3c4o2d2.o2a4o2e2o2e2o2a2.o2e4o2f2.o3c4o2d2.o2a4o2e1;
 @2t64v30o5e2o5c2r1r1r1r1r1r1r1;

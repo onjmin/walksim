@@ -26,12 +26,28 @@
 // | deep1    | -25.4（20）            | 20 → 24 | （比例） |
 // | deep2    | -32.1（20）            | 20 → 53 | -23.7    |
 // | deep4    | -29.0（20）            | 20 → 37 | -23.7    |
+// walksim での実測（2026-09-27。dev/bgm.html＝roguelike から移植。新作曲は make-bgm.mjs の head.volume）。
+// 目標は -23（日常の時間帯の曲 amb_* と kowareta は生活音の下に薄く流すので -30）。
+// 1回目の値から式で直し、2回目の測定で ±0.5 dB 以内（大きな #volume でもリミッタで潰れず比例した）:
+// | 曲         | 1回目 I（#volume） | 直した #volume | 2回目 I |
+// |------------|--------------------|----------------|---------|
+// | title      | -31.3（22）        | 57             | -23.0   |
+// | hub        | -37.7（18）        | 98 → 96        | -22.8   |
+// | yellow     | -43.6（16）        | 172 → 176      | -23.2   |
+// | kakolog    | -44.3（16）        | 185            | -23.0   |
+// | village    | -44.3（16）        | 187 → 188      | -23.1   |
+// | amb_yu     | -47.9（12）        | 95 → 90        | -29.5   |
+// | amb_yoru   | -45.1（12）        | 69 → 68        | -29.8   |
+// | amb_shinya | -48.7（11）        | 95 → 93        | -29.8   |
+// | amb_asa    | -46.8（12）        | 83 → 84        | -30.1   |
+// | kowareta   | -32.8（8）         | 11             | -30.1   |
+// （→ の右は2回目の結果から式で詰めた最終値。差は 0.5 dB 未満）
 // 軽量モード（内蔵シンセ）は音色が違うので少しずれる。ending の歌入り（singBgm）は インストより 15.6 dB
 // 小さく鳴るので、engine/audio.ts の SING_GAIN で上げて インストと そろえてある。
 
 // 2026-09-27 作者判断で新しく作曲（scripts/make-bgm.mjs の生成品。参考作品の静かな夜のローファイ／
 // 柔らかいチップチューンの空気）。title は旧 6c5cd6e3edc4433b「ゲーム音楽っぽい何か」を差し替え
-// （kowareta はその旧 title の変奏なので、そのまま残る）。#volume= は仮（冒頭の手順で測って直すこと）
+// （kowareta はその旧 title の変奏なので、そのまま残る）。#volume= は測ってそろえた値（冒頭の表）
 import amb_asa from "./bgm/amb_asa.mml?raw"; // 日常・朝（カリンバ）
 import amb_shinya from "./bgm/amb_shinya.mml?raw"; // 日常・深夜（パッドと こだまする矩形波）
 import amb_yoru from "./bgm/amb_yoru.mml?raw"; // 日常・宵（チェレスタ）
@@ -46,7 +62,7 @@ import kakolog from "./bgm/kakolog.mml?raw"; // 過去ログの地層（オル�
 // 新規手打ち（音響担当。DESIGN §9「品質担保の原則」＝既存MMLの編集的変換）
 // title の「壊れた再演」（#edo=31・t72・2トラック・長い休符・2音だけ約39セントずれ）
 // → クリア後の 無題のレコード『　』（docs/style-kaiwai.md §3-1）。朗読なしで、これを流すだけ。
-// #volume=8 は仮（title より明らかに小さく＝-30 LUFS 級を狙った値。冒頭の手順で測って直すこと）。
+// #volume=11 で -30 LUFS（2026-09-27 測定。冒頭の表）。
 // ※ zerouta.mml（ゼロの代読歌）は BGM ではないのでここに登録しない。
 //   terminus のスクリプトが ?raw で import して engine/audio.ts の singOnce(mml) に渡す。
 import kowareta from "./bgm/kowareta.mml?raw";
