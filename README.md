@@ -73,7 +73,7 @@ http://localhost:5180/?map=kura&x=4&y=5&dir=up&flags={"flashlight":true}&items=r
   - rpg からの追加命令: `s.se(name, { pan })`（効果音の左右パン。「ぽ……ぽ……」の距離感）・`s.record(id)`（レコード再生演出：回転ノイズ → 朗読 → 針の上がる音）・`s.note(id)`（かいいノートに書き留める）
   - `MapDef` の雰囲気フィールド: `ambient`（ただよう粒。dust / snow / rain / static / embers）・`tint`（マップ全体に乗せる半透明の色。夕焼け・黄ばみ）・`dark`（暗闇。プレイヤー中心の光半径の外を暗くする。懐中電灯で半径 3.5→6.5 タイル）
   - **かいいノート**: 怪異・小ネタの図鑑（`src/data/notes.ts`）。シナリオが発見の瞬間に `s.note(id)` を呼ぶとフラグ `note_<id>` が立ち、メニューの「ノート」で読み返せます。未発見は「？？？」（hint があれば薄字）。収集率はエンディングのまとめカードに出ます
-  - マップチップは同梱シート（`public/assets/rpg-reze/Base.png`・`field.png`、`public/assets/rpgen/map.png`）から `src/data/tiles.ts` のパレットで切り出しています。キリコの部屋とアパートの廊下は自作チップ（`public/assets/walksim/home.png`。`node scripts/make-home-tiles.mjs` で生成）です。効果音は RPGEN の素材の直リンクと、手打ちの MML（`src/data/sfx.ts`）です
+  - マップチップは同梱シート（`public/assets/rpg-reze/Base.png`・`field.png`、`public/assets/rpgen/map.png`）から `src/data/tiles.ts` のパレットで切り出しています。キリコの部屋・アパートの廊下・屋外の町並み（TOWN）は自作チップ（`public/assets/walksim/home.png`・`town.png`。`node scripts/make-home-tiles.mjs`・`make-town-tiles.mjs` で生成）です。効果音は RPGEN の素材の直リンクと、手打ちの MML（`src/data/sfx.ts`）です
 
 ### セリフの書き方
 

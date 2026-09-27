@@ -136,54 +136,77 @@ export const FIELD: Record<string, TileDef> = {
 //   |  木の柵  f  鉄の柵  *  花壇（ピンク）  &  花壇（黄）  T  広場の木  P  鉢植えの木  p  花の鉢
 //   O  噴水（3×3 の下段中央に置き、残り8マスは 0）  0  噴水のまわり（通れない石畳）
 //   U  井戸  K k  掲示板（2マス・左右）  !  立て看板  V  自販機  x  木箱  L  街灯  B b  ベンチ（左右）
-const PAVE = base(5, 48);
-const TURF = base(0, 4);
 const C_PAVE = "#8c8c90";
 const WIN_BRICK = basePx(16, 1382); // 格子窓（壁装飾 1,86 を半マス上げて切り出し）
-const WIN_WHITE = basePx(48, 1382); // 木枠の窓（壁装飾 3,86）
+
+// 絵は自作チップ（public/assets/walksim/town.png。scripts/make-town-tiles.mjs）。
+// 文字の意味は旧版（WOLF 風チップ）と同じまま、日本の郊外の住宅街の絵に置き換えた：
+//   n ^ 瓦屋根（本体・軒）  a A トタン屋根  z Z スレート屋根  % # 商店のモルタル壁・タイルの腰壁
+//   ( ) サイディングの家  [ ] 板張りの古い家  W w アルミサッシの窓（w は面格子つき）
+//   D 商店のガラス戸  d 玄関ドア  e 格子の引き戸  $ 箱看板  I 袖看板  + 医院・薬の看板
+//   | 生けがき  f 網フェンス  * & 花  T 庭木  P 植え込みの木  p 植木鉢  O 池の噴水  U 水のみ場
+//   K k 町内会の掲示板  ! 立て看板  V 自販機  x ビールケース  L 電柱の街灯  B b ベンチ
+const TOWN_PNG = "pub:assets/walksim/town.png";
+/** town.png の (c, r) マスから w×h マス。 */
+export const town = (c: number, r: number, w = 1, h = 1): string =>
+	cut(TOWN_PNG, c, r, w, h);
+const T_PAVE = town(0, 0);
+const T_ROAD = town(1, 0);
+const T_GROUND = town(2, 0);
+const T_MORTAR = town(1, 1);
+const T_TILE = town(2, 1);
+const T_SIDING_UP = town(3, 1);
+const T_SIDING_LO = town(4, 1);
+const T_BOARD_UP = town(5, 1);
+const T_BOARD_LO = town(6, 1);
+const C_ROAD = "#4a4a4e";
+const C_GROUND = "#6a7a48";
+const C_MORTAR = "#c8b8a0";
+const C_SIDING = "#d8d4c8";
+const C_BOARD = "#5a4432";
 
 export const TOWN: Record<string, TileDef> = {
-	".": floor(C_PAVE, PAVE),
-	":": floor("#8a7a6a", base(2, 46)),
-	",": floor(C_GRASS, TURF),
-	n: solid("#a83a2a", base(3, 82)),
-	"^": solid("#c04a3a", base(3, 83)),
-	a: solid("#3a5a8a", base(2, 82)),
-	A: solid("#4a6a9a", base(2, 83)),
-	z: solid("#b89a3a", base(6, 82)),
-	Z: solid("#c8aa4a", base(6, 83)),
-	"%": solid("#a04a3a", base(1, 61)),
-	"#": solid("#a04a3a", base(1, 62)),
-	"(": solid("#e8e8e8", base(1, 59)),
-	")": solid("#e8e8e8", base(1, 60)),
-	"[": solid("#6a4a2a", base(1, 55)),
-	"]": solid("#6a4a2a", base(1, 56)),
-	W: solid("#a04a3a", base(1, 61), WIN_BRICK),
-	w: solid("#e8e8e8", base(1, 59), WIN_WHITE),
-	D: floor("#a04a3a", base(1, 62), base(7, 61, 1, 2)),
-	d: floor("#e8e8e8", base(1, 60), base(7, 77, 1, 2)),
-	e: floor("#6a4a2a", base(1, 56), base(7, 55, 1, 2)),
-	$: solid("#a04a3a", base(1, 61), base(2, 95)),
-	I: solid("#a04a3a", base(1, 61), base(0, 96)),
-	"+": solid("#a04a3a", base(1, 61), base(1, 96)),
-	"|": solid(C_GRASS, TURF, base(5, 30)),
-	f: solid(C_PAVE, PAVE, base(5, 32)),
-	"*": solid(C_GRASS, TURF, base(5, 11)),
-	"&": solid(C_GRASS, TURF, base(7, 11)),
-	T: big(C_GRASS, TURF, base(0, 6, 2, 2)),
-	P: solid(C_PAVE, PAVE, base(7, 129, 1, 2)),
-	p: solid(C_PAVE, PAVE, base(7, 133)),
-	O: big(C_PAVE, PAVE, base(0, 132, 3, 3)),
-	"0": solid(C_PAVE, PAVE),
-	U: solid(C_PAVE, PAVE, base(2, 37)),
-	K: solid(C_PAVE, PAVE, base(6, 37, 1, 2)),
-	k: solid(C_PAVE, PAVE, base(7, 37, 1, 2)),
-	"!": solid(C_PAVE, PAVE, base(3, 38)),
-	V: solid(C_PAVE, PAVE, base(0, 519, 1, 2)),
-	x: solid(C_PAVE, PAVE, base(4, 123)),
-	L: solid(C_PAVE, PAVE, sp("2gTYec")), // 街灯（同梱シートに無いので RPGEN から）
-	B: solid(C_PAVE, PAVE, sp("9UnaFUN")), // ベンチ左（同上）
-	b: solid(C_PAVE, PAVE, sp("PcAZNWo")), // ベンチ右（同上）
+	".": floor(C_PAVE, T_PAVE),
+	":": floor(C_ROAD, T_ROAD),
+	",": floor(C_GROUND, T_GROUND),
+	n: solid("#4e5660", town(3, 0)),
+	"^": solid("#4e5660", town(4, 0)),
+	a: solid("#4a6478", town(5, 0)),
+	A: solid("#4a6478", town(6, 0)),
+	z: solid("#7a5238", town(7, 0)),
+	Z: solid("#7a5238", town(0, 1)),
+	"%": solid(C_MORTAR, T_MORTAR),
+	"#": solid(C_MORTAR, T_TILE),
+	"(": solid(C_SIDING, T_SIDING_UP),
+	")": solid(C_SIDING, T_SIDING_LO),
+	"[": solid(C_BOARD, T_BOARD_UP),
+	"]": solid(C_BOARD, T_BOARD_LO),
+	W: solid(C_MORTAR, T_MORTAR, town(7, 1)),
+	w: solid(C_SIDING, T_SIDING_UP, town(0, 2)),
+	D: floor(C_MORTAR, T_TILE, town(0, 3, 1, 2)),
+	d: floor(C_SIDING, T_SIDING_LO, town(1, 3, 1, 2)),
+	e: floor(C_BOARD, T_BOARD_LO, town(2, 3, 1, 2)),
+	$: solid(C_MORTAR, T_MORTAR, town(1, 2)),
+	I: solid(C_MORTAR, T_MORTAR, town(2, 2)),
+	"+": solid(C_MORTAR, T_MORTAR, town(3, 2)),
+	"|": solid(C_GROUND, T_GROUND, town(4, 2)),
+	f: solid(C_PAVE, T_PAVE, town(5, 2)),
+	"*": solid(C_GROUND, T_GROUND, town(6, 2)),
+	"&": solid(C_GROUND, T_GROUND, town(7, 2)),
+	T: big(C_GROUND, T_GROUND, town(0, 6, 2, 2)),
+	P: solid(C_PAVE, T_PAVE, town(6, 3, 1, 2)),
+	p: solid(C_PAVE, T_PAVE, town(0, 5)),
+	O: big(C_PAVE, T_PAVE, town(2, 6, 3, 3)),
+	"0": solid(C_PAVE, T_PAVE),
+	U: solid(C_PAVE, T_PAVE, town(1, 5)),
+	K: solid(C_PAVE, T_PAVE, town(4, 3, 1, 2)),
+	k: solid(C_PAVE, T_PAVE, town(5, 3, 1, 2)),
+	"!": solid(C_PAVE, T_PAVE, town(3, 5)),
+	V: solid(C_PAVE, T_PAVE, town(3, 3, 1, 2)),
+	x: solid(C_PAVE, T_PAVE, town(2, 5)),
+	L: { ...solid(C_PAVE, T_PAVE, town(7, 3, 1, 2)), thin: true }, // 電柱は細いので裏が無い
+	B: solid(C_PAVE, T_PAVE, town(4, 5)),
+	b: solid(C_PAVE, T_PAVE, town(5, 5)),
 	" ": BLACK,
 };
 

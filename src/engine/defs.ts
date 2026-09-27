@@ -19,6 +19,8 @@ export type TileDef = {
 	above?: string[];
 	/** カウンター（向こう側の人に話しかけられる）。 */
 	counter?: boolean;
+	/** 背は高いが裏の無い物（電柱など細い物）。北どなりからも調べられる（Field.hasBack）。 */
+	thin?: boolean;
 };
 
 export type EventTrigger =

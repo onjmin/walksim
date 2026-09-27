@@ -12,7 +12,7 @@ import { onViewportChange, viewport } from "./viewport";
 const TILES_ON_SHORT_SIDE =
 	typeof location !== "undefined" &&
 	new URLSearchParams(location.search).has("diorama")
-		? 16
+		? 13
 		: 11;
 
 export class Screen {

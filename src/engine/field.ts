@@ -14,6 +14,9 @@ const HIDDEN_RATIO = 0.9;
 const PROBE_W = 3 * TILE;
 const PROBE_H = 3 * TILE;
 
+/** 歩く人を上へずらす量（ソース画素）。半マス。 */
+export const ACTOR_LIFT = TILE / 2;
+
 export class Actor {
 	id: string;
 	x: number;
@@ -113,11 +116,12 @@ export class Actor {
 			return;
 		}
 		const frame = stepFrame(time + ((this.id.length * 97) % 400), this.moving);
-		if (!drawWalk(ctx, this.sprite, this.dir, frame, px, py)) {
-			// 読み込み中は小さな影だけ
-			ctx.fillStyle = "rgba(0,0,0,0.3)";
-			ctx.fillRect(px + 4, py + 12, 8, 3);
-		}
+		// 歩く人は半マス上に立たせる（足もとがマスの中ほど・頭が奥のマスに重なって、床に立って見える）。
+		// 足もとには小さな影。置き物（still）は床に置いたままなので上げない
+		ctx.fillStyle = "rgba(0,0,0,0.25)";
+		ctx.fillRect(px + 4, py + TILE - ACTOR_LIFT - 2, 8, 2);
+		ctx.fillRect(px + 3, py + TILE - ACTOR_LIFT - 1, 10, 1);
+		drawWalk(ctx, this.sprite, this.dir, frame, px, py - ACTOR_LIFT);
 	}
 }
 
@@ -209,6 +213,7 @@ export class Field {
 	hasBack(a: Actor): boolean {
 		if (a.sprite && !a.still) return false;
 		const t = this.tileAt(a.x, a.y);
+		if (t.thin) return false;
 		return [...t.layers, ...(t.above ?? []), a.sprite].some(
 			(r) => !!r && overflowsCell(r, TILE),
 		);
