@@ -2086,7 +2086,12 @@ html.diorama .msg {
 	box-shadow: none;
 	min-height: 0;
 	bottom: calc(9vh + var(--safe-b));
-	padding: 6px 10px;
+	/* ぼかしは文字のうしろだけ：箱の幅を文字に合わせ、真ん中に置く（left/right 0 ＋ margin auto） */
+	left: 0;
+	right: 0;
+	width: fit-content;
+	max-width: calc(100% - 24px);
+	padding: 4px 12px;
 	text-align: center;
 	text-shadow:
 		0 0 2px #000,
