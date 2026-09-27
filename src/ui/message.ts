@@ -25,7 +25,7 @@
 
 import { publicUrl } from "../engine/assets";
 import type { SpeechStart } from "../engine/audio";
-import { DIORAMA, pixelizePortrait } from "../engine/diorama";
+import { DIORAMA, tintPortrait } from "../engine/diorama";
 import type { Input } from "../engine/input";
 import { sleep } from "../engine/types";
 import { el } from "./dom";
@@ -327,8 +327,8 @@ class PortraitSlot {
 			const crop = Math.min(1, Math.max(0.2, p.crop ?? DEFAULT_CROP));
 			const cut = Math.max(1, Math.round(top + body * crop));
 			const view = el("canvas", { class: "portrait-img" });
-			// ジオラマ表示では作者の線画をドット絵風に（場面の色・ディザ）。縦横比は元のまま
-			const dots = DIORAMA ? pixelizePortrait(canvas, cut, body) : null;
+			// ジオラマ表示ではドット立ち絵（portraits-dot）に場面の色をかける。縦横比は元のまま
+			const dots = DIORAMA ? tintPortrait(canvas, cut) : null;
 			if (dots) {
 				view.width = dots.width;
 				view.height = dots.height;
@@ -358,15 +358,20 @@ class PortraitSlot {
 			// 枠より広い絵は、出してよい範囲（.portrait-art）の内側の端でぼかして消す
 			this.root.replaceChildren(el("div", { class: "portrait-art" }, [view]));
 		};
-		if (!p.src) {
+		// ジオラマ表示はドット立ち絵（public/portraits-dot/ の同名。作者の線画を清書してドット化したもの）
+		const src =
+			DIORAMA && p.src
+				? p.src.replace(/^portraits\//, "portraits-dot/")
+				: p.src;
+		if (!src) {
 			dummy();
-		} else if (ready.has(p.src)) {
-			show(ready.get(p.src) ?? null);
+		} else if (ready.has(src)) {
+			show(ready.get(src) ?? null);
 		} else {
 			// 初めての絵は読み込みを待つ（一瞬ダミーが見えないように、その間は空けておく）
 			this.root.replaceChildren();
 			const id = p.id;
-			void loadTrimmed(p.src).then((art) => {
+			void loadTrimmed(src).then((art) => {
 				if (this.current === id) show(art);
 			});
 		}
