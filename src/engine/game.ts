@@ -1024,7 +1024,6 @@ export class Game {
 			color: c?.color,
 			text,
 			portrait: opt.noPortrait || !who ? null : this.portraitOf(who),
-			dot: opt.noPortrait || !c ? undefined : c.id,
 			pace: (opt.pace ?? c?.pace) === "slow" ? "slow" : undefined,
 			onShow:
 				voice && settings.voice && !opt.noVoice

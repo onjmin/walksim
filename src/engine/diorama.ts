@@ -403,15 +403,130 @@ let actorLayer: HTMLCanvasElement | null = null;
 
 /** いま画面に出ている場面のパレット（立ち絵を同じ色に落とすため）。 */
 let currentPal: { key: string; ramp: Ramp; accent: Ramp } | null = null;
-const portraitCache = new Map<string, HTMLCanvasElement>();
+const portraitCache = new WeakMap<
+	HTMLCanvasElement,
+	Map<string, HTMLCanvasElement>
+>();
+/** 立ち絵のドットの細かさ：全身の高さを何ドットにするか。 */
+const PORTRAIT_BODY_DOTS = 170;
+
+/** 0..1 の値の並びを大津の方法で2つに分けるしきい値。 */
+const otsu = (v: Float32Array): number => {
+	const bins = 256;
+	const hist = new Float64Array(bins);
+	for (const x of v) hist[Math.min(bins - 1, Math.floor(x * bins))]++;
+	const total = v.length;
+	let sumAll = 0;
+	for (let i = 0; i < bins; i++) sumAll += i * hist[i];
+	let wB = 0;
+	let sumB = 0;
+	let best = 0;
+	let th = 0;
+	for (let i = 0; i < bins; i++) {
+		wB += hist[i];
+		if (!wB) continue;
+		const wF = total - wB;
+		if (!wF) break;
+		sumB += i * hist[i];
+		const mB = sumB / wB;
+		const mF = (sumAll - sumB) / wF;
+		const between = wB * wF * (mB - mF) * (mB - mF);
+		if (between > best) {
+			best = between;
+			th = i;
+		}
+	}
+	return (th + 1) / bins;
+};
 
 /**
- * 立ち絵（胸像のドット絵）を、いまの場面と同じ色・ディザに落とした画用紙を返す。
- * 場面（時間帯）が変わると描き直す。場面がまだ無ければ深夜の色。
+ * 縮めた線画の濃さ（ink）から、2値のきれいな1ドット線を作る。
+ *   大津の二値化（線の多い／少ない絵でもしきい値が自動で合う。ごく薄い点は捨てる）
+ *   → 孤立点を消す → Zhang-Suen の細線化で線を1ドットに → L字の角のダマを抜く（pixel-perfect）
  */
-export const stylizePortrait = (
-	id: string,
-	img: HTMLImageElement,
+const binarizeLines = (ink: Float32Array, w: number, h: number): Uint8Array => {
+	const th = Math.max(0.06, otsu(ink));
+	const b = new Uint8Array(w * h);
+	for (let i = 0; i < b.length; i++) b[i] = ink[i] >= th ? 1 : 0;
+	const at = (x: number, y: number) =>
+		x >= 0 && y >= 0 && x < w && y < h ? b[y * w + x] : 0;
+	// 孤立点
+	for (let y = 0; y < h; y++)
+		for (let x = 0; x < w; x++) {
+			if (!b[y * w + x]) continue;
+			let nb = 0;
+			for (let dy = -1; dy <= 1; dy++)
+				for (let dx = -1; dx <= 1; dx++)
+					if ((dx || dy) && at(x + dx, y + dy)) nb++;
+			if (!nb) b[y * w + x] = 0;
+		}
+	// Zhang-Suen
+	let changed = true;
+	const del: number[] = [];
+	while (changed) {
+		changed = false;
+		for (let pass = 0; pass < 2; pass++) {
+			del.length = 0;
+			for (let y = 0; y < h; y++)
+				for (let x = 0; x < w; x++) {
+					if (!b[y * w + x]) continue;
+					const p2 = at(x, y - 1);
+					const p3 = at(x + 1, y - 1);
+					const p4 = at(x + 1, y);
+					const p5 = at(x + 1, y + 1);
+					const p6 = at(x, y + 1);
+					const p7 = at(x - 1, y + 1);
+					const p8 = at(x - 1, y);
+					const p9 = at(x - 1, y - 1);
+					const nb = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
+					if (nb < 2 || nb > 6) continue;
+					const seq = [p2, p3, p4, p5, p6, p7, p8, p9, p2];
+					let trans = 0;
+					for (let i = 0; i < 8; i++) if (!seq[i] && seq[i + 1]) trans++;
+					if (trans !== 1) continue;
+					if (
+						pass === 0
+							? p2 * p4 * p6 || p4 * p6 * p8
+							: p2 * p4 * p8 || p2 * p6 * p8
+					)
+						continue;
+					del.push(y * w + x);
+				}
+			for (const i of del) b[i] = 0;
+			if (del.length) changed = true;
+		}
+	}
+	// L字の角のダマ（上と右のように直交する2つだけとつながる点）を抜く。斜めでつながったまま細くなる
+	for (let y = 0; y < h; y++)
+		for (let x = 0; x < w; x++) {
+			if (!b[y * w + x]) continue;
+			const n = at(x, y - 1);
+			const e = at(x + 1, y);
+			const s = at(x, y + 1);
+			const wv = at(x - 1, y);
+			const diag =
+				at(x - 1, y - 1) +
+				at(x + 1, y - 1) +
+				at(x - 1, y + 1) +
+				at(x + 1, y + 1);
+			if (n + e + s + wv !== 2 || diag) continue;
+			if ((n && e) || (e && s) || (s && wv) || (wv && n)) b[y * w + x] = 0;
+		}
+	return b;
+};
+
+/**
+ * 作者の立ち絵（線画）をドット絵風に変換する（ジオラマ表示。作者指示）。
+ *   1. 全身が PORTRAIT_BODY_DOTS ドットになるよう面積平均で縮め、線を2値のきれいな1ドット線に
+ *      （binarizeLines：大津の二値化 → 孤立点の除去 → 細線化 → 角のダマ取り）
+ *   2. 線のすき間を1ドットふさいでから外側を塗りつぶし、残った内側を体として塗る
+ *   3. 体はいまの場面のパレットの明るい段のべた塗り、線は最も暗い段（2値。ディザ・ぼかし無し）
+ * 線がとぎれていて内側が取れない絵は、線だけを明るい段で打つ。場面（時間帯）ごとにキャッシュ。
+ */
+export const pixelizePortrait = (
+	src: HTMLCanvasElement,
+	height: number,
+	body: number,
 ): HTMLCanvasElement | null => {
 	const pal =
 		currentPal ??
@@ -423,17 +538,115 @@ export const stylizePortrait = (
 				accent: sc.accent.map(hex),
 			};
 		})();
-	const key = `${id}:${pal.key}`;
-	const hit = portraitCache.get(key);
+	const key = `${pal.key}:${height}`;
+	let byKey = portraitCache.get(src);
+	if (!byKey) {
+		byKey = new Map();
+		portraitCache.set(src, byKey);
+	}
+	const hit = byKey.get(key);
 	if (hit) return hit;
-	const c = canvas(img.width, img.height);
-	const g = c.getContext("2d", { willReadFrequently: true });
-	if (!g) return null;
-	g.imageSmoothingEnabled = false;
-	g.drawImage(img, 0, 0);
-	quantize(g, img.width, img.height, 0, 0, pal.ramp, pal.accent, 0.12, []);
-	portraitCache.set(key, c);
-	return c;
+	const sg = src.getContext("2d", { willReadFrequently: true });
+	if (!sg || src.width <= 0 || height <= 0) return null;
+	const k = Math.min(1, PORTRAIT_BODY_DOTS / Math.max(1, body));
+	const ow = Math.max(1, Math.round(src.width * k));
+	const oh = Math.max(1, Math.round(height * k));
+	const data = sg.getImageData(
+		0,
+		0,
+		src.width,
+		Math.min(height, src.height),
+	).data;
+	const sw = src.width;
+	const sh = Math.min(height, src.height);
+	// 1. 線の濃さ（ブロック内の平均）
+	const ink = new Float32Array(ow * oh);
+	for (let y = 0; y < oh; y++) {
+		const y0 = Math.floor(y / k);
+		const y1 = Math.min(sh, Math.max(y0 + 1, Math.floor((y + 1) / k)));
+		for (let x = 0; x < ow; x++) {
+			const x0 = Math.floor(x / k);
+			const x1 = Math.min(sw, Math.max(x0 + 1, Math.floor((x + 1) / k)));
+			let sum = 0;
+			let n = 0;
+			for (let yy = y0; yy < y1; yy++)
+				for (let xx = x0; xx < x1; xx++) {
+					const i = (yy * sw + xx) * 4;
+					const a = data[i + 3] / 255;
+					const lum =
+						(data[i] * 0.3 + data[i + 1] * 0.55 + data[i + 2] * 0.15) / 255;
+					sum += a * (1 - lum);
+					n++;
+				}
+			ink[y * ow + x] = n ? sum / n : 0;
+		}
+	}
+	const line = binarizeLines(ink, ow, oh);
+	// 2. すき間をふさいだ壁で外側を塗りつぶす
+	const wall = new Uint8Array(ow * oh);
+	for (let y = 0; y < oh; y++)
+		for (let x = 0; x < ow; x++) {
+			let on = 0;
+			for (let dy = -1; dy <= 1 && !on; dy++)
+				for (let dx = -1; dx <= 1 && !on; dx++) {
+					const X = x + dx;
+					const Y = y + dy;
+					if (X >= 0 && Y >= 0 && X < ow && Y < oh && line[Y * ow + X]) on = 1;
+				}
+			wall[y * ow + x] = on;
+		}
+	const outside = new Uint8Array(ow * oh);
+	const stack: number[] = [];
+	const seed = (x: number, y: number) => {
+		const i = y * ow + x;
+		if (!wall[i] && !outside[i]) {
+			outside[i] = 1;
+			stack.push(i);
+		}
+	};
+	for (let x = 0; x < ow; x++) {
+		seed(x, 0);
+		seed(x, oh - 1);
+	}
+	for (let y = 0; y < oh; y++) {
+		seed(0, y);
+		seed(ow - 1, y);
+	}
+	while (stack.length) {
+		const i = stack.pop() as number;
+		const x = i % ow;
+		const y = (i - x) / ow;
+		if (x > 0) seed(x - 1, y);
+		if (x < ow - 1) seed(x + 1, y);
+		if (y > 0) seed(x, y - 1);
+		if (y < oh - 1) seed(x, y + 1);
+	}
+	let inner = 0;
+	for (let i = 0; i < line.length; i++) if (!outside[i] && !line[i]) inner++;
+	const filled = inner > ow * oh * 0.05;
+	// 3. 色を打つ
+	const out = canvas(ow, oh);
+	const og = out.getContext("2d");
+	if (!og) return null;
+	const img = og.createImageData(ow, oh);
+	const r = pal.ramp;
+	const n = r.length - 1;
+	for (let y = 0; y < oh; y++)
+		for (let x = 0; x < ow; x++) {
+			const i = y * ow + x;
+			let c: [number, number, number] | null = null;
+			// 2値：線と、体の内側のべた塗り（ディザ・影は無し）
+			if (line[i]) c = filled ? r[0] : r[n - 1];
+			else if (filled && !outside[i]) c = r[n - 1];
+			if (!c) continue;
+			img.data[i * 4] = c[0];
+			img.data[i * 4 + 1] = c[1];
+			img.data[i * 4 + 2] = c[2];
+			img.data[i * 4 + 3] = 255;
+		}
+	og.putImageData(img, 0, 0);
+	byKey.set(key, out);
+	return out;
 };
 
 export const renderDiorama = (

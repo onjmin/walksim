@@ -2110,26 +2110,17 @@ html.diorama .msg-next {
 	margin-left: 6px;
 }
 
-html.diorama .portrait-layer {
-	display: none;
+/* ジオラマ表示の立ち絵：作者の線画をドット絵風に変換したもの（engine/diorama.ts の pixelizePortrait） */
+html.diorama .portrait.left .portrait-art,
+html.diorama .portrait.right .portrait-art {
+	-webkit-mask-image: none;
+	mask-image: none;
 }
 
-/* ジオラマ表示の立ち絵：場面の色に落とした胸像のドット絵を、字幕の上に整数倍で */
-.msg-dot {
-	display: none;
-}
-
-html.diorama .msg-dot.shown {
-	display: block;
-	width: 96px;
-	height: 96px;
-	margin: 0 auto 2px;
+html.diorama .portrait-img.dots {
 	image-rendering: pixelated;
-}
-
-@media (min-width: 900px) and (min-height: 640px) {
-	html.diorama .msg-dot.shown {
-		width: 144px;
-		height: 144px;
-	}
+	/* 2値のドットのまま：影も下端のぼかしもかけない（切り口は字幕の下の虚空に沈む） */
+	filter: none;
+	-webkit-mask-image: none;
+	mask-image: none;
 }
