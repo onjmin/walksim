@@ -2077,12 +2077,10 @@ body.shake #app {
 /* ───────── ジオラマ表示（本番。?classic で旧表示。engine/diorama.ts） ─────────
    会話は窓でなく、箱の下の字幕。立ち絵は出さない（箱の中の小さなキャラが話し手） */
 html.diorama .msg {
-	/* 字幕の背景だけ、うしろ（立ち絵・箱）をぼかして暗く沈める（作者指示） */
-	background: rgba(0, 0, 0, 0.35);
-	-webkit-backdrop-filter: blur(6px);
-	backdrop-filter: blur(6px);
+	/* 字幕のうしろのぼかしは ::before に（縁が見えないよう、中心から外へ薄れさせる。作者指摘） */
+	background: none;
 	border: none;
-	border-radius: 10px;
+	border-radius: 0;
 	box-shadow: none;
 	min-height: 0;
 	bottom: calc(9vh + var(--safe-b));
@@ -2096,6 +2094,27 @@ html.diorama .msg {
 	text-shadow:
 		0 0 2px #000,
 		0 0 6px #000;
+}
+
+/*
+ * 字幕のうしろだけを、ほんのりぼかして暗く沈める。四角い縁が見えるとかっこ悪いので、
+ * 文字より少し広い層を楕円のマスクで中心から外へ消す（ぼかしも弱め）。文字は層の手前
+ */
+html.diorama .msg::before {
+	content: "";
+	position: absolute;
+	inset: -14px -28px;
+	z-index: -1;
+	background: rgba(0, 0, 0, 0.28);
+	-webkit-backdrop-filter: blur(3px);
+	backdrop-filter: blur(3px);
+	-webkit-mask-image: radial-gradient(
+		ellipse closest-side,
+		#000 45%,
+		transparent 100%
+	);
+	mask-image: radial-gradient(ellipse closest-side, #000 45%, transparent 100%);
+	pointer-events: none;
 }
 
 html.diorama .msg-name {

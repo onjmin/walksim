@@ -279,8 +279,13 @@ export const boxFor = (field: Field, player: Actor): Box => {
 	for (const b of field.def.boxes ?? [])
 		if (px >= b.x && py >= b.y && px < b.x + b.w && py < b.y + b.h) return b;
 	if (!field.def.outdoor) {
-		// 屋内: 外周の壁1マスを除いた部屋ぜんぶ（奥の壁の面は残る）
-		return { x: 1, y: 1, w: field.w - 2, h: field.h - 2 };
+		// 屋内: 外周の壁1マスを除いた部屋ぜんぶ（奥の壁の面は残る）。
+		// いちばん下の壁の列に出口（通れるマス）があれば、その列も箱に入れる（出口が見えないと出られない）
+		const last = field.h - 1;
+		let exitRow = false;
+		for (let x = 0; x < field.w; x++)
+			if (field.tileAt(x, last).passable) exitRow = true;
+		return { x: 1, y: 1, w: field.w - 2, h: field.h - (exitRow ? 1 : 2) };
 	}
 	const x = Math.floor(px / CHUNK_W) * CHUNK_W;
 	const y = Math.floor(py / CHUNK_H) * CHUNK_H;
@@ -840,9 +845,14 @@ export const renderDiorama = (
 	// 横の視差は、キリコが手前（箱の下）にいるほど大きく、奥にいるほど小さい（作者指摘）。
 	// 遠くの人が横に数歩あるいても、眺める視点はほとんど動かない＝手前の物も流れない
 	const near = Math.max(0, Math.min(1, (player.fy - box.y + 0.5) / box.h));
-	const lateral = vx * near * near;
+	// 箱が画面より大きく、キリコを追ってスクロールしているときは視差を掛けない
+	// （スクロールに数ドットのずれが毎歩かさなって、揺れて見える。作者指摘）
+	const scrolls =
+		box.w * TILE + TILE > screenW ||
+		box.h * TILE + backHeight(field, box) + SLAB + TILE > screenH;
+	const lateral = scrolls ? 0 : vx * near * near;
 	const sx = placed.sx - Math.round(lateral * 3);
-	const sy = placed.sy - Math.round(vy * 2);
+	const sy = placed.sy - (scrolls ? 0 : Math.round(vy * 2));
 	const backDx = Math.round(lateral * 2);
 	const frontDx = -Math.round(lateral * 9);
 	const back = backHeight(field, box);
