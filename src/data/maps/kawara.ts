@@ -299,7 +299,7 @@ export const kawara: MapDef = {
 		{ x: 26, y: 7, w: 14, h: 5 }, // 土手の東
 	],
 	name: "かわらのみち",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outdoor: true,
 	outside: "#0b0c09",
 	tiles,

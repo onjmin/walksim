@@ -348,7 +348,7 @@ export const street: MapDef = {
 		{ x: 13, y: 12, w: 14, h: 8 }, // 公園の東・たなかさん家
 	],
 	name: "まちのどおり",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outdoor: true,
 	outside: "#0d0b09",
 	tiles,

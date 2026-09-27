@@ -248,7 +248,7 @@ export const kokudo: MapDef = {
 		{ x: 27, y: 8, w: 13, h: 6 }, // 南の歩道の東
 	],
 	name: "こくどう",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outdoor: true,
 	outside: "#0a0a0c",
 	tiles,

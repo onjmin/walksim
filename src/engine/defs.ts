@@ -66,7 +66,10 @@ export type MapDef = {
 	id: string;
 	/** 画面に出す地名。 */
 	name: string;
-	/** BGM 名（data/bgm.ts）。null なら無音、省略なら前の曲を続ける。 */
+	/**
+	 * BGM 名（data/bgm.ts）。null なら無音、省略なら前の曲を続ける。
+	 * "@tod" は時間帯の曲（GameData.todBgm。日常の地区。時間帯が変わると曲も変わる）。
+	 */
 	bgm?: string | null;
 	/** 行の各文字 → タイル。 */
 	tiles: Record<string, TileDef>;
@@ -249,6 +252,8 @@ export type GameData = {
 	sfx: Record<string, string>;
 	titleBgm: string;
 	endingBgm: string;
+	/** 時間帯（flags.tod）ごとの曲。MapDef.bgm が "@tod" の地区で流す。 */
+	todBgm?: Record<string, string>;
 	start: {
 		mapId: string;
 		x: number;

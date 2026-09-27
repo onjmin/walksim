@@ -113,7 +113,7 @@ export const kakolog2: MapDef = {
 	id: "kakolog2",
 	scene: "sepia", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "過去ログの地層",
-	bgm: "deep4",
+	bgm: "kakolog",
 	dark: 0.5,
 	ambient: { kind: "dust" },
 	outside: "#050408",

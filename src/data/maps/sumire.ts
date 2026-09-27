@@ -229,7 +229,7 @@ export const sumire: MapDef = {
 		{ x: 0, y: 20, w: 10, h: 4 }, // 坂道
 	],
 	name: "すみれ町",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outdoor: true,
 	outside: "#0d0b09",
 	tiles,

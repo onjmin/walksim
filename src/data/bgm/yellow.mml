@@ -1,0 +1,6 @@
+// 黄色い部屋（Backrooms Level 0）— 蛍光灯のうなり。C と C# がぶつかる和音が途切れず鳴り、
+// まれにオルゴールの場違いな1音（F#）。旋律は無い。旧 deep2 の差し替え
+#inst=retro_game#volume=16#reverb=26#reverbdecay=30#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Pad 3 (polysynth)#t0rev=18#t0eqhi=-6#t1inst=Music Box#t1rev=30#t1pan=88#t1dly=30;
+@0t50v40[o3co3c+o3g]1[o3co3c+o3g]1[o3co3c+o3g]1[o3co3c+o3go4f+]1[o3co3c+o3g]1[o3co3c+o3g]1[o3co3c+o3g]1[o3co3c+o3go4f+]1;
+@1t50v30r1r1r1r2.o6f+4r1r1r2o6c4r4r1;
+#end;

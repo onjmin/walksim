@@ -201,7 +201,7 @@ const nikkiPage = async (s: Story): Promise<void> => {
 export const room: MapDef = {
 	id: "room",
 	name: "キリコの部屋",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outside: "#1b1410",
 	tiles,
 	rows,

@@ -61,6 +61,13 @@ export const data: GameData = {
 	sfx,
 	titleBgm: "title",
 	endingBgm: "ending",
+	// 日常の地区の BGM（生活音の下にごく薄く。作者判断 2026-09-27。MapDef.bgm = "@tod"）
+	todBgm: {
+		yu: "amb_yu",
+		yoru: "amb_yoru",
+		shinya: "amb_shinya",
+		asa: "amb_asa",
+	},
 	// 夕方の帰り道から始まる（DESIGN §4 時間帯システム・座標凍結v2）。
 	// 東寄りの大どおりで西向き＝アパートへ帰るおつかい（晩ごはん）の導線。
 	start: {

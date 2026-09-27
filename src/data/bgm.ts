@@ -29,11 +29,20 @@
 // 軽量モード（内蔵シンセ）は音色が違うので少しずれる。ending の歌入り（singBgm）は インストより 15.6 dB
 // 小さく鳴るので、engine/audio.ts の SING_GAIN で上げて インストと そろえてある。
 
+// 2026-09-27 作者判断で新しく作曲（scripts/make-bgm.mjs の生成品。参考作品の静かな夜のローファイ／
+// 柔らかいチップチューンの空気）。title は旧 6c5cd6e3edc4433b「ゲーム音楽っぽい何か」を差し替え
+// （kowareta はその旧 title の変奏なので、そのまま残る）。#volume= は仮（冒頭の手順で測って直すこと）
+import amb_asa from "./bgm/amb_asa.mml?raw"; // 日常・朝（カリンバ）
+import amb_shinya from "./bgm/amb_shinya.mml?raw"; // 日常・深夜（パッドと こだまする矩形波）
+import amb_yoru from "./bgm/amb_yoru.mml?raw"; // 日常・宵（チェレスタ）
+import amb_yu from "./bgm/amb_yu.mml?raw"; // 日常・夕方（ビブラフォン）
 // 層ごとの曲（roguelike。作曲エージェントが dtm の手書き譜面 docs/handscore.md で書いたもの）
 import deep1 from "./bgm/deep1.mml?raw"; // ハ短調 128・retro_game・8beat（掘る動機の行進）→ 回線の間
 import deep2 from "./bgm/deep2.mml?raw"; // ト短調 90・orchestra（ライン・クリシェ、打楽器なし）→ 黄色い部屋
 import deep4 from "./bgm/deep4.mml?raw"; // ニ短調 150・cyber_punk・16beat → 過去ログの地層
 import ending from "./bgm/ending.mml?raw"; // b312cbafed564277「変ト長調 (G♭) デュエット」
+import hub from "./bgm/hub.mml?raw"; // 回線の間（待合室のラウンジ・遠いチャイム）
+import kakolog from "./bgm/kakolog.mml?raw"; // 過去ログの地層（オルゴールと合唱）
 // 新規手打ち（音響担当。DESIGN §9「品質担保の原則」＝既存MMLの編集的変換）
 // title の「壊れた再演」（#edo=31・t72・2トラック・長い休符・2音だけ約39セントずれ）
 // → クリア後の 無題のレコード『　』（docs/style-kaiwai.md §3-1）。朗読なしで、これを流すだけ。
@@ -46,7 +55,9 @@ import retro from "./bgm/retro.mml?raw"; // post/1316 の >>9 30b7932c9e1a4102�
 import sad from "./bgm/sad.mml?raw"; // 155deb066bc94429「イ短調（Aマイナー）」→ 夕暮れの村
 import secret from "./bgm/secret.mml?raw"; // a91d232600e24c6a「修正版。オクターブ計算ミスってメロディがガタガタやったの直した」→ 供養スレ駅
 import tense from "./bgm/tense.mml?raw"; // 1d9e7eed2db44ce7「荒ぶるメロディライン」→ きさらぎ駅
-import title from "./bgm/title.mml?raw"; // 6c5cd6e3edc4433b「ゲーム音楽っぽい何か」
+import title from "./bgm/title.mml?raw"; // タイトル（夕方の日常・変ニ長調のローファイ）
+import village from "./bgm/village.mml?raw"; // 夕暮れの村（都節の箏と尺八）
+import yellow from "./bgm/yellow.mml?raw"; // 黄色い部屋（蛍光灯のうなり）
 
 export const bgm: Record<string, string> = {
 	title,
@@ -59,4 +70,12 @@ export const bgm: Record<string, string> = {
 	deep4,
 	retro,
 	kowareta,
+	amb_yu,
+	amb_yoru,
+	amb_shinya,
+	amb_asa,
+	hub,
+	yellow,
+	kakolog,
+	village,
 };

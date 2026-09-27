@@ -183,7 +183,7 @@ export const tonarimachi: MapDef = {
 		{ x: 24, y: 13, w: 12, h: 7 }, // 二本目の東
 	],
 	name: "となりまち",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outdoor: true,
 	outside: "#0d0a0c",
 	tiles,

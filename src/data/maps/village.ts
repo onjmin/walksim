@@ -237,7 +237,7 @@ export const village: MapDef = {
 	id: "village",
 	scene: "village", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "夕暮れの村",
-	bgm: "sad",
+	bgm: "village",
 	tint: "rgba(150,60,50,0.25)",
 	ambient: { kind: "dust", color: "#c8a070" },
 	outside: "#1a0d0a",

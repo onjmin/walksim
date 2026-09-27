@@ -171,7 +171,7 @@ export const ekimae: MapDef = {
 		{ x: 16, y: 10, w: 16, h: 7 }, // ロータリーの東
 	],
 	name: "えきまえ",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outdoor: true,
 	outside: "#0d0b09",
 	tiles,

@@ -332,7 +332,7 @@ const namelessRecord = async (s: Story): Promise<void> => {
 	await s.narrate("どこかが、すこしずつ\nずれていく。");
 	await s.wait(900);
 	await s.narrate("……さいごまで、きいた。");
-	s.bgm("deep1");
+	s.bgm("hub");
 	await s.narrate("レコードを、そっと\nベンチに　もどした。");
 };
 
@@ -340,7 +340,7 @@ export const hub: MapDef = {
 	id: "hub",
 	scene: "hub", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "回線の間",
-	bgm: "deep1",
+	bgm: "hub",
 	outside: "#08070c",
 	tiles,
 	rows,

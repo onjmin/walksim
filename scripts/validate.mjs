@@ -223,7 +223,10 @@ try {
 					`map ${id}: イベント ${e.id} の見た目 "${e.sprite}" が cast に無い`,
 				);
 		}
-		if (m.bgm && !data.bgm[m.bgm]) err(`map ${id}: BGM "${m.bgm}" が無い`);
+		if (m.bgm === "@tod") {
+			for (const [tod, name] of Object.entries(data.todBgm ?? {}))
+				if (!data.bgm[name]) err(`todBgm.${tod}: BGM "${name}" が無い`);
+		} else if (m.bgm && !data.bgm[m.bgm]) err(`map ${id}: BGM "${m.bgm}" が無い`);
 		if (m.dark !== undefined && !(m.dark >= 0 && m.dark <= 1))
 			err(`map ${id}: dark が 0〜1 でない: ${m.dark}`);
 	}

@@ -41,7 +41,7 @@ const hasDinner = (s: Story): boolean =>
 export const apart: MapDef = {
 	id: "apart",
 	name: "アパートの廊下",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outside: "#14120e",
 	tiles,
 	rows,

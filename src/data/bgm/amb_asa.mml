@@ -1,0 +1,5 @@
+// 日常・朝（光と音がもどる）— ト長調。カリンバの分散和音と明るいパッド
+#inst=retro_game#volume=12#reverb=30#reverbdecay=18#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Kalimba#t0rev=22#t0dly=12#t1inst=Pad 2 (warm)#t1rev=18#t1eqhi=-4;
+@0t72v52o4c8o4g8o4e8o4b8o4g4r4o4d8o4a8o4f+8o4b8o4a4r4o3b8o4f+8o4d8o4a8o4f+4r4o4e8o4b8o4g8o5d8o4b4r4o4c8o4g8o4e8o4b8o4g4r4o4d8o4a8o4f+8o4b8o4a4r4o3b8o4f+8o4d8o4a8o4f+4r4o4e8o4b8o4g8o5d8o4b4r4;
+@1t72v30[o4co4eo4go4b]1[o4do4f+o4ao4b]1[o3bo4do4f+o4a]1[o4eo4go4bo5do5f+]1[o4co4eo4go4b]1[o4do4f+o4ao4b]1[o3bo4do4f+o4a]1[o4eo4go4bo5do5f+]1;
+#end;

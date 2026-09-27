@@ -341,9 +341,16 @@ export class Game {
 			this.player.sprite,
 		];
 		await Promise.race([preloadImages(refs.filter(Boolean)), sleep(2500)]);
-		if (def.bgm !== undefined) this.audio.bgm(def.bgm);
+		if (def.bgm !== undefined) this.audio.bgm(this.resolveBgm(def.bgm));
 		this.updateCamera();
 		this.toast(def.name);
+	}
+
+	/** MapDef.bgm の "@tod"（時間帯の曲）を実際の曲名に。 */
+	private resolveBgm(name: string | null): string | null {
+		if (name !== "@tod") return name;
+		const tod = this.state.flags.tod;
+		return (typeof tod === "string" && this.data.todBgm?.[tod]) || null;
 	}
 
 	/** イベントの出現状態を反映する（スクリプトの後などに呼ぶ）。 */
@@ -1127,6 +1134,9 @@ export class Game {
 			flag: (name) => this.state.flags[name],
 			set: (name, value = true) => {
 				this.state.flags[name] = value;
+				// 時間帯が変わったら、時間帯の曲の地区では曲もかえる
+				if (name === "tod" && this.field?.def.bgm === "@tod")
+					this.audio.bgm(this.resolveBgm("@tod"));
 			},
 			warp: async (mapId, x, y, dir, opt) => {
 				const fade = opt?.fade ?? true;

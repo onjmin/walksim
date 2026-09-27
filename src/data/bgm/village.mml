@@ -1,0 +1,7 @@
+// 夕暮れの村（深夜2時のはずが、ずっと夕暮れ）— 都節音階（E F A B C）の箏と尺八と、
+// 低い持続音。旧 sad（イ短調）の差し替え
+#inst=retro_game#volume=16#reverb=40#reverbdecay=30#reverbpredelay=20#mastercomp=20#fadeout=15#mode=simple#t0inst=Koto#t0rev=26#t0dly=12#t1inst=Shakuhachi#t1rev=34#t1pan=44#t2inst=Pad 2 (warm)#t2rev=20#t2eqhi=-8;
+@0t56v56o4e8o4f8o4a4o4b2o5c4o4b8o4a8o4f2o4e2.r4r1o4a8o4b8o5c4o5e2o5f4o5e8o5c8o4b2o4a4o4f4o4e2r1;
+@1t56v40r1r1o4b2.o4a4o4e1r1r1o5c2o4b2o4e1;
+@2t56v28[o2eo2b]1[o2eo2b]1[o2eo2b]1[o2eo2b]1[o2eo2b]1[o2eo2b]1[o2eo2b]1[o2eo2b]1;
+#end;

@@ -231,7 +231,7 @@ export const danchi: MapDef = {
 		{ x: 16, y: 19, w: 16, h: 5 }, // 南の通路（東）
 	],
 	name: "すみれ台団地",
-	bgm: null,
+	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
 	outdoor: true,
 	outside: "#0c0b0d",
 	tiles,
