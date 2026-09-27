@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 from collections import deque
 from scipy import ndimage as ndi
+from skimage.morphology import skeletonize
 
 import os
 S = os.environ.get('WORK', os.path.join(os.getcwd(), 'work')) + '/'
@@ -134,6 +135,7 @@ def mono_eyes(rgb, out, fg, line, seg, sizes):
     small = fg & ~line & (size_of[seg] < limit)  # seg 0 は小さなかけら
     lab, n = ndi.label(white(rgb) & small)
     done = np.zeros(fg.shape, bool)
+    eyes = np.zeros(fg.shape, bool)
     for r in range(1, n + 1):
         m = lab == r
         if m.sum() < 20 or (m & (nearbg | done)).any():
@@ -157,23 +159,27 @@ def mono_eyes(rgb, out, fg, line, seg, sizes):
         body = eye & ~m & ~white(out)
         if body.sum() < 20:
             continue
-        # 白は虹彩のそばだけ目に入れる（眼鏡のレンズの白まで塗らない）。
-        # 塊どうしのあいだの線・瞳・光も目の中として埋める（外側の輪郭は残る）
-        eye = body | (m & ndi.binary_dilation(body, iterations=12))
-        eye = ndi.binary_fill_holes(eye | ndi.binary_closing(eye, iterations=3)) & fg
+        # 目は虹彩のところだけ（瞳・光も穴埋めで含める）。白目まで塗ると目が大きな色の塊になる
+        eye = ndi.binary_fill_holes(body | ndi.binary_closing(body, iterations=3)) & fg
         if eye.sum() > limit * 3:
             continue  # 大きすぎる＝目ではないものを拾った
         cols, counts = np.unique(out[body].reshape(-1, 3), axis=0, return_counts=True)
         out[eye] = cols[counts.argmax()]
-        done |= eye
-    return out, done
+        # 白目は、まわりの大きな塊（肌）の色で塗って消す
+        sclera = m & ~eye
+        if sclera.any() and near.any():
+            cols, counts = np.unique(out[near].reshape(-1, 3), axis=0, return_counts=True)
+            out[sclera] = cols[counts.argmax()]
+        done |= eye | m
+        eyes |= eye
+    return out, eyes
 
 
 def downscale(rgb, fg, line, eyes, oh, ow):
     """
     ドットへ縮小する。面積平均（BOX）だと線と面の境目に中間色（ぼかし）が出てドット絵として汚いので、
     1ドットごとに元の四角の中でいちばん多い色をそのまま使う（色は塗りの色だけ・混ぜない）。
-    細い線が消えないよう、線が四角の 30% 以上なら線の色にする。ただし目（mono_eyes で1色にしたところ）が
+    線は1ドットの太さで残す（芯が通る四角を線に）。ただし目（mono_eyes で1色にしたところ）が
     25% 以上なら目の色を先にする（小さな目が線に埋もれないように）。
     """
     h, w = fg.shape
@@ -184,6 +190,9 @@ def downscale(rgb, fg, line, eyes, oh, ow):
     q = np.zeros((oh, ow, 3), np.uint8)
     alpha = np.zeros((oh, ow), bool)
     eye_dot = np.zeros((oh, ow), bool)
+    # 線は芯（1画素の細線）にしてから、芯が通る四角を線のドットにする。面積の割合で決めると、
+    # 顔の細い線（目・口・眼鏡）が消え、太い線は太くなる
+    skel = skeletonize(line)
     for i in range(oh):
         for j in range(ow):
             f = fg[ys[i]:ys[i+1], xs[j]:xs[j+1]]
@@ -196,7 +205,7 @@ def downscale(rgb, fg, line, eyes, oh, ow):
                 eye_dot[i, j] = True
                 continue
             l = line[ys[i]:ys[i+1], xs[j]:xs[j+1]]
-            if l.mean() >= 0.3:
+            if skel[ys[i]:ys[i+1], xs[j]:xs[j+1]].sum() >= 3:
                 q[i, j] = (20, 16, 18)
                 continue
             sel = idx[ys[i]:ys[i+1], xs[j]:xs[j+1]][f & ~l]
