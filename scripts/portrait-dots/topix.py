@@ -8,11 +8,16 @@ from skimage.morphology import skeletonize
 
 import os
 S = os.environ.get('WORK', os.path.join(os.getcwd(), 'work')) + '/'
-BODY = int(sys.argv[1]) if len(sys.argv) > 1 else 150
-# 上半身だけを切り抜く（作者指示 2026-09-28: キャラによって頭身が違うので、全身の高さをそろえると
-# 頭の大きさがばらばらになる）。キャラごとの腰の位置（全身の高さに対する割合。清書を見て決めた）。
-# ここで切り、上半身を BODY ドットの高さにする。載っていないキャラは全身のまま
-UPPER = {'kiriko': 0.43, 'teto': 0.45, 'roze': 0.48, 'rei': 0.49, 'shiyo': 0.46, 'zero': 0.50, 'rino': 0.48, 'aru': 0.43}
+# 頭の高さ（髪のてっぺん〜あご）のドット数。どのキャラも頭がこの大きさになるように縮める
+# （作者指示 2026-09-28: 縮尺をそろえる＝頭をだいたい同じ大きさに。全身や上半身の高さでそろえると頭身の違いで頭の大きさがばらつく）
+HEAD_DOTS = int(sys.argv[1]) if len(sys.argv) > 1 else 32
+# キャラごとの頭の上端（髪のてっぺん。アホ毛・耳・リボン・帽子の飾りは除く）とあごの位置（清書の全身の高さに対する割合。清書を見て決めた）
+HEAD = {
+    'kiriko': (0.045, 0.225), 'teto': (0.07, 0.255), 'roze': (0.065, 0.225), 'rei': (0.06, 0.26),
+    'shiyo': (0.045, 0.19), 'zero': (0.11, 0.32), 'rino': (0.005, 0.19), 'aru': (0.02, 0.175),
+}
+# あごから下に見せる長さ（頭の高さの何倍か）。切り口は字幕の下に沈む
+BELOW_CHIN = 1.5
 # 2つめ以降の引数はキャラ id（省略時は work/ の *_ai.png 全部）
 NAMES = sys.argv[2:]
 COLORS = 16
@@ -267,14 +272,18 @@ def pix(name):
     fg = cut_bg(rgb)
     if not COLOR:
         ys, xs = np.nonzero(fg)
-        cut = ys.min() + round((ys.max() + 1 - ys.min()) * UPPER.get(name, 1))
+        H = ys.max() + 1 - ys.min()
+        top, chin = HEAD.get(name, (0.0, 0.18))
+        head = (chin - top) * H
+        cut = ys.min() + round(chin * H + head * BELOW_CHIN)
         fg = fg[ys.min():cut]
         rgb = rgb[ys.min():cut]
         xs = np.nonzero(fg.any(axis=0))[0]
         rgb = rgb[:, xs.min():xs.max()+1]
         fg = fg[:, xs.min():xs.max()+1]
-        oh = BODY
-        ow = max(1, round(fg.shape[1] * BODY / fg.shape[0]))
+        k = HEAD_DOTS / head
+        oh = max(1, round(fg.shape[0] * k))
+        ow = max(1, round(fg.shape[1] * k))
         q, alpha = pix_white(rgb, fg, oh, ow)
         # 外周に1ドットの輪郭（切り口の下端には付けない）
         padded = np.vstack([alpha, alpha[-1:]])
@@ -289,8 +298,8 @@ def pix(name):
     fg = fg[ys.min():ys.max()+1, xs.min():xs.max()+1]
     eyes = eyes[ys.min():ys.max()+1, xs.min():xs.max()+1]
     h, w = fg.shape
-    k = BODY / h
-    oh, ow = BODY, max(1, round(w * k))
+    k = HEAD_DOTS * 5 / h
+    oh, ow = HEAD_DOTS * 5, max(1, round(w * k))
     line = (rgb.max(axis=2) < 70) & fg
     q, alpha, eye_dot = downscale(rgb, fg, line, eyes, oh, ow)
     q = reduce_colors(q, alpha, eye_dot, COLORS)

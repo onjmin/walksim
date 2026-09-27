@@ -56,6 +56,12 @@ export type PortraitSpec = {
 	offsetY?: number;
 };
 
+/**
+ * ジオラマ表示のドット立ち絵で、枠の高さに当てるドット数。ドット立ち絵は頭を 32 ドットにして
+ * あごの下 1.5 頭ぶんで切ってある（頭のてっぺん〜切り口 80 ドット）。どのキャラも1ドットが同じ大きさになる。
+ */
+const DOT_REF = 80;
+
 /** 全身絵のうち、会話で見せる上半身の割合の既定値。 */
 const DEFAULT_CROP = 0.58;
 
@@ -356,7 +362,12 @@ class PortraitSlot {
 			s.setProperty("--hx", String(flip ? 1 - hx : hx));
 			// ぼかしは見せる上半身の下 18%
 			s.setProperty("--fade-at", `${(1 - (0.18 * body * crop) / cut) * 100}%`);
-			s.setProperty("--scale", String(p.scale ?? 1));
+			// ドット立ち絵は頭の大きさをそろえて作ってある（scripts/portrait-dots の HEAD_DOTS）ので、
+			// 全身の高さでなく1ドットの大きさをそろえる（DOT_REF ドットが枠の高さになる）
+			s.setProperty(
+				"--scale",
+				String((p.scale ?? 1) * (dots ? body / DOT_REF : 1)),
+			);
 			s.setProperty("--dy", String(p.offsetY ?? 0));
 			// 枠より広い絵は、出してよい範囲（.portrait-art）の内側の端でぼかして消す
 			this.root.replaceChildren(el("div", { class: "portrait-art" }, [view]));
