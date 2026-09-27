@@ -12,6 +12,9 @@ BODY = int(sys.argv[1]) if len(sys.argv) > 1 else 150
 # 2つめ以降の引数はキャラ id（省略時は work/ の *_ai.png 全部）
 NAMES = sys.argv[2:]
 COLORS = 16
+# 作者指示（2026-09-28）: 色を塗らず、原画のように白に統一する（線だけ黒）。COLOR=1 で塗り分けの版を作る
+COLOR = os.environ.get('COLOR') == '1'
+LINE = (20, 16, 18)
 
 
 def cut_bg(rgb):
@@ -231,9 +234,45 @@ def reduce_colors(q, alpha, eye_dot, k):
     return q
 
 
+def pix_white(rgb, fg, oh, ow):
+    """
+    白地に黒い線だけのドット（原画と同じ）。線は芯にして1ドットの太さで残す。
+    清書で黒く塗られた太い面（タイツ・黒い服）は、芯を取ると真ん中に線が出るので、ふちだけを線にする。
+    """
+    dark = (rgb.max(axis=2) < 70) & fg
+    thick = ndi.binary_opening(dark, iterations=5)
+    line = (dark & ~thick) | (thick & ~ndi.binary_erosion(thick))
+    h, w = fg.shape
+    ys = np.linspace(0, h, oh + 1).round().astype(int)
+    xs = np.linspace(0, w, ow + 1).round().astype(int)
+    skel = skeletonize(line)
+    q = np.full((oh, ow, 3), 255, np.uint8)
+    alpha = np.zeros((oh, ow), bool)
+    for i in range(oh):
+        for j in range(ow):
+            if fg[ys[i]:ys[i+1], xs[j]:xs[j+1]].mean() <= 0.5:
+                continue
+            alpha[i, j] = True
+            if skel[ys[i]:ys[i+1], xs[j]:xs[j+1]].sum() >= 3:
+                q[i, j] = LINE
+    return q, alpha
+
+
 def pix(name):
     rgb = np.array(Image.open(S + f'{name}_ai.png').convert('RGB'))
     fg = cut_bg(rgb)
+    if not COLOR:
+        ys, xs = np.nonzero(fg)
+        rgb = rgb[ys.min():ys.max()+1, xs.min():xs.max()+1]
+        fg = fg[ys.min():ys.max()+1, xs.min():xs.max()+1]
+        oh = BODY
+        ow = max(1, round(fg.shape[1] * BODY / fg.shape[0]))
+        q, alpha = pix_white(rgb, fg, oh, ow)
+        edge = alpha & ~ndi.binary_erosion(alpha, np.ones((3, 3)))
+        q[edge] = LINE
+        im = Image.fromarray(np.dstack([q, alpha.astype(np.uint8) * 255]), 'RGBA')
+        im.save(S + f'{name}_pix.png')
+        return im
     rgb, eyes = flatten(rgb, fg)
     ys, xs = np.nonzero(fg)
     rgb = rgb[ys.min():ys.max()+1, xs.min():xs.max()+1]
