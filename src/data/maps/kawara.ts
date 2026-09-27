@@ -106,10 +106,10 @@ const rows = [
 ];
 
 // ── モブの歩行グラ ──
-const GRANDPA = "pub:assets/rpgen/char/03-elderly-a.png";
-const RUNNER = "pub:assets/rpgen/char/11-woman-b.png";
-const KID = "pub:assets/rpgen/char/04-child.png";
-const WALKER = "pub:assets/rpgen/char/09-woman-a.png";
+const GRANDPA = "pub:sprites/mob_ojiichan.png";
+const RUNNER = "pub:sprites/mob_student.png";
+const KID = "pub:sprites/mob_child.png";
+const WALKER = "pub:sprites/mob_mama.png";
 
 /** 向きの逆算（戻り橋の「ふりむく」「一歩もどる」に使う）。 */
 const BACK: Record<Dir, "u" | "d" | "l" | "r"> = {

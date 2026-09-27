@@ -33,6 +33,10 @@
 - `hasshaku.png` だけ特殊: 32×128（**16×32の縦長セル**×2フレーム×4方向）。白いワンピース＋帽子の長身シルエット
 - ushiro は全方向「後ろ姿」で描いてあります（仕様です）
 
+- 町の人（`mob_child` / `mob_mama` / `mob_salaryman` / `mob_obaachan` / `mob_ojiichan` / `mob_student` /
+  `mob_man` / `mob_worker` / `mob_obachan` / `mob_shopkeeper` / `mob_ol`）は `scripts/make-townsfolk.mjs` の生成品
+  （RPGEN の RPG 風の歩行グラから差し替え）。描き直すなら同じ規格で、スクリプトの MOBS から外す
+
 ## 3. マップチップ（任意・現在は既存チップ+色調で代用）
 
 - 暗色系の差し替えチップ一式（現在は rpg-reze/Base.png を tint/dark で暗くして代用）

@@ -57,7 +57,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	{
 		id: "cp_street_yu",
 		label: "はじまり（まちのどおり・夕方）",
-		sprite: "pub:assets/rpgen/char/02-merchant.png",
+		sprite: "pub:sprites/mob_shopkeeper.png",
 		flags: { tod: "yu" },
 		items: {},
 		to: { map: "street", x: 24, y: 10, dir: "left" },
@@ -90,7 +90,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	{
 		id: "cp_sumire_yu",
 		label: "すみれ町（夕方）",
-		sprite: "pub:assets/rpgen/char/04-child.png",
+		sprite: "pub:sprites/mob_child.png",
 		flags: { tod: "yu" },
 		items: {},
 		to: { map: "sumire", x: 37, y: 3, dir: "left" },
@@ -98,7 +98,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	{
 		id: "cp_kawara_yu",
 		label: "かわらのみち（夕方）",
-		sprite: "pub:assets/rpgen/char/03-elderly-a.png",
+		sprite: "pub:sprites/mob_ojiichan.png",
 		flags: { tod: "yu" },
 		items: {},
 		to: { map: "kawara", x: 5, y: 2, dir: "down" },
@@ -106,7 +106,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	{
 		id: "cp_danchi_shinya",
 		label: "すみれ台団地（深夜2:00）",
-		sprite: "pub:assets/rpgen/char/17-woman-d.png",
+		sprite: "pub:sprites/mob_ol.png",
 		flags: { ...AWAKE, got_dinner_onigiri: true },
 		items: {},
 		to: { map: "danchi", x: 30, y: 12, dir: "left" },
@@ -114,7 +114,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	{
 		id: "cp_kokudo_shinya",
 		label: "こくどう（深夜2:00）",
-		sprite: "pub:assets/rpgen/char/16-man-b.png",
+		sprite: "pub:sprites/mob_salaryman.png",
 		flags: { ...AWAKE, got_dinner_onigiri: true },
 		items: {},
 		to: { map: "kokudo", x: 38, y: 10, dir: "left" },
@@ -122,7 +122,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	{
 		id: "cp_ekimae_yu",
 		label: "えきまえ（夕方）",
-		sprite: "pub:assets/rpgen/char/10-elderly-c.png",
+		sprite: "pub:sprites/mob_obachan.png",
 		flags: { tod: "yu" },
 		items: {},
 		to: { map: "ekimae", x: 30, y: 9, dir: "left" },
@@ -130,7 +130,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	{
 		id: "cp_tonarimachi_yu",
 		label: "となりまち（夕方）",
-		sprite: "pub:assets/rpgen/char/07-weapon-merchant.png",
+		sprite: "pub:sprites/mob_shopkeeper.png",
 		flags: { tod: "yu", got_dinner_onigiri: true },
 		items: {},
 		to: { map: "tonarimachi", x: 3, y: 10, dir: "right" },
@@ -211,7 +211,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	{
 		id: "cp_street_asa",
 		label: "まちのどおり（朝・エンディング）",
-		sprite: "pub:assets/rpgen/char/12-warrior-b.png",
+		sprite: "pub:sprites/mob_worker.png",
 		flags: {
 			...REC3,
 			tod: "asa",

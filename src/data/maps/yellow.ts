@@ -300,7 +300,7 @@ export const yellow: MapDef = {
 		npc("genju", 1, 13, SPR.townsfolk, genjuTalk, { dir: "right" }),
 
 		// ── ミニワイ（隠し部屋。歩行グラは仮＝同梱の子ども） ──
-		npc("miniwai", 18, 3, "pub:assets/rpgen/char/04-child.png", miniwaiTalk, {
+		npc("miniwai", 18, 3, "pub:sprites/mob_child.png", miniwaiTalk, {
 			dir: "down",
 		}),
 

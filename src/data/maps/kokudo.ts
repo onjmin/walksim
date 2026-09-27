@@ -102,11 +102,11 @@ const rows = [
 ];
 
 // ── モブの歩行グラ ──
-const OBACHAN = "pub:assets/rpgen/char/05-elderly-b.png";
-const STUDENT = "pub:assets/rpgen/char/04-child.png";
-const RUNNER = "pub:assets/rpgen/char/11-woman-b.png";
-const MAN = "pub:assets/rpgen/char/16-man-b.png";
-const GASMAN = "pub:assets/rpgen/char/12-warrior-b.png";
+const OBACHAN = "pub:sprites/mob_obaachan.png";
+const STUDENT = "pub:sprites/mob_student.png";
+const RUNNER = "pub:sprites/mob_student.png";
+const MAN = "pub:sprites/mob_salaryman.png";
+const GASMAN = "pub:sprites/mob_worker.png";
 
 /**
  * 環境音のワンショット（夕＝ヒグラシ／朝＝スズメ／夕のトラック）。street と同じ方式：

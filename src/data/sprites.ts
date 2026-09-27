@@ -19,6 +19,6 @@ export const SPR = {
 	myaumyauC: "pub:sprites/myaumyau_c.png",
 
 	// ── モブ（同梱の RPGEN DQ 風キャラ） ──
-	townsfolk: "pub:assets/rpgen/char/14-man-a.png",
-	woman: "pub:assets/rpgen/char/09-woman-a.png",
+	townsfolk: "pub:sprites/mob_man.png",
+	woman: "pub:sprites/mob_mama.png",
 } as const;

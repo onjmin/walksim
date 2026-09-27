@@ -139,11 +139,11 @@ const rows = [
 ];
 
 // ── モブの歩行グラ（同梱の RPGEN DQ 風） ──
-const CHILD = "pub:assets/rpgen/char/04-child.png";
-const ELDER = "pub:assets/rpgen/char/03-elderly-a.png";
-const GRANDMA = "pub:assets/rpgen/char/05-elderly-b.png";
-const WOMAN = "pub:assets/rpgen/char/11-woman-b.png";
-const MAN_B = "pub:assets/rpgen/char/16-man-b.png";
+const CHILD = "pub:sprites/mob_child.png";
+const ELDER = "pub:sprites/mob_ojiichan.png";
+const GRANDMA = "pub:sprites/mob_obaachan.png";
+const WOMAN = "pub:sprites/mob_student.png";
+const MAN_B = "pub:sprites/mob_salaryman.png";
 
 /**
  * 環境音のワンショット（夕＝ヒグラシ／朝＝スズメ）。street と同じ方式：

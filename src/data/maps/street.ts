@@ -134,11 +134,11 @@ const rows = [
 ];
 
 // ── モブの歩行グラ（同梱の RPGEN DQ 風） ──
-const CHILD = "pub:assets/rpgen/char/04-child.png";
-const GRANDMA = "pub:assets/rpgen/char/05-elderly-b.png";
-const WALKER = "pub:assets/rpgen/char/11-woman-b.png";
-const WORKER = "pub:assets/rpgen/char/12-warrior-b.png";
-const SHOPKEEPER = "pub:assets/rpgen/char/02-merchant.png";
+const CHILD = "pub:sprites/mob_child.png";
+const GRANDMA = "pub:sprites/mob_obaachan.png";
+const WALKER = "pub:sprites/mob_student.png";
+const WORKER = "pub:sprites/mob_worker.png";
+const SHOPKEEPER = "pub:sprites/mob_shopkeeper.png";
 
 /** 晩ごはんを買ったか（＞＞1おにぎり／＞＞2パン。持ちものは増やさない・フラグだけ）。 */
 const hasDinner = (s: Story): boolean =>

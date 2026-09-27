@@ -94,13 +94,13 @@ const rows = [
 ];
 
 // ── モブの歩行グラ ──
-const WIFE = "pub:assets/rpgen/char/09-woman-a.png";
-const KID = "pub:assets/rpgen/char/04-child.png";
-const KANRININ = "pub:assets/rpgen/char/10-elderly-c.png";
-const GRANDPA = "pub:assets/rpgen/char/03-elderly-a.png";
-const GRANDMA = "pub:assets/rpgen/char/05-elderly-b.png";
-const WOMAN = "pub:assets/rpgen/char/11-woman-b.png";
-const MAN = "pub:assets/rpgen/char/16-man-b.png";
+const WIFE = "pub:sprites/mob_mama.png";
+const KID = "pub:sprites/mob_child.png";
+const KANRININ = "pub:sprites/mob_ojiichan.png";
+const GRANDPA = "pub:sprites/mob_ojiichan.png";
+const GRANDMA = "pub:sprites/mob_obaachan.png";
+const WOMAN = "pub:sprites/mob_student.png";
+const MAN = "pub:sprites/mob_salaryman.png";
 
 /**
  * 環境音のワンショット（夕＝ヒグラシ／朝＝スズメ）。street / sumire と同じ方式：

@@ -99,7 +99,7 @@ export const cast: Record<string, CharDef> = {
 	oldman: c({
 		id: "oldman",
 		name: "片足の老人",
-		walk: "pub:assets/rpgen/char/03-elderly-a.png",
+		walk: "pub:sprites/mob_ojiichan.png",
 		color: "#9a9a90",
 	}),
 	/**
@@ -179,7 +179,7 @@ export const cast: Record<string, CharDef> = {
 	mgroid: c({
 		id: "mgroid",
 		name: "名無しさん",
-		walk: "pub:assets/rpgen/char/14-man-a.png",
+		walk: "pub:sprites/mob_man.png",
 		color: "#8a97a8",
 		voice: { model: "mgroid" },
 	}),
@@ -187,7 +187,7 @@ export const cast: Record<string, CharDef> = {
 	motroid: c({
 		id: "motroid",
 		name: "名無しさん",
-		walk: "pub:assets/rpgen/char/16-man-b.png",
+		walk: "pub:sprites/mob_salaryman.png",
 		color: "#98a88a",
 		voice: { model: "motroid" },
 	}),
@@ -195,7 +195,7 @@ export const cast: Record<string, CharDef> = {
 	nynroid: c({
 		id: "nynroid",
 		name: "名無しさん",
-		walk: "pub:assets/rpgen/char/09-woman-a.png",
+		walk: "pub:sprites/mob_mama.png",
 		color: "#a88a98",
 		voice: { model: "nynroid" },
 	}),

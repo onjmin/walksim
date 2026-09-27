@@ -89,11 +89,11 @@ const rows = [
 ];
 
 // ── モブの歩行グラ（同梱の RPGEN DQ 風） ──
-const CHILD = "pub:assets/rpgen/char/04-child.png";
-const KIOSK_LADY = "pub:assets/rpgen/char/09-woman-a.png";
-const DRIVER = "pub:assets/rpgen/char/16-man-b.png";
-const OLDMAN = "pub:assets/rpgen/char/03-elderly-a.png";
-const WORKER = "pub:assets/rpgen/char/12-warrior-b.png";
+const CHILD = "pub:sprites/mob_child.png";
+const KIOSK_LADY = "pub:sprites/mob_obachan.png";
+const DRIVER = "pub:sprites/mob_salaryman.png";
+const OLDMAN = "pub:sprites/mob_ojiichan.png";
+const WORKER = "pub:sprites/mob_worker.png";
 
 /**
  * 環境音のワンショット（ヒグラシ／スズメ）。street.ts と同じ方式：直前に鳴らした帯を

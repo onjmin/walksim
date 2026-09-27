@@ -129,12 +129,12 @@ const rows = [
 ];
 
 // ── モブの歩行グラ ──
-const RECORD_OYAJI = "pub:assets/rpgen/char/10-elderly-c.png";
-const TAIYAKI_OBACHAN = "pub:assets/rpgen/char/09-woman-a.png";
-const STUDENT = "pub:assets/rpgen/char/04-child.png";
-const WIFE = "pub:assets/rpgen/char/17-woman-d.png";
-const YAOYA = "pub:assets/rpgen/char/02-merchant.png";
-const MAN = "pub:assets/rpgen/char/14-man-a.png";
+const RECORD_OYAJI = "pub:sprites/mob_man.png";
+const TAIYAKI_OBACHAN = "pub:sprites/mob_obachan.png";
+const STUDENT = "pub:sprites/mob_student.png";
+const WIFE = "pub:sprites/mob_mama.png";
+const YAOYA = "pub:sprites/mob_shopkeeper.png";
+const MAN = "pub:sprites/mob_man.png";
 
 /** 一度だけ鳴る「場面」の帯（見えない touch を数マスに敷く）。 */
 const sceneBelt = (

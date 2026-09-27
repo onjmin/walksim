@@ -134,7 +134,7 @@ export const suupaa: MapDef = {
 			"baachan_ev",
 			7,
 			10,
-			"pub:assets/rpgen/char/05-elderly-b.png",
+			"pub:sprites/mob_obaachan.png",
 			baachan,
 			{
 				dir: "down",
@@ -144,7 +144,7 @@ export const suupaa: MapDef = {
 			"okusan",
 			4,
 			8,
-			"pub:assets/rpgen/char/09-woman-a.png",
+			"pub:sprites/mob_mama.png",
 			async (s) => {
 				if (!s.flag("seen_suupaa_okusan")) {
 					s.set("seen_suupaa_okusan");
@@ -162,7 +162,7 @@ export const suupaa: MapDef = {
 			"gacha_kid",
 			14,
 			12,
-			"pub:assets/rpgen/char/04-child.png",
+			"pub:sprites/mob_child.png",
 			async (s) => {
 				if (!s.flag("seen_gacha_kid")) {
 					s.set("seen_gacha_kid");
