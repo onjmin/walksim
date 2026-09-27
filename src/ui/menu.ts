@@ -1,5 +1,5 @@
 // フィールドのメニュー（Bボタン／☰）：
-// レコード・ノート・めをさます（room 以外）・せってい・きろく・タイトルへ（DESIGN §3）。
+// レコード・ノート・せってい・きろく・タイトルへ（DESIGN §3）。「めをさます」は 2026-09-28 作者指示「walksim は地続き」でやめた（歩いて帰る）。
 
 import type { Game } from "../engine/game";
 import { ResetToTitle } from "../engine/game";
@@ -331,11 +331,6 @@ export const fieldMenu = async (game: Game): Promise<void> => {
 			[
 				{ label: "レコード", value: "records" },
 				{ label: "ノート", value: "notes" },
-				// 夢の中（room 以外）でだけ出す安全装置（ゆめにっき9キー相当。DESIGN §3）。
-				// 日常パート（夕方・夜）ではまだ夢でないので出さない: tod が深夜のときだけ（DESIGN §4）
-				...(game.state.flags.tod === "shinya" && game.state.mapId !== "room"
-					? [{ label: "めをさます", value: "wake" }]
-					: []),
 				{ label: "せってい", value: "settings" },
 				{ label: "きろく", sub: "セーブ", value: "save" },
 				{ label: "タイトルへ", value: "title" },
@@ -345,22 +340,7 @@ export const fieldMenu = async (game: Game): Promise<void> => {
 		if (v === null) return;
 		if (v === "records") await recordMenu(game);
 		else if (v === "notes") await noteMenu(game);
-		else if (v === "wake") {
-			await game.say(
-				null,
-				"めを　さましますか？\n（すすんだ分は　きえません）",
-			);
-			const n = await game.story.choose(["はい", "いいえ"], { cancel: 1 });
-			game.msg.hideWindow();
-			if (n === 0) {
-				// 自室のベッドで目が覚める（フラグ・持ちものはそのまま）。
-				// data.start は夕方の街路（DESIGN §4）なので、行き先はベッドに固定する
-				await game.story.warp("room", 2, 4, "down");
-				await game.say(null, "……目が　さめた。");
-				game.msg.hideWindow();
-				return;
-			}
-		} else if (v === "settings") await settingsMenu(game);
+		else if (v === "settings") await settingsMenu(game);
 		else if (v === "save") {
 			const ok = writeSave(game.state);
 			game.audio.se(ok ? "save" : "cancel");

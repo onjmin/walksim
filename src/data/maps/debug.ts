@@ -16,7 +16,7 @@ const done = (map: string, ...ids: string[]): Flags =>
 	Object.fromEntries(ids.map((id) => [`done:${map}:${id}`, true]));
 
 // 本編の区切りごとに立っているフラグ（前の区切りに足していく）。
-// tod は時間帯システム（DESIGN §4）: 夢パートは "shinya"（menu の「めをさます」条件）
+// tod は時間帯システム（DESIGN §4）: 夢パートは "shinya"
 const AWAKE: Flags = {
 	...done("room", "opening"),
 	seen_door: true,
@@ -207,6 +207,47 @@ const CHECKPOINTS: Checkpoint[] = [
 		items: KEYS3,
 		to: { map: "terminus", x: 13, y: 5, dir: "left" },
 	},
+	// 地続きの拡張（2026-09-28）の新しい地区
+	{
+		id: "cp_senro_yu",
+		label: "せんろぞいのみち（夕方）",
+		sprite: SPR.woman,
+		flags: { tod: "yu" },
+		items: {},
+		to: { map: "senro", x: 42, y: 7, dir: "left" },
+	},
+	{
+		id: "cp_koen_yu",
+		label: "みどりがおか公園（夕方）",
+		sprite: "pub:sprites/mob_ojiichan.png",
+		flags: { tod: "yu" },
+		items: {},
+		to: { map: "koen", x: 20, y: 22, dir: "up" },
+	},
+	{
+		id: "cp_yamamichi_shinya",
+		label: "やまみち（深夜・峠のてまえ）",
+		sprite: "pub:sprites/mob_ojiichan.png",
+		flags: AWAKE,
+		items: {},
+		to: { map: "yamamichi", x: 4, y: 1, dir: "down" },
+	},
+	// 夜明けの うみべ（終点から線路を歩いて出てきたところ。ending_ready は terminus が立てる）
+	{
+		id: "cp_umi_asa",
+		label: "うみべ（朝・終点から歩いて出てきた）",
+		sprite: "pub:sprites/mob_ojiichan.png",
+		flags: {
+			...REC3,
+			tod: "asa",
+			ending_ready: true,
+			clear: true,
+			ending_seen: true,
+			seen_kaeri: "walk",
+		},
+		items: KEYS3,
+		to: { map: "umi", x: 42, y: 17, dir: "left" },
+	},
 	// 朝のまちのどおり（エンディングは東端の囲いの手前。ending_ready は terminus が立てる）
 	{
 		id: "cp_street_asa",
@@ -271,6 +312,10 @@ const spots: [number, number][] = [
 	[10, 6],
 	[12, 6],
 	[14, 6],
+	[4, 8],
+	[8, 8],
+	[12, 8],
+	[14, 8],
 ];
 
 const events: EventDef[] = [

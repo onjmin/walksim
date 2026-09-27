@@ -1,5 +1,6 @@
 // となりまち「つきみ」（アーケード商店街）。docs/content-briefs.md「日常の町 拡張」。
-// 36×20・outdoor・BGM null・夕方のみ（ekimae の改札からしか来られない）・怪異ゼロ必達。
+// 36×20・outdoor・BGM null・夕方のみ（ekimae の電車か、せんろぞいのみちを歩いて来る。
+// senro の西はしは夕方だけ通れる＝アーケードのシャッター）・怪異ゼロ必達。
 // ここは「行かなくてもいい豊かさ」の担当——進行に一切関係しない。純ノスタルジー地区。
 // かいいノート（s.note）は一つも呼ばない。
 //
@@ -28,7 +29,7 @@ import type {
 	Story,
 	TileDef,
 } from "../../engine/defs";
-import { npc } from "../helpers";
+import { npc, warp } from "../helpers";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
@@ -815,6 +816,9 @@ export const tonarimachi: MapDef = {
 			},
 		},
 
+		// ── 東はし（二本目の通り）→ せんろぞいのみち（歩いて えきまえへ。地続きの拡張 2026-09-28） ──
+		warp("to_senro", 35, 16, { map: "senro", x: 1, y: 7, dir: "right" }),
+		warp("to_senro2", 35, 17, { map: "senro", x: 1, y: 7, dir: "right" }),
 		// ── 人たち（夕方だけの町なので when は不要） ──
 		// レコード店主（店のおく。3層: 初回／針の話／待機）
 		npc(

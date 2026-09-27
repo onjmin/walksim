@@ -5,7 +5,7 @@
 // 呼び声（蔵への道・お守り必須帯の手前）・くねくね（田の向こう・二度目は消えている）・
 // 杉沢村の看板（入口）・巨頭オの傾いた看板（蔵への道）。
 //
-// 経路: 北西の扉(3,1)⇔hub。参道=x3 の道。メインストリート=y10（西端・東端に地蔵）。
+// 経路: 北西の峠道(3,1)⇔やまみち（深夜だけ、峠のむこうがこの村。2026-09-28 作者指示「walksim は地続き」で hub の扉をやめた）。参道=x3 の道。メインストリート=y10（西端・東端に地蔵）。
 // 南の道=x10（用水路の橋→南の地蔵）。蔵への道=x17 を北へ→(17,6)お守りの帯→y5 を東へ→蔵の戸(20,4)。
 // 隠し: 入口の道の東、木立の切れ目 (4,4) から北の小さなほこら (5,3)。
 
@@ -26,7 +26,7 @@ const tiles: Record<string, TileDef> = VILLAGE;
 
 const rows = [
 	"                          ", // y0
-	"   :               zzz    ", // y1  hubへの出口 (3,1)
+	"   :               zzz    ", // y1  峠への出口 (3,1)→yamamichi
 	"  T:.T             ZZZ    ", // y2  着地 (3,2)・杉沢村の看板 (4,2)
 	"   :T.      .....  (w(    ", // y3  ほこら (5,3)・八尺様② (14,3)
 	"   :..      ..L... )d)    ", // y4  電柱のかげ (14,4)・倒れた地蔵 (17,4)・蔵の戸 (20,4)
@@ -191,7 +191,9 @@ const yobigoe = async (s: Story): Promise<void> => {
 		s.set("seen_yobigoe_reply");
 		await s.say("kiriko", "……おかあさん？");
 		await s.narrate("――へんじを、してしまった。");
-		await s.warp("village", 7, 9, "down");
+		// 地続き（作者指示）: 飛ばさずに、来た道を神社の前まで かってに歩かされる
+		await s.narrate("足が、かってに\nうごきだした。");
+		await s.move("player", "dddllllllllllu", { speed: 0.6 });
 		await s.narrate("……神社の　まえに\n立っていた。");
 		await s.say("tsukuyomi", "……もどってきましたね");
 		await s.narrate("日は、まだ　しずまない。");
@@ -216,13 +218,7 @@ export const village: MapDef = {
 	rows,
 	events: [
 		// ── 出入り口 ──
-		warp(
-			"to_hub",
-			3,
-			1,
-			{ map: "hub", x: 10, y: 2, dir: "down" },
-			{ se: "door" },
-		),
+		warp("to_yamamichi", 3, 1, { map: "yamamichi", x: 4, y: 1, dir: "down" }),
 		warp(
 			"to_kura",
 			20,

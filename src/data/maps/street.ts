@@ -114,7 +114,7 @@ const rows = [
 	"                              ", // y0
 	"                              ", // y1
 	"                              ", // y2
-	"    |||||||                   ", // y3  物干しのロープ (8,3)
+	"    .||||||                   ", // y3  物干しのロープ (8,3)・北 (4,3)→koen（みどりがおか公園への石段）
 	"    ..x...x                   ", // y4  裏どおり。だんボール (6,4)・ねこ (7,4)・ビールケース (10,4)
 	"aaaa.......                   ", // y5  アパートの屋根・裏どおり
 	"AAAA.nnnnnn aaaa              ", // y6  路地 (4,5)-(4,9)
@@ -459,6 +459,8 @@ export const street: MapDef = {
 		warp("to_sumire", 2, 19, { map: "sumire", x: 37, y: 3, dir: "left" }),
 		warp("to_kawara", 21, 19, { map: "kawara", x: 37, y: 8, dir: "left" }),
 		warp("to_kokudo", 0, 11, { map: "kokudo", x: 38, y: 10, dir: "left" }),
+		// 裏どおりの北はしから、みどりがおか公園への石段（地続きの拡張 2026-09-28）
+		warp("to_koen", 4, 3, { map: "koen", x: 20, y: 22, dir: "up" }),
 		// 深夜だけ、囲いのあった場所が駅の入口（→ hub）
 		{
 			id: "sta_in",

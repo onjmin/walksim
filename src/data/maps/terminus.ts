@@ -4,9 +4,9 @@
 // - 蓄音機台: rec_a/b/c を「本人の声」で再生（trueVoice・1枚ずつスキップ可）→ rec_last が自動で回る
 //   → ゼロの声のない歌 → キリコが紙をのせて singOnce(zerouta)（キリコの声の代読歌）
 //   → テト到着 → 優音アイが一瞬 → ロゼの「朝は来るアル」→ 帰り方の選択 → kane →
-//   tod="asa"・ending_ready を立てて 朝の room (2,4) へ返す（DESIGN §4 時間帯システム）。
-//   目ざめの一言のあとは通常操作（room→apart→street と歩いて帰る。朝のスレの書き込み
-//   ＝MGRoidらの3レスは room.ts のモニターが tod="asa" で受け持つ）。
+//   tod="asa"・ending_ready を立てる。2026-09-28 作者指示「walksim は地続き」で、ベッドで目ざめる
+//   のをやめた: 夜があけたホームから、線路を東へ歩いて（終電を選べば電車で）海ぞいの umi へ出て、
+//   朝の町を歩いて帰る（umi の yoake_arrive が夜明けの場面。朝のスレの書き込みは room.ts のモニター）。
 //   エンディング本体（s.ending・まとめカード「こんやの　きろく」）は street.ts の
 //   工事囲いの前のイベントが受け持つ（ending_ready・seen_kaeri を読む）
 // - 音響担当への依存: src/data/bgm/zerouta.mml と engine/audio.ts の singOnce(mml)（統合段階で確認）
@@ -29,8 +29,12 @@ const announce = (s: Story, text: string) =>
 
 // 駅舎と終端のチップ（data/tiles-station.ts の TERMINUS）。
 // ( ) 駅舎の白壁 / w 窓 / k K 時刻表（なにも書かれていない） / D 待合室の扉（あかない）
-// . ホーム / - ホームの端 / t 線路の名残（通れない） / V 自販機 / L 常夜灯 / B b ベンチ
-const tiles: Record<string, TileDef> = TERMINUS;
+// . ホーム / - ホームの端 / t 線路の名残（通れない） / r 線路（通れる。東はしから海ぞいへ） / V 自販機 / L 常夜灯 / B b ベンチ
+const tiles: Record<string, TileDef> = {
+	...TERMINUS,
+	// 線路のつづき（地続き。朝はここから レールづたいに海ぞいへ歩いて帰る）
+	r: { ...TERMINUS.t, passable: true },
+};
 
 const rows = [
 	"                ", // y0
@@ -42,7 +46,7 @@ const rows = [
 	" .Bb.......Bb.  ", // y6  ベンチ×2。ロゼ (10,6)・シヨ (12,6)・テト (13,6)
 	" .............  ", // y7  墓標 (1,7)(2,7)・駅名標 (7,7)・アイ (13,7)
 	" -------------  ", // y8
-	"   tttttttt     ", // y9  線路の名残。花 (6,9)
+	"   rrrrrrrrrrrrr", // y9  線路（東へつづく）。花 (6,9)・東はし (15,9)→umi（朝だけ）
 ];
 
 export const terminus: MapDef = {
@@ -79,7 +83,30 @@ export const terminus: MapDef = {
 			trigger: "touch",
 			through: true,
 			run: async (s) => {
+				// 夜があけたら、トンネルへは もどらない（帰り道は 線路の東）
+				if (s.flag("ending_ready")) {
+					await s.narrate("トンネルの　おくは、\nもう　まっくらだ。");
+					await s.move("player", "l");
+					return;
+				}
 				await s.warp("tunnel", 1, 3, "right");
+			},
+		},
+
+		// ── 線路の東はし（夜があけたら、レールづたいに海ぞいの umi へ。それまでは草にのまれている） ──
+		{
+			id: "rail_east",
+			x: 15,
+			y: 9,
+			trigger: "touch",
+			through: true,
+			run: async (s) => {
+				if (s.flag("ending_ready")) {
+					await s.warp("umi", 42, 17, "left");
+					return;
+				}
+				await s.narrate("線路は、すぐ先で\n草に　のまれている。");
+				await s.move("player", "l");
 			},
 		},
 
@@ -296,16 +323,16 @@ export const terminus: MapDef = {
 				// 工事囲いの前のイベントが受け持つ（ending_ready と seen_kaeri を読む）
 				s.set("tod", "asa");
 				s.set("ending_ready");
-				await s.warp("room", 2, 4, "down", { fade: false });
+				// 地続き（作者指示）: 目ざめて自室へ飛ぶのをやめ、ここから歩いて（終電なら電車で）海ぞいへ出る。
+				// 夜明けの場面は umi の yoake_arrive が受け持つ
+				if (way === 1) {
+					await s.warp("umi", 42, 17, "left");
+					return;
+				}
 				await s.wait(400);
 				await s.fadeIn(1200);
-				await s.narrate("……目が　さめた。");
-				s.se("tick", { volume: 0.7 });
-				await s.wait(500);
-				s.se("tick", { volume: 0.7 });
-				await s.narrate("――秒針が、もどっている。");
-				await s.narrate("窓から、あさの光。");
-				await s.say("kiriko", "……ただいまンゴ");
+				await s.narrate("……夜が、あけていく。");
+				await s.narrate("レールの先が、東のほうで\nしろく　ひかっている。");
 			},
 		},
 

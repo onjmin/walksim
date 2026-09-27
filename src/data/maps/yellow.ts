@@ -2,7 +2,8 @@
 // 26×18 の均質迷路。style-spaces §2 の例外＝黒の海でなく「どこまでも同じ」で作る。
 // tint 黄・ambient dust・BGM deep2。
 //
-// 座標の凍結（統合仕様）: 着地 (3,2)／出口 touch (3,1) → hub (4,2)。
+// 座標の凍結（統合仕様）: 着地 (3,2)／出口 touch (3,1) → kokudo (18,6)。
+// 2026-09-28 作者指示「walksim は地続き」: 入口は hub の扉でなく、こくどうの つぶれたファミレスの通用口（深夜だけ）。
 //
 // 見どころ:
 // - おんJマンのポスターの反復（1枚だけ逆向き → note exit8）
@@ -28,7 +29,7 @@ import { UG, YELLOW } from "../tiles-underground";
 // 自作チップ（data/tiles-underground.ts の YELLOW）。黄ばんだ縞の壁紙（H 上段 / h 下段）と
 // しめったベージュのカーペット、灰色の事務机・パイプいす・事務椅子。u は「見た目はかべ・通れる」隠し。
 //   H h 壁紙  u 隠しのかべ  . カーペット  ; 水たまり（しめったカーペット）  ~ 隠し部屋の赤いじゅうたん
-//   D hub への扉  E どこにもつながらない扉（同じ絵）  Q おんJマンのポスター（同じ絵の反復）
+//   D ファミレスの通用口へもどる扉  E どこにもつながらない扉（同じ絵）  Q おんJマンのポスター（同じ絵の反復）
 //   N はり紙  M 消えたモニター  V うなる自販機  t じむ机  n いす  r 事務椅子（テトの席）  x 段ボール
 const tiles = YELLOW;
 
@@ -38,7 +39,7 @@ const tiles = YELLOW;
 
 const rows = [
 	"HHHhHHHHHHHHHHHHHHHHHHHHHH", // y0
-	"HhQDhHHHHHHHHHHHHhhhHHHHHH", // y1  ポスター① (2,1)・扉 (3,1) → hub
+	"HhQDhHHHHHHHHHHHHhhhHHHHHH", // y1  ポスター① (2,1)・扉 (3,1) → kokudo の通用口
 	"H....hhhQhhhhhhQH~~~HHHHHH", // y2  ポスター② (8,2)・③ (15,2)・隠し部屋 x17-19
 	"H...............u~~~HHHHHH", // y3  北のろうか。隠しのかべ (16,3)・ミニワイ (18,3)
 	"H....HHHHH.HHHHHH~~xHHHHHH", // y4  だんボールの巣 (19,4)
@@ -188,12 +189,12 @@ export const yellow: MapDef = {
 	tiles,
 	rows,
 	events: [
-		// ── 出口（入口のそばの扉 → hub） ──
+		// ── 出口（入口のそばの扉 → こくどうのファミレスの通用口） ──
 		warp(
-			"to_hub",
+			"to_kokudo",
 			3,
 			1,
-			{ map: "hub", x: 4, y: 2, dir: "down" },
+			{ map: "kokudo", x: 18, y: 6, dir: "down" },
 			{ se: "door" },
 		),
 

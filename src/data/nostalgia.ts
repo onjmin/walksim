@@ -75,7 +75,10 @@ export const strFlag = (s: Story, name: string): string | null => {
 
 // ───────────────── 宵の段（P0-1） ─────────────────
 
-/** 日常の屋外6地区（宵の段・深夜に歩いたか を数える地区。apart・room は入らない）。 */
+/**
+ * 日常の屋外の地区（宵の段・深夜に歩いたか を数える地区。apart・room は入らない）。
+ * 2026-09-28 地続きの拡張で、やまみち・せんろぞいのみち・うみべ・みどりがおか公園を足して10地区。
+ */
 export const OUTDOOR_DAILY: readonly string[] = [
 	"street",
 	"sumire",
@@ -83,6 +86,10 @@ export const OUTDOOR_DAILY: readonly string[] = [
 	"danchi",
 	"kokudo",
 	"ekimae",
+	"yamamichi",
+	"senro",
+	"umi",
+	"koen",
 ];
 
 type Tod = "yu" | "yoru" | "shinya" | "asa";
@@ -100,11 +107,14 @@ export const yoruStepSt = (st: GameState): number =>
 	OUTDOOR_DAILY.filter((m) => !!st.flags[`done:${m}:arrive_yoru`]).length;
 
 /**
- * 宵の町の時計（"20:05"〜"20:47"。yoruStep ごとに7分進む）。off は時計ごとのずれ（ekimae tokei は 1）。
+ * 宵の町の時計（"20:05"〜"21:15"。yoruStep ごとに7分進む）。off は時計ごとのずれ（ekimae tokei は 1）。
  * 例: `` s.narrate(`まちの時計。――${yoruClock(s)}。`) ``。
  */
-export const yoruClock = (s: Story, off = 0): string =>
-	`20:${String(5 + 7 * yoruStep(s) + off).padStart(2, "0")}`;
+export const yoruClock = (s: Story, off = 0): string => {
+	// 地区がふえて 60 分をこえるので、時もくり上げる（10地区で 21:15 まで）
+	const m = 20 * 60 + 5 + 7 * yoruStep(s) + off;
+	return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+};
 
 /**
  * あくび（宵の4地区目あたり。一度だけ `seen_akubi`）。7か所の arrive_yoru の末尾で `await yoruAkubi(s)`。

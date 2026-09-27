@@ -11,9 +11,11 @@ import { hub } from "./maps/hub";
 import { kakolog2 } from "./maps/kakolog2";
 import { kawara } from "./maps/kawara";
 import { kisaragi } from "./maps/kisaragi";
+import { koen } from "./maps/koen";
 import { kokudo } from "./maps/kokudo";
 import { kura } from "./maps/kura";
 import { room } from "./maps/room";
+import { senro } from "./maps/senro";
 import { street } from "./maps/street";
 import { sumire } from "./maps/sumire";
 import { suupaa } from "./maps/suupaa";
@@ -21,7 +23,9 @@ import { terminus } from "./maps/terminus";
 import { tonarimachi } from "./maps/tonarimachi";
 import { train } from "./maps/train";
 import { tunnel } from "./maps/tunnel";
+import { umi } from "./maps/umi";
 import { village } from "./maps/village";
+import { yamamichi } from "./maps/yamamichi";
 import { yellow } from "./maps/yellow";
 import { notes } from "./notes";
 import { items, records } from "./records";
@@ -42,6 +46,10 @@ export const data: GameData = {
 		ekimae,
 		suupaa,
 		tonarimachi,
+		senro,
+		yamamichi,
+		koen,
+		umi,
 		hub,
 		yellow,
 		village,

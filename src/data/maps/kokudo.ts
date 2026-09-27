@@ -59,6 +59,12 @@ const tiles: Record<string, TileDef> = {
 		color: "#6a4a2a",
 		passable: false,
 	},
+	// ファミレスの通用口（深夜だけ あいている → 黄色い部屋。ほかの時間は踏むと押し戻す）
+	J: {
+		layers: [WALL.tileLo, DOOR.sliding],
+		color: "#8a7a3a",
+		passable: true,
+	},
 	b: {
 		layers: [JP.ground, JP.susuki],
 		color: "#5f8e2a",
@@ -90,7 +96,7 @@ const rows = [
 	"                        .....           ", // y2  歩道橋のデッキ (24-28,2)
 	"        nnnnnnnnnnn     fffff           ", // y3  ファミレスの屋根・らんかん（南）
 	"        ^^^^^^^^^^^                     ", // y4
-	"        #t#t#j#t#t#                     ", // y5  われた窓 (9,5)・営業時間 (10,5)・入口 (13,5)
+	"        #t#t#j#t#tJ                     ", // y5  われた窓 (9,5)・営業時間 (10,5)・入口 (13,5)・通用口 (18,5)
 	"      ......................=..         ", // y6  ファミレス前・北階段 (28,6)・死んだ自販機 (30,6)
 	"      .........................         ", // y7
 	"----------------------------------------", // y8  国道（センターライン）
@@ -439,6 +445,28 @@ export const kokudo: MapDef = {
 			run: async (s) => {
 				await s.narrate("『ながらくの　ごあいこ――』");
 				await s.narrate("はり紙のつづきは、\n日に焼けて　よめない。");
+			},
+		},
+		// 通用口（作者指示「walksim は地続き」: 黄色い部屋は、このファミレスの おくにある。
+		// 深夜だけ あいていて、入ると どこまでも同じ黄色い部屋。ほかの時間は かぎがかかっている）
+		{
+			id: "famiresu_back",
+			x: 18,
+			y: 5,
+			trigger: "touch",
+			through: true,
+			run: async (s) => {
+				if (s.flag("tod") === "shinya") {
+					if (!s.flag("seen_famiresu_back")) {
+						s.set("seen_famiresu_back");
+						await s.narrate("通用口の戸が、すこし\nあいている。");
+						await s.narrate("おくから、けいこうとうの\nうなる音がする。");
+					}
+					await s.warp("yellow", 3, 2, "down", { se: "door" });
+					return;
+				}
+				await s.narrate("『従業員通用口』\n……かぎが　かかっている。");
+				await s.move("player", "d");
 			},
 		},
 		{
