@@ -173,6 +173,15 @@ const rideHome = async (s: Story): Promise<void> => {
 
 export const tonarimachi: MapDef = {
 	id: "tonarimachi",
+	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	boxes: [
+		{ x: 0, y: 7, w: 12, h: 6 }, // アーケード一本目の西
+		{ x: 12, y: 7, w: 12, h: 6 }, // アーケード一本目のなか
+		{ x: 24, y: 7, w: 12, h: 6 }, // アーケード一本目の東
+		{ x: 0, y: 13, w: 12, h: 7 }, // 二本目の西
+		{ x: 12, y: 13, w: 12, h: 7 }, // 二本目のなか
+		{ x: 24, y: 13, w: 12, h: 7 }, // 二本目の東
+	],
 	name: "となりまち",
 	bgm: null,
 	outdoor: true,

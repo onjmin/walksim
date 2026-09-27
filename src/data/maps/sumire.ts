@@ -214,6 +214,20 @@ const denwaHint = (x: number, y: number): EventDef => ({
 
 export const sumire: MapDef = {
 	id: "sumire",
+	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	boxes: [
+		{ x: 1, y: 0, w: 14, h: 7 }, // 小学校
+		{ x: 15, y: 3, w: 11, h: 4 }, // 坂の上の道
+		{ x: 26, y: 0, w: 14, h: 7 }, // いしはら家・みずの家
+		{ x: 0, y: 7, w: 10, h: 6 }, // 歯科と緑地
+		{ x: 10, y: 7, w: 9, h: 6 }, // 掲示板と自販機
+		{ x: 19, y: 7, w: 13, h: 6 }, // 公園
+		{ x: 32, y: 7, w: 8, h: 6 }, // こんどう家
+		{ x: 0, y: 13, w: 14, h: 7 }, // やまだ家と坂
+		{ x: 14, y: 13, w: 15, h: 7 }, // おおた家と空き地
+		{ x: 29, y: 13, w: 11, h: 6 }, // 南の木立
+		{ x: 0, y: 20, w: 10, h: 4 }, // 坂道
+	],
 	name: "すみれ町",
 	bgm: null,
 	outdoor: true,

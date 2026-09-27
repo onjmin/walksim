@@ -288,6 +288,15 @@ const suwaru = async (s: Story): Promise<void> => {
 
 export const kawara: MapDef = {
 	id: "kawara",
+	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	boxes: [
+		{ x: 26, y: 1, w: 12, h: 7 }, // 神社
+		{ x: 14, y: 12, w: 13, h: 4 }, // 川ぞいの橋
+		{ x: 0, y: 0, w: 13, h: 6 }, // すみれ町へのみち
+		{ x: 0, y: 6, w: 13, h: 6 }, // 田んぼと土手
+		{ x: 13, y: 6, w: 13, h: 6 }, // 土手のなかほど
+		{ x: 26, y: 7, w: 14, h: 5 }, // 土手の東
+	],
 	name: "かわらのみち",
 	bgm: null,
 	outdoor: true,

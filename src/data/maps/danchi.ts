@@ -219,6 +219,17 @@ const ichibanUe = async (s: Story): Promise<void> => {
 
 export const danchi: MapDef = {
 	id: "danchi",
+	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	boxes: [
+		{ x: 0, y: 0, w: 15, h: 8 }, // A棟
+		{ x: 15, y: 0, w: 17, h: 8 }, // B棟
+		{ x: 0, y: 8, w: 16, h: 5 }, // 棟のあいだ（西）
+		{ x: 16, y: 8, w: 16, h: 5 }, // 棟のあいだ（東）
+		{ x: 0, y: 13, w: 15, h: 6 }, // C棟
+		{ x: 15, y: 13, w: 17, h: 6 }, // 集会所
+		{ x: 0, y: 19, w: 16, h: 5 }, // 南の通路（西）
+		{ x: 16, y: 19, w: 16, h: 5 }, // 南の通路（東）
+	],
 	name: "すみれ台団地",
 	bgm: null,
 	outdoor: true,

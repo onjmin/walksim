@@ -161,6 +161,15 @@ const kaisatsuOto = async (s: Story): Promise<void> => {
 
 export const ekimae: MapDef = {
 	id: "ekimae",
+	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	boxes: [
+		{ x: 8, y: 0, w: 13, h: 5 }, // スーパー
+		{ x: 0, y: 5, w: 9, h: 5 }, // 駅舎
+		{ x: 9, y: 5, w: 12, h: 5 }, // 駅前
+		{ x: 21, y: 5, w: 11, h: 5 }, // 東の家並み
+		{ x: 0, y: 10, w: 16, h: 7 }, // ロータリーの西
+		{ x: 16, y: 10, w: 16, h: 7 }, // ロータリーの東
+	],
 	name: "えきまえ",
 	bgm: null,
 	outdoor: true,

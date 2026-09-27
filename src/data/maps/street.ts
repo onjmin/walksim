@@ -339,6 +339,14 @@ const endingAtKakoi = async (s: Story): Promise<void> => {
 
 export const street: MapDef = {
 	id: "street",
+	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	boxes: [
+		{ x: 0, y: 3, w: 12, h: 9 }, // アパートと裏どおり
+		{ x: 12, y: 6, w: 10, h: 6 }, // 商店とコンビニ
+		{ x: 22, y: 6, w: 8, h: 6 }, // とこやと駅の入口
+		{ x: 0, y: 12, w: 13, h: 8 }, // 公園の西・すずきさん家
+		{ x: 13, y: 12, w: 14, h: 8 }, // 公園の東・たなかさん家
+	],
 	name: "まちのどおり",
 	bgm: null,
 	outdoor: true,

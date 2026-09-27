@@ -239,6 +239,14 @@ const gasmanAsa = async (s: Story): Promise<void> => {
 
 export const kokudo: MapDef = {
 	id: "kokudo",
+	// ジオラマ表示（?diorama）の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
+	boxes: [
+		{ x: 4, y: 3, w: 16, h: 5 }, // ファミレス
+		{ x: 20, y: 1, w: 14, h: 7 }, // 歩道橋
+		{ x: 0, y: 8, w: 14, h: 6 }, // スタンド
+		{ x: 14, y: 8, w: 13, h: 6 }, // バスだまり
+		{ x: 27, y: 8, w: 13, h: 6 }, // 南の歩道の東
+	],
 	name: "こくどう",
 	bgm: null,
 	outdoor: true,
