@@ -1123,11 +1123,11 @@ export const renderDiorama = (
 	if (terrain.back) ctx.drawImage(terrain.back, sx, sy - back);
 	ctx.drawImage(terrain.below, sx, sy);
 	for (const r of rows) {
+		// 同じ行では 人 → その行の物のはみ出し（木の葉・棚の上段）の順。幹の横に立つと葉が頭にかぶさる
 		const strip = terrain.strips.get(r);
-		if (strip) ctx.drawImage(strip, sx, sy);
-		const list = byRow.get(r);
-		if (!list) continue;
-		for (const a of list.sort((p, q) => p.fy - q.fy || p.fx - q.fx)) {
+		for (const a of (byRow.get(r) ?? []).sort(
+			(p, q) => p.fy - q.fy || p.fx - q.fx,
+		)) {
 			// 1人ぶんの四角（半マス上に立つ・横と上に1マスの余白）だけ描いて変換する
 			const rc = clipRect(
 				{
@@ -1161,6 +1161,7 @@ export const renderDiorama = (
 				rc.h,
 			);
 		}
+		if (strip) ctx.drawImage(strip, sx, sy);
 	}
 	// 暗闇：照らす半径の外を、場面のいちばん暗い段でディザ状に潰す（懐中電灯で広がる）
 	if (dark && dark.amount > 0)

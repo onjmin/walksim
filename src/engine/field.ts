@@ -395,12 +395,13 @@ export class Field {
 			else byRow.set(r, [a]);
 		}
 		for (let r = lo; r <= hi; r++) {
-			const strip = this.strips.get(r);
-			if (strip) ctx.drawImage(strip, -ox, (r - STRIP_UP) * TILE - oy);
+			// 同じ行では 人 → その行の物のはみ出し の順（幹の横に立つと木の葉が頭にかぶさる）
 			const list = byRow.get(r);
 			if (list)
 				for (const a of list.sort((p, q) => p.fy - q.fy || p.fx - q.fx))
 					a.draw(ctx, ox, oy, time);
+			const strip = this.strips.get(r);
+			if (strip) ctx.drawImage(strip, -ox, (r - STRIP_UP) * TILE - oy);
 		}
 	}
 
