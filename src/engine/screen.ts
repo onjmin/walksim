@@ -9,7 +9,11 @@ import { TILE } from "./types";
 import { onViewportChange, viewport } from "./viewport";
 
 /** 画面の短辺に入れたいマス数の目安。 */
-const TILES_ON_SHORT_SIDE = 11;
+const TILES_ON_SHORT_SIDE =
+	typeof location !== "undefined" &&
+	new URLSearchParams(location.search).has("diorama")
+		? 16
+		: 11;
 
 export class Screen {
 	readonly canvas: HTMLCanvasElement;

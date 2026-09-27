@@ -135,6 +135,8 @@ export class Field {
 	/** 上の層の各画素の濃さ（alpha）。隠れぐあいを測るのに使う。 */
 	private cover: Uint8Array | null = null;
 	private dirty = true;
+	/** 地形を描き直した回数（ジオラマ表示のキャッシュ判定用）。 */
+	version = 0;
 	private unsub: () => void;
 	actors: Actor[] = [];
 
@@ -219,6 +221,7 @@ export class Field {
 	 */
 	private redraw(): void {
 		this.dirty = false;
+		this.version++;
 		const tiles = [...new Set(this.grid)];
 		if (
 			!this.above &&
@@ -304,6 +307,11 @@ export class Field {
 			}
 		}
 		return body > 0 && covered >= body * HIDDEN_RATIO;
+	}
+
+	/** 画像の読み込みで汚れていれば地形を描き直す。 */
+	sync(): void {
+		if (this.dirty) this.redraw();
 	}
 
 	/** 地形の下の層（キャラより奥）。 */

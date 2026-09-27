@@ -15,6 +15,7 @@ import type {
 	Script,
 	Story,
 } from "./defs";
+import { boxFor, boxPlacement, DIORAMA, renderDiorama } from "./diorama";
 import { Actor, Field } from "./field";
 import type { Input } from "./input";
 import { writeSave } from "./save";
@@ -626,6 +627,12 @@ export class Game {
 		const field = this.field;
 		if (!field) return;
 		const { width, height } = this.screen;
+		if (DIORAMA) {
+			const p = boxPlacement(boxFor(field, this.player), width, height);
+			this.camX = p.camX;
+			this.camY = p.camY;
+			return;
+		}
 		const mw = field.w * TILE;
 		const mh = field.h * TILE;
 		const cx = this.player.fx * TILE + TILE / 2 - width / 2;
@@ -663,6 +670,21 @@ export class Game {
 		ctx.fillStyle = tod?.outside ?? field?.def.outside ?? "#000";
 		ctx.fillRect(0, 0, this.screen.width, this.screen.height);
 		if (!field) return;
+		if (DIORAMA) {
+			renderDiorama(
+				ctx,
+				this.screen.width,
+				this.screen.height,
+				field,
+				this.player,
+				[...field.actors, this.player],
+				this.time,
+				typeof this.state.flags.tod === "string"
+					? this.state.flags.tod
+					: undefined,
+			);
+			return;
+		}
 		const ox = this.camX;
 		const oy = this.camY;
 		field.drawBelow(ctx, ox, oy);
