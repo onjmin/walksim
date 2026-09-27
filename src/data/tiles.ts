@@ -255,6 +255,79 @@ export const INDOOR: Record<string, TileDef> = {
 	" ": BLACK,
 };
 
+// ───────────────── 自作チップ（キリコの部屋・アパートの廊下） ─────────────────
+// public/assets/walksim/home.png（scripts/make-home-tiles.mjs で作る。8列）。
+// ジオラマ表示（engine/diorama.ts）の画作りに合わせた、日本のワンルームと共用廊下の絵。
+//   ROOM:  # 天井  H h 壁紙（上段・下段）  W 窓  Q ポスター  c カレンダー  k 壁掛け時計
+//          . フローリング  D 玄関のたたき  Z z ベッド（頭・足）  t ローテーブル  j やかんの台
+//          B 本棚  V テレビ  M パソコン机  n いす
+//          小物（通れる） o 座布団  m 雑誌の山  l 脱いだ服
+//          小物（通れない） g 鉢植え  f 段ボール  w ごみ箱  e 扇風機
+//   APART: # 天井  H h 壁（上段・下段）  . コンクリートの床  D q 鉄の扉（キリコの部屋・よその部屋）
+//          B 郵便受け  u かさ立て  > 下り階段  r 外廊下の手すり（向こうは夜空）  x 手すりの前の消火器
+
+const HOME_PNG = "pub:assets/walksim/home.png";
+/** home.png の (c, r) マスから w×h マス。 */
+export const home = (c: number, r: number, w = 1, h = 1): string =>
+	cut(HOME_PNG, c, r, w, h);
+
+const C_WALL = "#dcd6c8";
+const C_FLOOR = "#9c7048";
+const C_CONC = "#b4b2aa";
+const H_WOOD = home(0, 0);
+const H_WALL_TOP = home(1, 0);
+const H_WALL_BOT = home(2, 0);
+
+export const ROOM: Record<string, TileDef> = {
+	"#": solid("#1b1410"),
+	H: solid(C_WALL, H_WALL_TOP),
+	h: solid(C_WALL, H_WALL_BOT),
+	W: solid(C_WALL, H_WALL_TOP, home(0, 1)),
+	Q: solid(C_WALL, H_WALL_TOP, home(1, 1)),
+	c: solid(C_WALL, H_WALL_BOT, home(2, 1)),
+	k: solid(C_WALL, H_WALL_BOT, home(3, 1)),
+	".": floor(C_FLOOR, H_WOOD),
+	D: floor("#b4b2aa", home(6, 0)),
+	Z: solid(C_FLOOR, H_WOOD, home(4, 1)),
+	z: solid(C_FLOOR, H_WOOD, home(5, 1)),
+	t: solid(C_FLOOR, H_WOOD, home(6, 1)),
+	j: solid(C_FLOOR, H_WOOD, home(7, 1)),
+	B: solid(C_FLOOR, H_WOOD, home(0, 3, 1, 2)),
+	V: solid(C_FLOOR, H_WOOD, home(0, 2)),
+	M: solid(C_FLOOR, H_WOOD, home(1, 2)),
+	n: solid(C_FLOOR, H_WOOD, home(2, 2)),
+	o: floor(C_FLOOR, H_WOOD, home(5, 2)),
+	m: floor(C_FLOOR, H_WOOD, home(6, 2)),
+	l: floor(C_FLOOR, H_WOOD, home(7, 2)),
+	g: solid(C_FLOOR, H_WOOD, home(4, 3)),
+	f: solid(C_FLOOR, H_WOOD, home(5, 3)),
+	w: solid(C_FLOOR, H_WOOD, home(6, 3)),
+	e: solid(C_FLOOR, H_WOOD, home(7, 3)),
+	" ": BLACK,
+};
+
+const A_WALL_TOP = home(3, 0);
+const A_WALL_BOT = home(4, 0);
+const A_FLOOR = home(5, 0);
+
+export const APART: Record<string, TileDef> = {
+	"#": solid("#1b1410"),
+	H: solid(C_CONC, A_WALL_TOP),
+	h: solid(C_CONC, A_WALL_BOT),
+	".": floor(C_CONC, A_FLOOR),
+	D: floor(C_CONC, A_WALL_BOT, home(1, 3, 1, 2)),
+	q: solid(C_CONC, A_WALL_BOT, home(2, 3, 1, 2)),
+	B: solid(C_CONC, A_WALL_BOT, home(3, 3, 1, 2)),
+	u: solid(C_CONC, A_FLOOR, home(4, 2)),
+	">": floor(C_CONC, home(7, 0)),
+	r: solid("#10141c", home(4, 4)),
+	x: solid("#10141c", home(4, 4), home(5, 4)),
+	" ": BLACK,
+};
+
+/** 日記（セーブ点）の絵。 */
+export const HOME_DIARY = home(3, 2);
+
 // ───────────────── 洞窟・ダンジョン ─────────────────
 // 上端は「闇 # ＋ 岩壁2段（W 上段・w 下段）」。水晶の洞窟は C/c を壁に使う。
 //   #  闇（岩の天井）  W w  岩壁（上段・下段）  C c  水晶の壁（上段・下段）

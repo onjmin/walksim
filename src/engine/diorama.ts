@@ -265,6 +265,36 @@ const quantize = (
 	g.putImageData(img, 0, 0);
 };
 
+/** 描いたものの外側に1画素の輪郭（キャラを床から浮かせる。参考作品のキャラも輪郭で立っている）。 */
+const outline = (
+	g: CanvasRenderingContext2D,
+	w: number,
+	h: number,
+	c: [number, number, number],
+): void => {
+	const img = g.getImageData(0, 0, w, h);
+	const d = img.data;
+	const src = new Uint8Array(w * h);
+	for (let i = 0; i < w * h; i++) src[i] = d[i * 4 + 3] > 0 ? 1 : 0;
+	for (let y = 0; y < h; y++)
+		for (let x = 0; x < w; x++) {
+			const i = y * w + x;
+			if (src[i]) continue;
+			if (
+				(x > 0 && src[i - 1]) ||
+				(x < w - 1 && src[i + 1]) ||
+				(y > 0 && src[i - w]) ||
+				(y < h - 1 && src[i + w])
+			) {
+				d[i * 4] = c[0];
+				d[i * 4 + 1] = c[1];
+				d[i * 4 + 2] = c[2];
+				d[i * 4 + 3] = 255;
+			}
+		}
+	g.putImageData(img, 0, 0);
+};
+
 /** 地形の層（下・上）の変換結果。箱・時間帯・マップが変わるまで使い回す。 */
 let terrain: {
 	key: string;
@@ -436,6 +466,7 @@ export const renderDiorama = (
 	const sorted = [...actors].sort((a, b) => a.fy - b.fy);
 	for (const a of sorted) a.draw(g, ox, oy, time);
 	quantize(g, bw, bh, ox, oy, pal.ramp, pal.accent, 0.12, lamps);
+	outline(g, bw, bh, pal.ramp[0]);
 
 	// 床の厚み → 箱の中身 → 断面の縁
 	ctx.fillStyle = scene.slab;

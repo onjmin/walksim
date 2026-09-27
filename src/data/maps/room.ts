@@ -24,7 +24,6 @@
 //   seen_nikki_asa・seen_receipt・seen_makura_asa（この3つは room の中だけ。朝の日記・机・枕元を一度にする）。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
-import { OBJ } from "../helpers";
 import {
 	arrived,
 	chukeiDan,
@@ -40,29 +39,22 @@ import {
 	yoruStep,
 } from "../nostalgia";
 import { SPR } from "../sprites";
-import { base, INDOOR, PROPS } from "../tiles";
+import { HOME_DIARY, ROOM } from "../tiles";
 
-// INDOOR に足すもの: c 壁の貼り紙（カレンダー）
-const tiles: Record<string, TileDef> = {
-	...INDOOR,
-	c: {
-		layers: [base(1, 78), PROPS.notice],
-		color: "#e8e4dc",
-		passable: false,
-	},
-};
+// 絵は自作チップ（data/tiles.ts の ROOM・scripts/make-home-tiles.mjs）
+const tiles: Record<string, TileDef> = ROOM;
 
-// W 窓 / Q 絵（ポスター） / c カレンダー / k 柱時計 / Z z ベッド / t 机 / B 本棚 / V テレビ / M モニター / n いす
+// W 窓 / Q 絵（ポスター） / c カレンダー / k 壁掛け時計 / Z z ベッド / t 机 / j やかんの台 / B 本棚 / V テレビ / M モニター / n いす
 const rows = [
 	"############", // y0
 	"#HHWHHQHHHH#", // y1  窓 (3,1)・ポスター (6,1)
-	"#hhhchhhkhh#", // y2  カレンダー (4,2)（(4,3) から）・柱時計 (8,2)
-	"#Zt..B.V.M.#", // y3  ベッド (1,3)・机 (2,3)・本棚 (5,3)・テレビ (7,3)・モニター (9,3)
-	"#z.......n.#", // y4  いす (9,4)。目ざめの場所 (2,4)
-	"#..........#", // y5
-	"#.........t#", // y6  日記 (2,6)・蓄音機 (5,6)・やかんの台 (10,6)
-	"#..........#", // y7
-	"#..........#", // y8  apart からの戻り位置 (5,8)
+	"#hhhchhhkhh#", // y2  カレンダー (4,2)（(4,3) から）・壁掛け時計 (8,2)
+	"#Zto.B.V.M.#", // y3  ベッド (1,3)・机 (2,3)・本棚 (5,3)・テレビ (7,3)・モニター (9,3)
+	"#z.......nw#", // y4  いす (9,4)。目ざめの場所 (2,4)
+	"#g.....m...#", // y5
+	"#.........j#", // y6  日記 (2,6)・蓄音機 (5,6)・やかんの台 (10,6)
+	"#e......l..#", // y7
+	"#.........f#", // y8  apart からの戻り位置 (5,8)
 	"#####D######", // y9  ドア (5,9) → apart (2,3)（座標凍結v2）
 ];
 
@@ -308,13 +300,13 @@ export const room: MapDef = {
 				await s.warp("apart", 2, 3, "down", { se: "door" });
 			},
 		},
-		// ── 日記（セーブ）。絵は記録の水晶（helpers.ts の OBJ.save）で代用。
+		// ── 日記（セーブ）。絵は床のノート（自作チップ）。
 		//    セーブの前に一行日記（nostalgia.md P0-4。宵に一行・深夜にポエム・朝に消す＝nikkiPage） ──
 		{
 			id: "diary",
 			x: 2,
 			y: 6,
-			sprite: OBJ.save,
+			sprite: HOME_DIARY,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
