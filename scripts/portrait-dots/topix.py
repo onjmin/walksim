@@ -2,7 +2,6 @@
 import sys
 import numpy as np
 from PIL import Image
-from collections import deque
 from scipy import ndimage as ndi
 from skimage.morphology import skeletonize
 
@@ -15,7 +14,7 @@ HEAD_DOTS = int(sys.argv[1]) if len(sys.argv) > 1 else 32
 # 清書の頭を 0.01 きざみの目盛りで拡大して読んだ（全身の図で読むと 0.02〜0.03 ずれて、頭の大きさが 2 割ばらついた）
 HEAD = {
     'kiriko': (0.025, 0.215), 'teto': (0.055, 0.245), 'roze': (0.045, 0.215), 'rei': (0.05, 0.245),
-    'shiyo': (0.045, 0.215), 'zero': (0.115, 0.33), 'rino': (0.003, 0.205), 'aru': (0.003, 0.15),
+    'shiyo': (0.045, 0.215), 'zero': (0.11, 0.316), 'rino': (0.003, 0.205), 'aru': (0.003, 0.15),
 }
 # あごから下に見せる長さ（頭の高さの何倍か）。切り口は字幕の下に沈む
 BELOW_CHIN = 1.5
@@ -28,28 +27,26 @@ LINE = (20, 16, 18)
 
 
 def cut_bg(rgb):
-    """四辺から、白に近い画素を塗りつぶして背景として抜く。"""
-    h, w, _ = rgb.shape
+    """
+    四辺から、白に近い画素を塗りつぶして背景として抜く。
+    線のすき間から中へ漏れて、白い手袋・袖・足などが透けないように、線を GAP 画素ぶん太らせた壁で
+    せき止めてから塗りつぶし、あとで線の手前まで広げる（GAP×2 までのすき間はふさがる）。
+    """
+    GAP = 5
     white = (rgb.min(axis=2) > 225) & (rgb.max(axis=2) - rgb.min(axis=2) < 25)
-    bg = np.zeros((h, w), bool)
-    q = deque()
-    for x in range(w):
-        for y in (0, h - 1):
-            if white[y, x] and not bg[y, x]: bg[y, x] = True; q.append((y, x))
-    for y in range(h):
-        for x in (0, w - 1):
-            if white[y, x] and not bg[y, x]: bg[y, x] = True; q.append((y, x))
-    while q:
-        y, x = q.popleft()
-        for Y, X in ((y-1, x), (y+1, x), (y, x-1), (y, x+1)):
-            if 0 <= Y < h and 0 <= X < w and white[Y, X] and not bg[Y, X]:
-                bg[Y, X] = True; q.append((Y, X))
-    # いちばん大きい塊だけ残す（紙のしみ・影のかけら）
+    wall = ndi.binary_dilation(~white, iterations=GAP)
+    open_ = white & ~wall
+    lab, n = ndi.label(open_)
+    edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    bg = np.isin(lab, edge[edge > 0])
+    # 壁の厚みぶん、白いところだけ線の手前まで背景を広げる
+    bg = ndi.binary_dilation(bg, iterations=GAP + 1, mask=white)
+    # 小さなかけら（紙のしみ・影のかけら）は捨てる。離れた手や飾りは残す
     fg = ~bg
     lab, n = ndi.label(fg)
     if n > 1:
         sizes = ndi.sum(fg, lab, range(1, n + 1))
-        fg = lab == (np.argmax(sizes) + 1)
+        fg = np.isin(lab, 1 + np.nonzero(sizes >= sizes.max() * 0.01)[0])
     return fg
 
 
