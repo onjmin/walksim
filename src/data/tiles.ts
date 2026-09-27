@@ -443,6 +443,34 @@ export const APART: Record<string, TileDef> = {
 	" ": BLACK,
 };
 
+/**
+ * スーパーみなみ（home.png の後半）。
+ *   # 天井  H h 店の壁（赤い帯とポップ・幅木）  . 木の床  D 出口のマット
+ *   S 冷蔵ケース  s 冷凍ケース  B 陳列棚  t 惣菜のケース  x 搬入の箱  w 特売ワゴン  k かごの山
+ *   U 米袋  L スピーカー  [ = ] レジ台（向こうのばあちゃんに話しかけられる）  g ガチャガチャ
+ */
+export const SHOP: Record<string, TileDef> = {
+	"#": solid("#1b1410"),
+	H: solid(C_WALL, home(6, 4)),
+	h: solid(C_WALL, H_WALL_BOT),
+	".": floor(C_FLOOR, H_WOOD),
+	D: floor("#5a5e64", home(7, 4)),
+	S: solid(C_FLOOR, H_WOOD, home(0, 5, 1, 2)),
+	s: solid(C_FLOOR, H_WOOD, home(1, 5, 1, 2)),
+	B: solid(C_FLOOR, H_WOOD, home(2, 5, 1, 2)),
+	t: solid(C_FLOOR, H_WOOD, home(4, 5)),
+	x: solid(C_FLOOR, H_WOOD, home(5, 3)),
+	w: solid(C_FLOOR, H_WOOD, home(5, 5)),
+	k: solid(C_FLOOR, H_WOOD, home(7, 6)),
+	U: solid(C_FLOOR, H_WOOD, home(6, 5)),
+	L: solid(C_FLOOR, H_WOOD, home(7, 5)),
+	"[": { ...solid(C_FLOOR, H_WOOD, home(4, 6)), counter: true },
+	"=": { ...solid(C_FLOOR, H_WOOD, home(5, 6)), counter: true },
+	"]": { ...solid(C_FLOOR, H_WOOD, home(6, 6)), counter: true },
+	g: solid(C_FLOOR, H_WOOD, home(3, 5, 1, 2)),
+	" ": BLACK,
+};
+
 /** 日記（セーブ点）の絵。 */
 export const HOME_DIARY = home(3, 2);
 

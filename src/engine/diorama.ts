@@ -155,15 +155,36 @@ export const boxPlacement = (
 	box: Box,
 	screenW: number,
 	screenH: number,
+	player: Actor,
 ): { sx: number; sy: number; camX: number; camY: number } => {
 	const bw = box.w * TILE;
 	const bh = box.h * TILE;
 	const back = backHeight(field, box);
-	const sx = Math.round((screenW - bw) / 2);
+	const margin = TILE / 2;
+	// 箱が画面に収まれば真ん中へ。はみ出すとき（縦長の画面の広い店など）は、箱の中で
+	// キリコを追って動かす（箱の端は画面の端から margin より内へは入れない）
+	const fit = (
+		screen: number,
+		size: number,
+		center: number,
+		extra: number,
+	): number =>
+		size + extra + margin * 2 <= screen
+			? Math.round((screen - size - extra) / 2)
+			: Math.round(
+					Math.min(
+						margin,
+						Math.max(screen - size - margin, screen / 2 - center),
+					),
+				);
+	const px = (player.fx - box.x) * TILE + TILE / 2;
+	const py = (player.fy - box.y) * TILE + TILE / 2;
+	const sx = fit(screenW, bw, px, 0);
 	// 下に字幕が来るので少し上寄り
-	const sy = Math.round(
-		back + (screenH - back - bh - SLAB) / 2 - screenH * 0.06,
-	);
+	const sy =
+		bh + back + SLAB + margin * 2 <= screenH
+			? Math.round(back + (screenH - back - bh - SLAB) / 2 - screenH * 0.06)
+			: back + fit(screenH - back - SLAB, bh, py, 0);
 	return { sx, sy, camX: box.x * TILE - sx, camY: box.y * TILE - sy };
 };
 
@@ -397,7 +418,7 @@ export const renderDiorama = (
 		rampCache.set(tod ?? "", pal);
 	}
 	const box = boxFor(field, player);
-	const { sx, sy } = boxPlacement(field, box, screenW, screenH);
+	const { sx, sy } = boxPlacement(field, box, screenW, screenH, player);
 	const back = backHeight(field, box);
 	const bw = box.w * TILE;
 	const bh = box.h * TILE;

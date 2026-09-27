@@ -503,6 +503,178 @@ const extinguisher = () => {
 	return s;
 };
 
+// ───────────────── スーパーみなみ（夕方だけの、ふるい駅前スーパー） ─────────────────
+
+/** 店の壁（上段）：クリームの壁に赤い帯と、手書きのポップ。 */
+const shopWallTop = () => {
+	const s = sprite();
+	for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) s.px(x, y, "w");
+	s.hline(0, 0, 16, "V").rect(0, 3, 16, 2, "r").hline(0, 5, 16, "R");
+	s.rect(2, 8, 5, 6, "y").hline(3, 10, 3, "r").hline(3, 12, 2, "K");
+	s.rect(9, 7, 5, 6, "p").hline(10, 9, 3, "u").hline(10, 11, 3, "r");
+	return s;
+};
+
+/** オープンの冷蔵ケース（16x32。牛乳・とうふ。棚の奥が明るい）。 */
+const reefer = () => {
+	const s = sprite(16, 32);
+	s.rect(0, 2, 16, 28, "l").hline(0, 2, 16, "p");
+	s.rect(0, 4, 16, 2, "s");
+	for (const [top, a, b] of [
+		[7, "p", "u"],
+		[13, "p", "p"],
+		[19, "x", "f"],
+	]) {
+		s.rect(1, top, 14, 5, "d");
+		for (let x = 2; x < 14; x += 3) s.rect(x, top + 1, 2, 4, x % 2 ? a : b).px(x, top + 1, "p");
+		s.hline(1, top + 5, 14, "L");
+	}
+	s.rect(0, 25, 16, 5, "M").hline(0, 25, 16, "L");
+	s.hline(0, 30, 16, "Q");
+	return s;
+};
+
+/** 冷凍ケース（16x32。霜のついたガラス戸）。 */
+const freezer = () => {
+	const s = sprite(16, 32);
+	s.rect(0, 2, 16, 28, "l").hline(0, 2, 16, "p");
+	s.rect(1, 5, 14, 20, "N").vline(8, 5, 20, "l");
+	for (let y = 6; y < 25; y++)
+		for (let x = 1; x < 15; x++) if (hash(x, y, 50) < 0.18) s.px(x, y, "m");
+	s.rect(2, 8, 5, 4, "s").rect(9, 14, 5, 4, "s");
+	s.vline(7, 12, 5, "L").vline(9, 12, 5, "L");
+	s.rect(0, 25, 16, 5, "M").hline(0, 25, 16, "L");
+	s.hline(0, 30, 16, "Q");
+	return s;
+};
+
+/** 陳列棚（16x32。色とりどりの商品）。 */
+const gondola = () => {
+	const s = sprite(16, 32);
+	s.rect(0, 3, 16, 27, "L").hline(0, 3, 16, "l");
+	const goods = ["r", "y", "u", "g", "p", "e", "R", "Y", "U"];
+	for (const top of [5, 12, 19]) {
+		s.rect(1, top, 14, 6, "M");
+		let x = 1;
+		while (x < 15) {
+			const w = 2 + Math.floor(hash(x, top, 51) * 2);
+			const h = 3 + Math.floor(hash(x, top, 52) * 3);
+			s.rect(x, top + 6 - h, Math.min(w, 15 - x), h, goods[Math.floor(hash(x, top, 53) * goods.length)]);
+			x += w;
+		}
+		s.hline(1, top + 6, 14, "p");
+	}
+	s.rect(0, 26, 16, 4, "M");
+	s.hline(0, 30, 16, "Q");
+	return s;
+};
+
+/** 惣菜のケース（コロッケ・煮物・卵焼き）。 */
+const deliCase = () => {
+	const s = sprite();
+	s.rect(0, 2, 16, 13, "l").hline(0, 2, 16, "p");
+	s.rect(1, 4, 14, 6, "m");
+	s.rect(2, 5, 3, 4, "A").px(3, 6, "q");
+	s.rect(6, 5, 4, 4, "g").px(7, 6, "G");
+	s.rect(11, 5, 3, 4, "y").px(12, 6, "Y");
+	s.rect(1, 11, 14, 3, "M").hline(1, 11, 14, "L");
+	s.rect(12, 1, 3, 2, "y").px(13, 1, "r");
+	return s;
+};
+
+/** 特売ワゴン（金網のかごに山盛り、赤い札）。 */
+const wagon = () => {
+	const s = sprite();
+	s.rect(1, 6, 14, 7, "L").hline(1, 6, 14, "l");
+	for (let x = 2; x < 15; x += 2) s.vline(x, 7, 5, "M");
+	for (const [x, y, c] of [
+		[3, 3, "y"],
+		[6, 2, "r"],
+		[9, 3, "u"],
+		[12, 2, "g"],
+		[5, 5, "p"],
+		[10, 5, "e"],
+	])
+		s.rect(x, y, 3, 3, c);
+	s.rect(5, 8, 6, 3, "r").hline(6, 9, 4, "p");
+	s.px(2, 14, "K").px(13, 14, "K");
+	return s;
+};
+
+/** 米袋の山。 */
+const riceBags = () => {
+	const s = sprite();
+	for (const [x, y] of [
+		[1, 7],
+		[8, 7],
+		[4, 2],
+	]) {
+		s.rect(x, y, 7, 6, "p").hline(x, y, 7, "x").hline(x, y + 5, 7, "P");
+		s.hline(x + 2, y + 2, 3, "r").hline(x + 2, y + 3, 2, "g");
+	}
+	s.hline(1, 13, 14, "Q");
+	return s;
+};
+
+/** 店内放送のスピーカー（柱にとりつけ）。 */
+const speaker = () => {
+	const s = sprite();
+	s.vline(7, 6, 9, "M");
+	s.rect(4, 1, 8, 6, "l").vline(4, 1, 6, "L").rect(6, 2, 4, 4, "d").px(7, 3, "M");
+	s.hline(5, 15, 6, "Q");
+	return s;
+};
+
+/** レジ台（左・レジ・右）。 */
+const register = (part) => {
+	const s = sprite();
+	s.rect(0, 6, 16, 3, "l").hline(0, 6, 16, "p");
+	s.rect(0, 9, 16, 5, "L").hline(0, 13, 16, "M");
+	if (part === "left") s.vline(0, 6, 8, "M");
+	if (part === "right") s.vline(15, 6, 8, "M");
+	if (part === "mid") {
+		s.rect(3, 1, 10, 6, "M").rect(4, 2, 8, 2, "d").hline(5, 2, 4, "g");
+		s.rect(4, 5, 8, 1, "l");
+	}
+	return s;
+};
+
+/** ガチャガチャ（赤い台に丸いドーム）。 */
+const gacha = () => {
+	const s = sprite(16, 32);
+	s.art(2, 4, [
+		"...mmmmmm...",
+		"..mrmmymm...",
+		".mmmumpmmm..",
+		".myrmmgmrm..",
+		".mmgmpmmum..",
+		"..mmmrmmm...",
+		"...mmmmmm...",
+	]);
+	s.rect(3, 11, 10, 18, "r").vline(3, 11, 18, "R").hline(3, 11, 10, "p");
+	s.rect(6, 14, 4, 4, "l").px(7, 15, "M").px(8, 16, "M");
+	s.rect(5, 21, 6, 3, "d");
+	s.rect(3, 29, 10, 1, "R").hline(3, 30, 10, "Q");
+	return s;
+};
+
+/** 買いものかごの山。 */
+const baskets = () => {
+	const s = sprite();
+	for (let i = 0; i < 4; i++) s.rect(3, 9 - i * 2, 10, 3, i % 2 ? "e" : "r").hline(3, 9 - i * 2, 10, i % 2 ? "E" : "R");
+	s.rect(3, 12, 10, 2, "r").hline(4, 13, 8, "R");
+	s.hline(3, 14, 10, "Q");
+	return s;
+};
+
+/** 出口のマット。 */
+const exitMat = () => {
+	const s = sprite().rect(0, 0, 16, 16, "M");
+	for (let y = 1; y < 16; y += 2) s.hline(1, y, 14, "d");
+	s.rect(0, 0, 16, 1, "L");
+	return s;
+};
+
 // ───────────────── シートに並べる（8列。16x32 は縦2マス） ─────────────────
 
 // 地（床・壁・階段）以外の物には1画素の輪郭をつける。ジオラマ表示は色数が少ないので、
@@ -543,8 +715,23 @@ const LAYOUT = [
 	[1, 3, steelDoor("p").outline()],
 	[2, 3, steelDoor("P").outline()],
 	[3, 3, mailbox().outline()],
+	// スーパーみなみ（data/tiles.ts の SHOP）
+	[6, 4, shopWallTop()],
+	[7, 4, exitMat()],
+	[0, 5, reefer().outline()],
+	[1, 5, freezer().outline()],
+	[2, 5, gondola().outline()],
+	[3, 5, gacha().outline()],
+	[4, 5, deliCase().outline()],
+	[5, 5, wagon().outline()],
+	[6, 5, riceBags().outline()],
+	[7, 5, speaker().outline()],
+	[4, 6, register("left").outline()],
+	[5, 6, register("mid").outline()],
+	[6, 6, register("right").outline()],
+	[7, 6, baskets().outline()],
 ];
 
 console.log(
-	`home.png ${writeSheet(join(OUT, "home.png"), LAYOUT, PAL, 8, 5)}`,
+	`home.png ${writeSheet(join(OUT, "home.png"), LAYOUT, PAL, 8, 7)}`,
 );
