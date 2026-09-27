@@ -886,6 +886,100 @@ const drawDark = (
 	ctx.drawImage(darkMask, sx, sy);
 };
 
+/**
+ * 前景パララックス（作者提案）：カメラと箱のあいだにある物のシルエット。
+ * キリコが歩くと、箱の中身より大きく横へ流れる（手前ほど速い＝奥行き）。手前なので2倍の粗さのドット。
+ *   poles … 太い電柱と電線（上）＋ 生けがきの影（下）。日常の屋外の既定
+ *   susuki … ススキの穂（下）。川ぞい
+ * 物の並び（世界の x）はマップごとに決まっている（同じ場所にいつも同じ電柱）。
+ */
+const FG_PX = 2; // 前景の1ドットの大きさ（ソース画素）
+const drawForeground = (
+	ctx: CanvasRenderingContext2D,
+	screenW: number,
+	screenH: number,
+	field: Field,
+	player: Actor,
+	kind: "poles" | "susuki",
+	ramp: Ramp,
+): void => {
+	// 虚空（黒）より一段明るく、箱の中身よりは暗いシルエット
+	const [r0, g0, b0] = ramp[1];
+	const [r1, g1, b1] = ramp[2];
+	const ink = `rgb(${r0},${g0},${b0})`;
+	const rim = `rgb(${r1},${g1},${b1})`;
+	const seed = [...field.def.id].reduce((a, c) => a * 31 + c.charCodeAt(0), 7);
+	const px = player.fx * TILE + TILE / 2;
+	const mid = screenW / 2;
+	const dot = (x: number, y: number, w: number, h: number, c: string) => {
+		ctx.fillStyle = c;
+		ctx.fillRect(
+			Math.round(x / FG_PX) * FG_PX,
+			Math.round(y / FG_PX) * FG_PX,
+			Math.max(FG_PX, Math.round(w / FG_PX) * FG_PX),
+			Math.max(FG_PX, Math.round(h / FG_PX) * FG_PX),
+		);
+	};
+	const mapW = field.w * TILE;
+	if (kind === "poles") {
+		// 電柱：9〜13マスおき。視差 1.9（箱の中身より手前）
+		const k = 1.9;
+		const poles: number[] = [];
+		for (let wx = -TILE * 4 + (seed % 5) * TILE; wx < mapW + TILE * 8; ) {
+			poles.push(wx);
+			wx += ((9 + hash(wx, seed) * 5) | 0) * TILE;
+		}
+		const xs = poles.map((wx) => mid + (wx - px) * k);
+		const top = -FG_PX * 4;
+		const armY = Math.round(screenH * 0.1);
+		// 電線（となりの電柱どうしを、たわんだ線で）
+		for (let wire = 0; wire < 3; wire++) {
+			const y0 = armY + wire * FG_PX * 3;
+			for (let i = 0; i < xs.length - 1; i++) {
+				const a = xs[i];
+				const b = xs[i + 1];
+				if (b < 0 || a > screenW) continue;
+				const sag = (b - a) * 0.07;
+				for (let x = Math.max(0, a); x <= Math.min(screenW, b); x += FG_PX) {
+					const t = (x - a) / (b - a);
+					dot(x, y0 + 4 * sag * t * (1 - t), FG_PX, FG_PX, ink);
+				}
+			}
+		}
+		for (const x of xs) {
+			if (x < -40 || x > screenW + 40) continue;
+			const w = FG_PX * 5;
+			dot(x - w / 2, top, w, screenH - top, ink);
+			dot(x - w / 2 + FG_PX, top, FG_PX, screenH - top, rim);
+			dot(x - FG_PX * 9, armY - FG_PX, FG_PX * 18, FG_PX * 2, ink);
+			dot(x - FG_PX * 7, armY + FG_PX * 6, FG_PX * 14, FG_PX * 2, ink);
+			// 足場ボルトと、変圧器の箱
+			for (let y = armY + FG_PX * 14; y < screenH; y += FG_PX * 10)
+				dot(x + w / 2, y, FG_PX * 2, FG_PX, ink);
+			dot(x + w / 2, armY + FG_PX * 10, FG_PX * 5, FG_PX * 8, ink);
+		}
+	}
+	// 足もとの前景（生けがきの影／ススキ）。視差 2.4
+	const k2 = 2.4;
+	const baseY = screenH - FG_PX * 3;
+	const step = FG_PX * 3;
+	const start = Math.floor((px * k2 - mid) / step) - 1;
+	for (let i = start; i < start + screenW / step + 3; i++) {
+		const x = i * step - px * k2 + mid;
+		const h = hash(i, seed + 3);
+		if (kind === "susuki") {
+			if (h < 0.55) continue;
+			const tall = FG_PX * (8 + (((h * 97) | 0) % 14));
+			dot(x, baseY - tall, FG_PX, tall + FG_PX * 3, ink);
+			dot(x - FG_PX, baseY - tall - FG_PX * 2, FG_PX * 2, FG_PX * 4, rim);
+		} else {
+			const tall = FG_PX * (3 + (((h * 53) | 0) % 5));
+			if (hash(i >> 3, seed + 5) < 0.45) continue; // 生けがきの切れ目
+			dot(x, baseY - tall, step, tall + FG_PX * 3, ink);
+		}
+	}
+};
+
 export const renderDiorama = (
 	ctx: CanvasRenderingContext2D,
 	screenW: number,
@@ -1075,6 +1169,9 @@ export const renderDiorama = (
 		drawFray(ctx, sx, sy - back, bw, bh + back);
 		return;
 	}
+	const fgKind =
+		field.def.foreground ??
+		(field.def.outdoor && !field.def.scene ? "poles" : undefined);
 	ctx.fillStyle = scene.cut;
 	if (field.def.outdoor) {
 		// 屋外: 地面の奥の端にだけ細い線（遠くは虚空へ溶けている）
@@ -1089,4 +1186,6 @@ export const renderDiorama = (
 		ctx.fillRect(sx + bw, sy - back, EDGE, bh + back); // 右
 	}
 	ctx.fillRect(sx - EDGE, sy + bh, bw + EDGE * 2, 1); // 床の切り口
+	if (fgKind && fgKind !== "none")
+		drawForeground(ctx, screenW, screenH, field, player, fgKind, pal.ramp);
 };

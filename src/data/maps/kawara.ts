@@ -288,6 +288,7 @@ const suwaru = async (s: Story): Promise<void> => {
 
 export const kawara: MapDef = {
 	id: "kawara",
+	foreground: "susuki", // ジオラマ表示の前景（手前のススキ）
 	// ジオラマ表示の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
 	boxes: [
 		{ x: 26, y: 1, w: 12, h: 7 }, // 神社
