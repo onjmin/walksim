@@ -11,35 +11,18 @@
 import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
 import type { Dir } from "../../engine/types";
 import { SPR } from "../sprites";
-import { base, basePx, PROPS, TOWN } from "../tiles";
+import { KISARAGI, STN } from "../tiles-station";
 
 /** 駅のアナウンス（レイの機械音声。立ち絵なし・名前欄「アナウンス」）。 */
 const announce = (s: Story, text: string) =>
 	s.say("rei", text, { name: "アナウンス", noPortrait: true });
 
-const PAVE = base(5, 48);
-const DIRT = base(1, 162);
-const TIES = base(4, 43); // 橋板を枕木に見立てる
-const EDGE_LINE = basePx(96, 1760, 16, 3); // 白線（マスの下端に乗る）
-
-// TOWN ＋ 駅の地形。
-// - ホームの白線 / w ホームの壁面 / = ホームから線路へ降りる段
+// 無人ホームと線路のチップ（data/tiles-station.ts の KISARAGI）。
+// . ホーム / - ホームの端（点字ブロックと白線） / w ホームの壁面 / = ホームから線路へ降りる段
 // t 線路（枕木） / g 砂利（通れない） / ^ 車止め
 // I ホームの柱 / M 駅員室のシャッター / p 公衆電話 / ~ " 向かいのホーム（渡れない）
-const tiles: Record<string, TileDef> = {
-	...TOWN,
-	"-": { layers: [PAVE, EDGE_LINE], color: "#9aa0a8", passable: true },
-	w: { layers: [base(1, 170)], color: "#3a3630", passable: false },
-	"=": { layers: [base(6, 51)], color: "#8a8a8a", passable: true },
-	t: { layers: [DIRT, TIES], color: "#2e2620", passable: true },
-	g: { layers: [DIRT], color: "#26221e", passable: false },
-	"^": { layers: [DIRT, PROPS.crate], color: "#3a3026", passable: false },
-	I: { layers: [PAVE, base(1, 68)], color: "#8c8c90", passable: false },
-	M: { layers: [PAVE, PROPS.metalDoor], color: "#8c8c90", passable: false },
-	p: { layers: [PAVE, PROPS.console], color: "#8c8c90", passable: false },
-	"~": { layers: [PAVE], color: "#4a4b52", passable: false },
-	'"': { layers: [PAVE], color: "#44454c", passable: false },
-};
+// f 網フェンス / K 掲示板 / V 自販機 / B b ベンチ / L 電灯
+const tiles: Record<string, TileDef> = KISARAGI;
 
 const rows = [
 	"                              ", // y0
@@ -140,7 +123,7 @@ export const kisaragi: MapDef = {
 			id: "ekimei",
 			x: 10,
 			y: 3,
-			sprite: PROPS.signpost,
+			sprite: STN.nameSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -471,7 +454,7 @@ export const kisaragi: MapDef = {
 			id: "flower",
 			x: 28,
 			y: 8,
-			sprite: base(5, 11),
+			sprite: STN.flower,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -483,7 +466,7 @@ export const kisaragi: MapDef = {
 			id: "signal",
 			x: 2,
 			y: 6,
-			sprite: PROPS.lantern,
+			sprite: STN.signal,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -498,7 +481,7 @@ export const kisaragi: MapDef = {
 			id: "isanuki_sign",
 			x: 1,
 			y: 6,
-			sprite: PROPS.signpost,
+			sprite: STN.tiltedSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {

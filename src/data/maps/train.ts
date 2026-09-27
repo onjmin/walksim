@@ -6,21 +6,16 @@
 // s.note: saruyume（乗客の寝言）・isanuki（窓の外の駅名。kisaragi 西端の看板でも呼ぶ）。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
-import { base, INDOOR, PROPS } from "../tiles";
+import { TRAIN } from "../tiles-station";
 
 /** 駅のアナウンス（レイの機械音声。立ち絵なし・名前欄「アナウンス」）。 */
 const announce = (s: Story, text: string) =>
 	s.say("rei", text, { name: "アナウンス", noPortrait: true });
 
-// INDOOR ＋ 車両の備品。E = 降車ドア（東の壁。鉄の扉）
-const tiles: Record<string, TileDef> = {
-	...INDOOR,
-	E: {
-		layers: [base(1, 78), PROPS.metalDoor],
-		color: "#e8e4dc",
-		passable: false,
-	},
-};
+// 車内のチップ（data/tiles-station.ts の TRAIN）。
+//   h 化粧板の壁（網棚とつり革） / W 車窓 / Q 路線図・中づり / n ロングシート
+//   E 降車ドア（東の端。ステンレスの扉）
+const tiles: Record<string, TileDef> = TRAIN;
 
 const rows = [
 	"##############", // y0

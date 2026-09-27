@@ -21,45 +21,16 @@ import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
 import zerouta from "../bgm/zerouta.mml?raw";
 import { records } from "../records";
 import { SPR } from "../sprites";
-import { base, basePx, PROPS, TOWN } from "../tiles";
+import { STN, TERMINUS } from "../tiles-station";
 
 /** 駅のアナウンス（レイ。終点だけ、ほとんど人の声のように書く。DESIGN §5）。 */
 const announce = (s: Story, text: string) =>
 	s.say("rei", text, { name: "アナウンス", noPortrait: true });
 
-const PAVE = base(5, 48);
-
-// TOWN ＋ 駅舎と終端の地形。
-// k K 時刻表（なにも書かれていない） / D 待合室の扉（あかない） / - ホームの白線
-// t 線路の名残（通れない） / w 窓（白壁）は TOWN の w
-const tiles: Record<string, TileDef> = {
-	...TOWN,
-	k: {
-		layers: [base(1, 59), base(6, 37, 1, 2)],
-		color: "#e8e8e8",
-		passable: false,
-	},
-	K: {
-		layers: [base(1, 59), base(7, 37, 1, 2)],
-		color: "#e8e8e8",
-		passable: false,
-	},
-	D: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
-		color: "#e8e8e8",
-		passable: false,
-	},
-	"-": {
-		layers: [PAVE, basePx(96, 1760, 16, 3)],
-		color: "#9aa0a8",
-		passable: true,
-	},
-	t: {
-		layers: [base(1, 162), base(4, 43)],
-		color: "#2e2620",
-		passable: false,
-	},
-};
+// 駅舎と終端のチップ（data/tiles-station.ts の TERMINUS）。
+// ( ) 駅舎の白壁 / w 窓 / k K 時刻表（なにも書かれていない） / D 待合室の扉（あかない）
+// . ホーム / - ホームの端 / t 線路の名残（通れない） / V 自販機 / L 常夜灯 / B b ベンチ
+const tiles: Record<string, TileDef> = TERMINUS;
 
 const rows = [
 	"                ", // y0
@@ -400,7 +371,7 @@ export const terminus: MapDef = {
 			id: "haka_aru",
 			x: 1,
 			y: 7,
-			sprite: PROPS.grave,
+			sprite: STN.grave,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -416,7 +387,7 @@ export const terminus: MapDef = {
 			id: "haka_clean",
 			x: 2,
 			y: 7,
-			sprite: PROPS.grave,
+			sprite: STN.grave,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -492,7 +463,7 @@ export const terminus: MapDef = {
 			id: "ekimei",
 			x: 7,
 			y: 7,
-			sprite: PROPS.signpost,
+			sprite: STN.nameSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -540,7 +511,7 @@ export const terminus: MapDef = {
 			id: "flower",
 			x: 6,
 			y: 9,
-			sprite: base(5, 11),
+			sprite: STN.flower,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {

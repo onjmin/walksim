@@ -4,18 +4,12 @@
 // s.note: yamanoke（壁の落書き「テン　ソウ　メツ」）。
 // 東 (23,3) → kisaragi (1,7)・西 (0,3) → terminus (13,5)（どちらも両道）。
 
-import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
-import { base, CAVE } from "../tiles";
+import type { GameState, MapDef, Story } from "../../engine/defs";
+import { TUNNEL } from "../tiles-underground";
 
-// CAVE ＋ 線路の床（きさらぎ駅から枕木がつづく）
-const tiles: Record<string, TileDef> = {
-	...CAVE,
-	t: {
-		layers: [base(1, 162), base(4, 43)],
-		color: "#2e2620",
-		passable: true,
-	},
-};
+// 自作チップ（data/tiles-underground.ts の TUNNEL）。
+// # 闇 / W 煤けたレンガの巻き / w 湿ったコンクリートの側壁（ケーブル棚） / t 線路（きさらぎ駅から枕木がつづく）
+const tiles = TUNNEL;
 
 const rows = [
 	"########################", // y0

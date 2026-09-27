@@ -6,10 +6,10 @@
 
 import type { MapDef } from "../../engine/defs";
 import { warp } from "../helpers";
-import { SPR } from "../sprites";
-import { INDOOR } from "../tiles";
+import { KURA, UG } from "../tiles-underground";
 
-// INDOOR の文字そのまま。x 木箱 / t 机 / O 白い台 / U 樽
+// 自作チップ（data/tiles-underground.ts の KURA）。漆喰の壁と板の腰壁・古い床板。
+// x 木箱（長持） / t 文机（帳面） / O 白い布の台 / U 樽
 const rows = [
 	"##########", // y0
 	"#HHHHHHHH#", // y1
@@ -28,7 +28,7 @@ export const kura: MapDef = {
 	bgm: null,
 	dark: 0.7,
 	outside: "#080604",
-	tiles: INDOOR,
+	tiles: KURA,
 	rows,
 	events: [
 		warp(
@@ -58,7 +58,7 @@ export const kura: MapDef = {
 			id: "rec_b_ev",
 			x: 7,
 			y: 3,
-			sprite: SPR.record,
+			sprite: UG.record,
 			trigger: "talk",
 			fixedDir: true,
 			when: (st) => !(st.items.rec_b ?? 0),

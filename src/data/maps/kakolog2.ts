@@ -13,45 +13,19 @@
 //
 // 座標フリーズ: 入口の着地 (3,2)。出口 touch (3,1) → hub (16,2)。
 
-import type { EventDef, MapDef, TileDef } from "../../engine/defs";
+import type { EventDef, MapDef } from "../../engine/defs";
 import { npc, savePoint, sign, warp } from "../helpers";
 import { SPR } from "../sprites";
-import { base, CAVE, PROPS } from "../tiles";
+import { HOME_DIARY } from "../tiles";
+import { KAKOLOG, UG } from "../tiles-underground";
 import { weekday } from "../weekday";
 
-// ── タイル。CAVE を土台に、書庫の棚・食堂・おんちゃんの部屋を足す ──
-const DARK = base(1, 162); // 暗い土の床
-const WOOD = base(0, 46); // 木の床（おんちゃんの部屋だけ明るい）
-const C_SHELF = "#3a3226";
-const shelfOn = (img: string): TileDef => ({
-	layers: [DARK, img],
-	color: C_SHELF,
-	passable: false,
-});
-const counterOn = (img: string): TileDef => ({
-	layers: [DARK, img],
-	color: C_SHELF,
-	passable: false,
-	counter: true,
-});
-
-const tiles: Record<string, TileDef> = {
-	...CAVE,
-	S: shelfOn(base(0, 108, 1, 2)), // 大きな棚（左）
-	s: shelfOn(base(1, 108, 1, 2)), // 大きな棚（右）
-	B: shelfOn(base(3, 104, 1, 2)), // 棚（一本）
-	t: shelfOn(base(2, 108)), // 机
-	x: shelfOn(base(4, 123)), // ダンボール箱（CAVE の骸骨は使わない）
-	f: shelfOn(base(5, 32)), // 鉄の柵（ムッジェの前）
-	"[": counterOn(base(1, 98)), // 食堂のカウンター
-	"=": counterOn(base(2, 98)),
-	"]": counterOn(base(3, 98)),
-	b: { layers: [WOOD], color: "#b8905a", passable: true }, // おんちゃんの部屋の床
-	Z: { layers: [WOOD, base(0, 112)], color: "#b8905a", passable: false }, // ふとん（枕）
-	z: { layers: [WOOD, base(0, 113)], color: "#b8905a", passable: false }, // ふとん（すそ）
-	m: { layers: [DARK, PROPS.magicCircle], color: "#6a5a3a", passable: true }, // 奥の間の台
-	h: { layers: [], color: "#050408", passable: true }, // 隠しすきま（外の黒と同じ色）
-};
+// ── タイル。自作チップ（data/tiles-underground.ts の KAKOLOG）。地下の書庫の廃墟 ──
+//   . 石の床  , 暗い床（紙くず）  > 下りの石段  ( 上りの階段  ~ 水たまり  m 奥の間の台座
+//   h 隠しすきま（外の黒と同じ色）  S s ログの大きな棚（左右）  B 目録カードの棚  t 机
+//   x ダンボール箱  f 鉄の柵（ムッジェの前）  [ = ] 食堂のカウンター
+//   b おんちゃんの部屋の木の床（唯一の明るい床）  Z z ふとん（枕・すそ）
+const tiles = KAKOLOG;
 
 // ── マップ本体 ──
 const rows = [
@@ -151,7 +125,7 @@ export const kakolog2: MapDef = {
 			id: "flashlight_ev",
 			x: 10,
 			y: 12,
-			sprite: SPR.lantern,
+			sprite: UG.flashlight,
 			trigger: "talk",
 			fixedDir: true,
 			when: (st) => !(st.items.flashlight ?? 0),
@@ -182,13 +156,14 @@ export const kakolog2: MapDef = {
 			12,
 			8,
 			"『【急募】眠れない時の\n過ごし方』……dat落ちスレだ。",
+			UG.placard,
 		),
 		{
 			// 日付が1日だけズレている（技法3。だれも言及しない）
 			id: "dat_cd",
 			x: 18,
 			y: 8,
-			sprite: PROPS.sign,
+			sprite: UG.placard,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -200,7 +175,7 @@ export const kakolog2: MapDef = {
 			id: "senkyo",
 			x: 22,
 			y: 8,
-			sprite: PROPS.notice,
+			sprite: UG.memo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -213,7 +188,7 @@ export const kakolog2: MapDef = {
 			id: "dat_soto",
 			x: 16,
 			y: 12,
-			sprite: PROPS.sign,
+			sprite: UG.placard,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -238,7 +213,7 @@ export const kakolog2: MapDef = {
 			id: "dat_turbo",
 			x: 20,
 			y: 14,
-			sprite: PROPS.sign,
+			sprite: UG.placard,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -262,7 +237,7 @@ export const kakolog2: MapDef = {
 				await s.narrate("天井に、電球がひとつ。\nちゃんと、ついている。");
 			},
 		},
-		savePoint("save_on", 3, 16),
+		{ ...savePoint("save_on", 3, 16), sprite: HOME_DIARY }, // 日記（キリコの部屋と同じ絵）
 		npc(
 			"onchan",
 			5,
@@ -409,7 +384,7 @@ export const kakolog2: MapDef = {
 			14,
 			16,
 			"『えいぎょう中』の札。\nあたたかい湯気が、ながれてくる。",
-			PROPS.notice,
+			UG.placard,
 		),
 		{
 			id: "rino_nabe",
@@ -484,7 +459,7 @@ export const kakolog2: MapDef = {
 			id: "web_counter",
 			x: 19,
 			y: 16,
-			sprite: PROPS.sign,
+			sprite: UG.crt,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -498,7 +473,7 @@ export const kakolog2: MapDef = {
 			id: "web_oekaki",
 			x: 22,
 			y: 16,
-			sprite: PROPS.board,
+			sprite: UG.crtDesk,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -517,7 +492,7 @@ export const kakolog2: MapDef = {
 			id: "web_links",
 			x: 19,
 			y: 17,
-			sprite: PROPS.sign,
+			sprite: UG.crt,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -530,7 +505,7 @@ export const kakolog2: MapDef = {
 			21,
 			17,
 			"『工事中』の看板。\n……ずっと、工事中だ。",
-			PROPS.notice,
+			UG.kouji,
 		),
 
 		// ═══════════ 深層 ═══════════
@@ -564,7 +539,7 @@ export const kakolog2: MapDef = {
 			id: "dat_kakurenbo",
 			x: 6,
 			y: 18,
-			sprite: PROPS.sign,
+			sprite: UG.placard,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -580,7 +555,7 @@ export const kakolog2: MapDef = {
 			id: "dat_samejima",
 			x: 17,
 			y: 18,
-			sprite: PROPS.sign,
+			sprite: UG.placard,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -658,7 +633,7 @@ export const kakolog2: MapDef = {
 			id: "shinen_ev",
 			x: 13,
 			y: 20,
-			sprite: PROPS.sign,
+			sprite: UG.placard,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -676,7 +651,7 @@ export const kakolog2: MapDef = {
 			id: "dat_buu",
 			x: 15,
 			y: 20,
-			sprite: PROPS.sign,
+			sprite: UG.placard,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -691,7 +666,7 @@ export const kakolog2: MapDef = {
 			id: "iko_labels",
 			x: 22,
 			y: 20,
-			sprite: PROPS.sign,
+			sprite: UG.placard,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -703,7 +678,7 @@ export const kakolog2: MapDef = {
 			id: "iko_1",
 			x: 24,
 			y: 20,
-			sprite: PROPS.notice,
+			sprite: UG.memo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -715,7 +690,7 @@ export const kakolog2: MapDef = {
 			id: "iko_2",
 			x: 22,
 			y: 21,
-			sprite: PROPS.notice,
+			sprite: UG.memo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -727,7 +702,7 @@ export const kakolog2: MapDef = {
 			id: "iko_3",
 			x: 24,
 			y: 21,
-			sprite: PROPS.notice,
+			sprite: UG.memo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -741,7 +716,7 @@ export const kakolog2: MapDef = {
 			id: "rec_c_ev",
 			x: 20,
 			y: 21,
-			sprite: SPR.record,
+			sprite: UG.record,
 			trigger: "talk",
 			fixedDir: true,
 			when: (st) => !(st.items.rec_c ?? 0),

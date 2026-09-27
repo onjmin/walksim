@@ -19,49 +19,18 @@
 //   seen_y_vending / seen_y_monitor（数・調べた回数）
 // このマップが呼ぶノート: yellow / exit8 / akaiheya / myaumyau / miniwai
 
-import type { MapDef, Story, TileDef } from "../../engine/defs";
+import type { MapDef, Story } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import { SPR } from "../sprites";
-import { base, basePx, PROPS } from "../tiles";
+import { UG, YELLOW } from "../tiles-underground";
 
 // ───────────────── タイル ─────────────────
-// 黄ばんだ壁紙（H 上段 / h 下段の面）と金のじゅうたん。u は「見た目はかべ・通れる」隠し。
-
-const CARPET = base(5, 47); // 金のじゅうたん＝黄ばんだカーペット
-const WALL_UP = base(1, 77);
-const WALL_LOW = base(1, 78);
-const C_WALL = "#d8cf9e";
-const C_CARPET = "#c0a030";
-
-const wall = (...layers: string[]): TileDef => ({
-	layers,
-	color: C_WALL,
-	passable: false,
-});
-const carpet = (...over: string[]): TileDef => ({
-	layers: [CARPET, ...over],
-	color: C_CARPET,
-	passable: true,
-});
-
-const tiles: Record<string, TileDef> = {
-	H: wall(WALL_UP),
-	h: wall(WALL_LOW),
-	".": carpet(),
-	";": carpet(base(5, 12)), // 水たまり（しめったカーペット）
-	"~": { layers: [base(5, 46)], color: "#c02020", passable: true }, // 隠し部屋の赤いじゅうたん
-	u: { layers: [WALL_UP], color: C_WALL, passable: true }, // 隠し: かべに見えるが通れる（無印）
-	D: { layers: [WALL_LOW, base(7, 61, 1, 2)], color: C_WALL, passable: true }, // hub への扉
-	E: wall(WALL_LOW, base(7, 61, 1, 2)), // どこにもつながらない扉
-	Q: wall(WALL_LOW, basePx(64, 1446)), // おんJマンのポスター（同じ絵の反復）
-	N: wall(WALL_LOW, PROPS.notice), // はり紙
-	M: wall(WALL_LOW, PROPS.monitor), // 消えたモニター
-	V: wall(WALL_UP, PROPS.vending), // うなる自販機
-	t: { layers: [CARPET, base(2, 108)], color: C_CARPET, passable: false }, // じむ机
-	n: { layers: [CARPET, base(2, 109)], color: C_CARPET, passable: false }, // いす
-	r: { layers: [CARPET, base(3, 109)], color: C_CARPET, passable: false }, // 事務椅子（テトの席）
-	x: { layers: [CARPET, base(4, 123)], color: C_CARPET, passable: false }, // 段ボール
-};
+// 自作チップ（data/tiles-underground.ts の YELLOW）。黄ばんだ縞の壁紙（H 上段 / h 下段）と
+// しめったベージュのカーペット、灰色の事務机・パイプいす・事務椅子。u は「見た目はかべ・通れる」隠し。
+//   H h 壁紙  u 隠しのかべ  . カーペット  ; 水たまり（しめったカーペット）  ~ 隠し部屋の赤いじゅうたん
+//   D hub への扉  E どこにもつながらない扉（同じ絵）  Q おんJマンのポスター（同じ絵の反復）
+//   N はり紙  M 消えたモニター  V うなる自販機  t じむ机  n いす  r 事務椅子（テトの席）  x 段ボール
+const tiles = YELLOW;
 
 // ───────────────── マップ（26×18） ─────────────────
 // 入口ホール（左上）→ 北のろうか（y3）→ 中央のテトの部屋 → 南の長いろうか（y14）→ 最奥（右）。
@@ -310,7 +279,7 @@ export const yellow: MapDef = {
 			id: "rec_a_ev",
 			x: 23,
 			y: 10,
-			sprite: SPR.record,
+			sprite: UG.record,
 			trigger: "talk",
 			fixedDir: true,
 			when: (st) => !(st.items.rec_a ?? 0),

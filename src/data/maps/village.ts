@@ -11,47 +11,18 @@
 
 import type { EventDef, MapDef, Story, TileDef } from "../../engine/defs";
 import type { Dir } from "../../engine/types";
-import { OBJ, warp } from "../helpers";
-import { base, basePx, FIELD, field, PROPS, TOWN } from "../tiles";
+import { warp } from "../helpers";
+import { JP } from "../tiles";
+import { VILLAGE, VILLAGE_SPR } from "../tiles-village";
 
 // ── タイル ──
-// FIELD をベースに、家（TOWN）と村の小物を足す。
+// 絵と文字の対応は data/tiles-village.ts（自作チップ village.png と town.png の JP / TOWN）。
 //   :  あぜ道   . , 草地   i  田（通れない・counter=1マスむこうを調べられる）
-//   ~  用水路   #  橋      T  木   L  電柱（街灯で代用）   G  石灯籠   U  井戸
-//   n ^ 赤い屋根（神社・母屋）   z Z わら屋根   ( ) 白壁   [ ] 板壁
-//   w  窓（壁の上段）   W  窓（白壁の下段）   m  窓（板壁の下段）
+//   ~  用水路   #  橋      T  かきの木   L  木の電柱   G  石灯籠   U  つるべ井戸
+//   n ^ 瓦屋根（神社・母屋）   z Z 茅葺き屋根   ( ) 白壁   [ ] 板壁
+//   w  格子窓（白壁の上段）   W  灯りの窓（白壁の下段）   m  窓（板壁の下段）
 //   q  しまった戸（通れない）   d  蔵の戸（通れる。warp を置く）
-const GRASS = field(1, 10);
-const WIN = basePx(48, 1382); // 木枠の窓
-const tiles: Record<string, TileDef> = {
-	...FIELD,
-	i: {
-		layers: [GRASS, base(0, 11)],
-		color: "#7a9a3a",
-		passable: false,
-		counter: true,
-	},
-	L: { layers: [GRASS, "sp:2gTYec"], color: "#6fae3a", passable: false },
-	G: { layers: [GRASS, PROPS.stoneLantern], color: "#6fae3a", passable: false },
-	U: { layers: [GRASS, PROPS.well], color: "#6fae3a", passable: false },
-	n: TOWN.n,
-	"^": TOWN["^"],
-	z: TOWN.z,
-	Z: TOWN.Z,
-	"(": TOWN["("],
-	")": TOWN[")"],
-	"[": TOWN["["],
-	"]": TOWN["]"],
-	w: TOWN.w,
-	W: { layers: [base(1, 60), WIN], color: "#e8e8e8", passable: false },
-	m: { layers: [base(1, 56), WIN], color: "#6a4a2a", passable: false },
-	q: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
-		color: "#e8e8e8",
-		passable: false,
-	},
-	d: TOWN.d,
-};
+const tiles: Record<string, TileDef> = VILLAGE;
 
 const rows = [
 	"                          ", // y0
@@ -279,7 +250,7 @@ export const village: MapDef = {
 			id: "sugisawa",
 			x: 4,
 			y: 2,
-			sprite: OBJ.sign,
+			sprite: VILLAGE_SPR.oldSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -296,7 +267,7 @@ export const village: MapDef = {
 			id: "jizo_n",
 			x: 17,
 			y: 4,
-			sprite: base(1, 13),
+			sprite: VILLAGE_SPR.jizoFallen,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -309,7 +280,7 @@ export const village: MapDef = {
 			id: "jizo_w",
 			x: 1,
 			y: 10,
-			sprite: PROPS.grave,
+			sprite: VILLAGE_SPR.jizo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -321,7 +292,7 @@ export const village: MapDef = {
 			id: "jizo_e",
 			x: 24,
 			y: 10,
-			sprite: PROPS.grave,
+			sprite: VILLAGE_SPR.jizo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -332,7 +303,7 @@ export const village: MapDef = {
 			id: "jizo_s",
 			x: 10,
 			y: 18,
-			sprite: PROPS.grave,
+			sprite: VILLAGE_SPR.jizo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -354,7 +325,7 @@ export const village: MapDef = {
 			id: "saisen",
 			x: 8,
 			y: 9,
-			sprite: PROPS.crate,
+			sprite: JP.saisen,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -366,7 +337,7 @@ export const village: MapDef = {
 			id: "ema",
 			x: 6,
 			y: 8,
-			sprite: PROPS.signpost,
+			sprite: JP.emakake,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -380,7 +351,7 @@ export const village: MapDef = {
 			id: "hokora",
 			x: 5,
 			y: 3,
-			sprite: PROPS.stoneLantern,
+			sprite: VILLAGE_SPR.hokora,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -396,7 +367,7 @@ export const village: MapDef = {
 			id: "kyotoo",
 			x: 16,
 			y: 7,
-			sprite: OBJ.sign,
+			sprite: VILLAGE_SPR.tiltedSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -610,7 +581,7 @@ export const village: MapDef = {
 			id: "kunekune",
 			x: 20,
 			y: 14,
-			sprite: basePx(96, 1760, 6, 16),
+			sprite: VILLAGE_SPR.kunekune,
 			trigger: "talk",
 			fixedDir: true,
 			when: (st) => !st.flags.seen_kunekune,
@@ -683,7 +654,7 @@ export const village: MapDef = {
 			id: "busstop",
 			x: 2,
 			y: 11,
-			sprite: PROPS.signpost,
+			sprite: VILLAGE_SPR.busStop,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {

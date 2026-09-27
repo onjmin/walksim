@@ -19,74 +19,14 @@ import { settings } from "../../engine/settings";
 import { npc, warp } from "../helpers";
 import { notes } from "../notes";
 import { SPR } from "../sprites";
-import { base, basePx, INDOOR, PROPS } from "../tiles";
+import { HUB, STN } from "../tiles-station";
 
-const TILE_FLOOR = base(3, 46); // タイルの床（INDOOR の ","）
-const C_TILE = "#9a9a9a";
-const C_WALL = "#e8e4dc";
-
-// INDOOR に駅の備品を足す。
-//   T 時刻表のわく（なにも貼られていない） / P はり紙（This Man） / k 柱時計
-//   B b ベンチ / V 自販機 / f 鉄の柵（改札） / G 改札のさきのホーム床
+// 駅の待合室のチップ（data/tiles-station.ts の HUB。文字の意味は旧版のまま）。
+//   T 時刻表のわく（なにも貼られていない） / P はり紙（This Man） / k 駅の時計
+//   B b ベンチ / V 自販機 / f 自動改札機（改札の柵） / G 改札のさきのホーム床
 //   D 北の扉 / E エレベーターの扉（ひらかない） / d 部屋へのドア（南端） / ^ その上半分（床）
 //   o 見えない床（黒の海とおなじ色。かくし通路）
-const tiles: Record<string, TileDef> = {
-	...INDOOR,
-	T: {
-		layers: [base(1, 78), basePx(64, 1446)],
-		color: C_WALL,
-		passable: false,
-	},
-	P: {
-		layers: [base(1, 78), PROPS.notice],
-		color: C_WALL,
-		passable: false,
-	},
-	B: {
-		layers: [TILE_FLOOR, "sp:9UnaFUN"],
-		color: C_TILE,
-		passable: false,
-	},
-	b: {
-		layers: [TILE_FLOOR, "sp:PcAZNWo"],
-		color: C_TILE,
-		passable: false,
-	},
-	V: {
-		layers: [TILE_FLOOR, base(0, 519, 1, 2)],
-		color: C_TILE,
-		passable: false,
-	},
-	f: {
-		layers: [TILE_FLOOR, base(5, 32)],
-		color: C_TILE,
-		passable: false,
-	},
-	G: { layers: [TILE_FLOOR], color: C_TILE, passable: true },
-	D: {
-		layers: [base(1, 78), base(7, 61, 1, 2)],
-		color: C_WALL,
-		passable: true,
-	},
-	E: {
-		layers: [base(1, 78), base(0, 193, 1, 2)],
-		color: C_WALL,
-		passable: false,
-	},
-	// 南口の扉は上下2マスに分けて描く。16x32 のまま置くと、上半分が着地点 (10,12) で
-	// キャラより手前に描かれ、立っているキリコが足ぶみのたびに点滅してしまう。
-	d: {
-		layers: [TILE_FLOOR, base(7, 78)],
-		color: C_TILE,
-		passable: true,
-	},
-	"^": {
-		layers: [TILE_FLOOR, base(7, 77)],
-		color: C_TILE,
-		passable: true,
-	},
-	o: { layers: [], color: "#08070c", passable: true },
-};
+const tiles: Record<string, TileDef> = HUB;
 
 const rows = [
 	"HHHHHHHHHHHHHHHHHHHH", // y0
@@ -645,7 +585,7 @@ export const hub: MapDef = {
 			id: "circle",
 			x: 14,
 			y: 12,
-			sprite: PROPS.magicCircle,
+			sprite: STN.chalkCircle,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
