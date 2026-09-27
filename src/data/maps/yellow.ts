@@ -210,6 +210,7 @@ const poster = (
 
 export const yellow: MapDef = {
 	id: "yellow",
+	scene: "yellow", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "黄色い部屋",
 	bgm: "deep2",
 	tint: "rgba(180,150,40,0.18)",

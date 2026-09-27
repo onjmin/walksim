@@ -76,6 +76,7 @@ const rows = [
 
 export const terminus: MapDef = {
 	id: "terminus",
+	scene: "terminus", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "供養スレ駅",
 	bgm: "secret",
 	outside: "#000",

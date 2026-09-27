@@ -66,6 +66,7 @@ const VEC: Record<Dir, [number, number]> = {
 
 export const kisaragi: MapDef = {
 	id: "kisaragi",
+	scene: "kisaragi", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "きさらぎ駅",
 	bgm: null,
 	ambient: { kind: "static", color: "#3a4044" },

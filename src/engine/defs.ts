@@ -98,6 +98,12 @@ export type MapDef = {
 	 * 省略時は屋内=部屋ぜんぶ・屋外=12×8 マスごと（engine/diorama.ts）。
 	 */
 	boxes?: { x: number; y: number; w: number; h: number }[];
+	/**
+	 * ジオラマ表示の場面（怪異の地区だけ）。engine/diorama.ts の DREAM のキー
+	 * （hub / yellow / village / sepia / kisaragi / train / tunnel / terminus）。
+	 * 色合い・箱の縁（ほどける）・虚空（砂あらし・まっくら）が日常と変わる。省略時は時間帯の場面。
+	 */
+	scene?: string;
 	lights?: {
 		x: number;
 		y: number;

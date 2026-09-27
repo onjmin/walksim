@@ -37,6 +37,7 @@ const asleep = (s: Story) =>
 
 export const train: MapDef = {
 	id: "train",
+	scene: "train", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "終電",
 	bgm: null,
 	outside: "#000",

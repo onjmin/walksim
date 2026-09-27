@@ -338,6 +338,7 @@ const namelessRecord = async (s: Story): Promise<void> => {
 
 export const hub: MapDef = {
 	id: "hub",
+	scene: "hub", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "回線の間",
 	bgm: "deep1",
 	outside: "#08070c",

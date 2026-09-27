@@ -130,16 +130,9 @@ export const suupaa: MapDef = {
 		},
 
 		// ── 人たち ──
-		npc(
-			"baachan_ev",
-			7,
-			10,
-			"pub:sprites/mob_obaachan.png",
-			baachan,
-			{
-				dir: "down",
-			},
-		),
+		npc("baachan_ev", 7, 10, "pub:sprites/mob_obaachan.png", baachan, {
+			dir: "down",
+		}),
 		npc(
 			"okusan",
 			4,

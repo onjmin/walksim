@@ -38,7 +38,144 @@ type Scene = {
 	cut: string;
 	slab: string;
 	star: string;
+	/** 箱の縁。"cut"＝明るい断面と床の厚み（日常）／"fray"＝縁がディザで虚空に溶ける（怪異）。 */
+	frame?: "cut" | "fray";
+	/** 虚空。"stars"＝またたく星（既定）／"static"＝砂あらし／"none"＝まっくら。 */
+	voidKind?: "stars" | "static" | "none";
 };
+
+/** 怪異の地区の場面（MapDef.scene で選ぶ）。日常は「箱」、怪異は「箱がほどける」。 */
+const f = (
+	ramp: string[],
+	accent: string[],
+	voidKind: Scene["voidKind"],
+	frame: Scene["frame"] = "fray",
+): Scene => ({
+	ramp,
+	accent,
+	cut: ramp[5],
+	slab: ramp[1],
+	star: ramp[4],
+	frame,
+	voidKind,
+});
+const DREAM: Record<string, Scene> = {
+	// 回線の間：深い藍にナトリウム灯の橙（待合室）
+	hub: f(
+		[
+			"#06060e",
+			"#12122a",
+			"#1e2244",
+			"#303a66",
+			"#4e5e8a",
+			"#8090b8",
+			"#d0d8f0",
+		],
+		["#3a2208", "#8a5418", "#e8a040", "#ffe0a0"],
+		"none",
+	),
+	// 黄色い部屋：病的な黄の一色（どこまでも同じ）
+	yellow: f(
+		[
+			"#141005",
+			"#3a300c",
+			"#6a5a18",
+			"#9a8a2a",
+			"#c8b848",
+			"#e8d878",
+			"#fff4c0",
+		],
+		["#2a3010", "#6a7a28", "#c8d860", "#f4ffc0"],
+		"static",
+	),
+	// 夕暮れの村：終わらない夕暮れ（紫がかった赤）
+	village: f(
+		[
+			"#140810",
+			"#34142a",
+			"#5a2438",
+			"#8a3a40",
+			"#c0604a",
+			"#e89a68",
+			"#ffd8a8",
+		],
+		["#3a0a0a", "#8a1a1a", "#e03a2a", "#ffa080"],
+		"none",
+	),
+	// 過去ログの地層・蔵：セピアの紙
+	sepia: f(
+		[
+			"#0c0806",
+			"#241a12",
+			"#443222",
+			"#6a5236",
+			"#95784e",
+			"#c4a878",
+			"#f0e0bc",
+		],
+		["#2a1a08", "#6a4a18", "#c89a48", "#f8e0a0"],
+		"none",
+	),
+	// きさらぎ駅：冷たい青灰に赤い信号
+	kisaragi: f(
+		[
+			"#040608",
+			"#0e1418",
+			"#1c262c",
+			"#2e3c44",
+			"#4a5c64",
+			"#7a8c94",
+			"#c0ccd0",
+		],
+		["#2a0606", "#6a1010", "#d02a2a", "#ff8a7a"],
+		"static",
+	),
+	// 終電：くすんだ緑の蛍光灯（車両という箱なので縁は断面のまま）
+	train: f(
+		[
+			"#050805",
+			"#101a12",
+			"#1e2e22",
+			"#324a36",
+			"#50705a",
+			"#88a890",
+			"#d8ecdc",
+		],
+		["#2a2a08", "#6a6a18", "#d8d848", "#ffffb0"],
+		"none",
+		"cut",
+	),
+	// トンネル：黒とナトリウムの橙
+	tunnel: f(
+		[
+			"#020202",
+			"#0e0a06",
+			"#1e160c",
+			"#322414",
+			"#503a20",
+			"#7a5a34",
+			"#b08a58",
+		],
+		["#3a1a04", "#8a4a10", "#f09030", "#ffd890"],
+		"none",
+	),
+	// 供養スレ駅（終点）：やわらかい常夜灯（日常の箱にもどる＝縁は断面・星）
+	terminus: f(
+		[
+			"#080a14",
+			"#161a2c",
+			"#262c48",
+			"#3e4666",
+			"#62688a",
+			"#9aa0b8",
+			"#e8e4dc",
+		],
+		["#3a2410", "#8a5a28", "#f0b860", "#fff0c8"],
+		"stars",
+		"cut",
+	),
+};
+
 const SCENES: Record<string, Scene> = {
 	yu: {
 		accent: ["#5a2418", "#b8502c", "#f0a040", "#ffe08a"],
@@ -679,6 +816,76 @@ export const pixelizePortrait = (
 	return out;
 };
 
+/** 縁がほどける箱：箱の縁から FRAY_W ドットのあいだを、外へ行くほど多く黒で抜く（ディザ）。 */
+const FRAY_W = 10;
+let frayMask: HTMLCanvasElement | null = null;
+const drawFray = (
+	ctx: CanvasRenderingContext2D,
+	x0: number,
+	y0: number,
+	w: number,
+	h: number,
+): void => {
+	if (!frayMask || frayMask.width !== w || frayMask.height !== h) {
+		frayMask = canvas(w, h);
+		const g = frayMask.getContext("2d");
+		if (!g) return;
+		const img = g.createImageData(w, h);
+		for (let y = 0; y < h; y++)
+			for (let x = 0; x < w; x++) {
+				const e = Math.min(x, y, w - 1 - x, h - 1 - y);
+				if (e >= FRAY_W) continue;
+				const t = 1 - e / FRAY_W;
+				if (BAYER[(y & 3) * 4 + (x & 3)] + 0.5 < t * t * 1.1)
+					img.data[(y * w + x) * 4 + 3] = 255;
+			}
+		g.putImageData(img, 0, 0);
+	}
+	ctx.drawImage(frayMask, x0, y0);
+};
+
+/** 暗闇（MapDef.dark）。照らす半径の外ほど多く、場面の最暗色で塗る（2値のディザ）。 */
+let darkMask: HTMLCanvasElement | null = null;
+const drawDark = (
+	ctx: CanvasRenderingContext2D,
+	sx: number,
+	sy: number,
+	bw: number,
+	bh: number,
+	player: Actor,
+	box: Box,
+	dark: { amount: number; radius: number },
+	col: [number, number, number],
+): void => {
+	if (!darkMask || darkMask.width !== bw || darkMask.height !== bh)
+		darkMask = canvas(bw, bh);
+	const g = darkMask.getContext("2d");
+	if (!g) return;
+	// 光の中心は、半マス上に立つキリコの胸のあたり
+	const cx = (player.fx - box.x) * TILE + TILE / 2;
+	const cy = (player.fy - box.y) * TILE;
+	const r = dark.radius * TILE;
+	const edge = 1.5 * TILE;
+	const amount = Math.min(1, dark.amount * 1.15);
+	const img = g.createImageData(bw, bh);
+	const d = img.data;
+	for (let y = 0; y < bh; y++)
+		for (let x = 0; x < bw; x++) {
+			const dist = Math.hypot(x - cx, y - cy);
+			if (dist <= r) continue;
+			const cover = Math.min(1, (dist - r) / edge) * amount;
+			if (BAYER[(y & 3) * 4 + (x & 3)] + 0.5 < cover) {
+				const i = (y * bw + x) * 4;
+				d[i] = col[0];
+				d[i + 1] = col[1];
+				d[i + 2] = col[2];
+				d[i + 3] = 255;
+			}
+		}
+	g.putImageData(img, 0, 0);
+	ctx.drawImage(darkMask, sx, sy);
+};
+
 export const renderDiorama = (
 	ctx: CanvasRenderingContext2D,
 	screenW: number,
@@ -688,14 +895,25 @@ export const renderDiorama = (
 	actors: Actor[],
 	time: number,
 	tod: string | undefined,
+	/** 暗闇（MapDef.dark）：照らす半径（マス）の外をディザで潰す。 */
+	dark?: { amount: number; radius: number },
 ): void => {
-	const scene = SCENES[tod ?? ""] ?? SCENES.shinya;
-	let pal = rampCache.get(tod ?? "");
+	// 場面：怪異の地区は MapDef.scene、日常は時間帯
+	const sceneKey =
+		field.def.scene && DREAM[field.def.scene]
+			? `d:${field.def.scene}`
+			: (tod ?? "");
+	const scene =
+		(field.def.scene && DREAM[field.def.scene]) ||
+		SCENES[tod ?? ""] ||
+		SCENES.shinya;
+	let pal = rampCache.get(sceneKey);
 	if (!pal) {
 		pal = { ramp: scene.ramp.map(hex), accent: scene.accent.map(hex) };
-		rampCache.set(tod ?? "", pal);
+		rampCache.set(sceneKey, pal);
 	}
-	currentPal = { key: tod ?? "", ...pal };
+	currentPal = { key: sceneKey, ...pal };
+	const fray = scene.frame === "fray";
 	const box = boxFor(field, player);
 	const { sx, sy } = boxPlacement(field, box, screenW, screenH, player);
 	const back = backHeight(field, box);
@@ -704,11 +922,25 @@ export const renderDiorama = (
 	const ox = box.x * TILE;
 	const oy = box.y * TILE;
 
-	// 虚空（黒＋ゆっくりまたたく星）
+	// 虚空（黒＋ゆっくりまたたく星／砂あらし／まっくら）
 	ctx.fillStyle = "#000";
 	ctx.fillRect(0, 0, screenW, screenH);
 	ctx.fillStyle = scene.star;
-	for (let i = 0; i < 90; i++) {
+	if (scene.voidKind === "static") {
+		// 砂あらし：1/15 秒ごとに入れかわる、まばらな点
+		const t = Math.floor(time / 66);
+		for (let i = 0; i < 260; i++) {
+			const x = Math.floor(hash(i, t) * screenW);
+			const y = Math.floor(hash(i + 999, t) * screenH);
+			ctx.globalAlpha = 0.06 + 0.18 * hash(i, t + 7);
+			ctx.fillRect(x, y, 1, 1);
+		}
+	}
+	for (
+		let i = 0;
+		i < (scene.voidKind && scene.voidKind !== "stars" ? 0 : 90);
+		i++
+	) {
 		const x = Math.floor(hash(i, 1) * screenW);
 		const y = Math.floor(hash(i, 2) * screenH);
 		const tw = 0.5 + 0.5 * Math.sin(time / (900 + hash(i, 3) * 1800) + i);
@@ -732,7 +964,7 @@ export const renderDiorama = (
 
 	// 地形（下の層・上の層）は変わったときだけ変換し直す
 	field.sync();
-	const key = `${field.def.id}:${box.x},${box.y},${box.w},${box.h}:${tod}:${field.version}`;
+	const key = `${field.def.id}:${box.x},${box.y},${box.w},${box.h}:${sceneKey}:${field.version}`;
 	if (!terrain || terrain.key !== key) {
 		const below = canvas(bw, bh);
 		const bg = below.getContext("2d", { willReadFrequently: true });
@@ -787,11 +1019,13 @@ export const renderDiorama = (
 		(p, q) => p - q,
 	);
 
-	// 床の厚み → 箱の中身 → 断面の縁
-	ctx.fillStyle = scene.slab;
-	ctx.fillRect(sx - EDGE, sy + bh, bw + EDGE * 2, SLAB);
-	ctx.fillStyle = "rgba(0,0,0,0.35)";
-	ctx.fillRect(sx - EDGE, sy + bh + SLAB - 2, bw + EDGE * 2, 2);
+	// 床の厚み → 箱の中身 → 断面の縁（怪異の箱は床の厚みも断面も無く、縁が虚空に溶ける）
+	if (!fray) {
+		ctx.fillStyle = scene.slab;
+		ctx.fillRect(sx - EDGE, sy + bh, bw + EDGE * 2, SLAB);
+		ctx.fillStyle = "rgba(0,0,0,0.35)";
+		ctx.fillRect(sx - EDGE, sy + bh + SLAB - 2, bw + EDGE * 2, 2);
+	}
 	if (terrain.back) ctx.drawImage(terrain.back, sx, sy - back);
 	ctx.drawImage(terrain.below, sx, sy);
 	for (const r of rows) {
@@ -833,6 +1067,13 @@ export const renderDiorama = (
 				rc.h,
 			);
 		}
+	}
+	// 暗闇：照らす半径の外を、場面のいちばん暗い段でディザ状に潰す（懐中電灯で広がる）
+	if (dark && dark.amount > 0)
+		drawDark(ctx, sx, sy, bw, bh, player, box, dark, pal.ramp[0]);
+	if (fray) {
+		drawFray(ctx, sx, sy - back, bw, bh + back);
+		return;
 	}
 	ctx.fillStyle = scene.cut;
 	if (field.def.outdoor) {

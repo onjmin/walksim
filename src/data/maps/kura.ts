@@ -23,6 +23,7 @@ const rows = [
 
 export const kura: MapDef = {
 	id: "kura",
+	scene: "sepia", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "蔵のなか",
 	bgm: null,
 	dark: 0.7,

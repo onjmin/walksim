@@ -235,6 +235,7 @@ const yobigoe = async (s: Story): Promise<void> => {
 
 export const village: MapDef = {
 	id: "village",
+	scene: "village", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "夕暮れの村",
 	bgm: "sad",
 	tint: "rgba(150,60,50,0.25)",

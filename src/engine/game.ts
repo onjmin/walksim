@@ -688,6 +688,14 @@ export class Game {
 				typeof this.state.flags.tod === "string"
 					? this.state.flags.tod
 					: undefined,
+				field.def.dark
+					? {
+							amount: field.def.dark,
+							radius: this.state.flags.flashlight
+								? LIGHT_RADIUS_FLASHLIGHT
+								: LIGHT_RADIUS,
+						}
+					: undefined,
 			);
 			return;
 		}

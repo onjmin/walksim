@@ -28,6 +28,7 @@ const rows = [
 
 export const tunnel: MapDef = {
 	id: "tunnel",
+	scene: "tunnel", // ジオラマ表示の場面（怪異の地区は箱がほどける）
 	name: "伊佐貫トンネル",
 	bgm: null,
 	dark: 0.85,
