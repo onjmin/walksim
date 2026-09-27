@@ -14,7 +14,7 @@
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
 import { npc } from "../helpers";
-import { base, INDOOR } from "../tiles";
+import { base, INDOOR, JP } from "../tiles";
 
 // INDOOR に足すもの:
 //   g  ガチャガチャ（自販機のチップで代用）
@@ -22,7 +22,7 @@ import { base, INDOOR } from "../tiles";
 const tiles: Record<string, TileDef> = {
 	...INDOOR,
 	g: {
-		layers: [base(0, 46), base(0, 519, 1, 2)],
+		layers: [base(0, 46), JP.vending],
 		color: "#c02020",
 		passable: false,
 	},

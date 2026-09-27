@@ -32,10 +32,10 @@ import type {
 	Story,
 	TileDef,
 } from "../../engine/defs";
-import { npc, OBJ, warp } from "../helpers";
+import { npc, warp } from "../helpers";
 import { kanHeld, kanLine, kanShinya, kanTick, yoruAkubi } from "../nostalgia";
 import { SPR } from "../sprites";
-import { base, basePx, field, PROPS, TOWN } from "../tiles";
+import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
 // TOWN をベースに、住宅街の部品を足す。
@@ -44,68 +44,68 @@ import { base, basePx, field, PROPS, TOWN } from "../tiles";
 //   +  歯科の看板（白壁の上段）  q  校門の門柱  G  しまった校門（鉄柵）
 //   g  校庭の土（入れない）  s  すなば  u  ブランコ  /  すべり台
 //   h  空き地の柵（見た目は柵・通れる＝無印の隠し）  _  坂の段差
-const TURF = base(0, 4);
-const WIN_LOW_WHITE = basePx(48, 1382);
-const WIN_LOW_BRICK = basePx(16, 1382);
+const TURF = JP.ground;
+const WIN_LOW_WHITE = WIN.sash;
+const WIN_LOW_BRICK = WIN.sash;
 const tiles: Record<string, TileDef> = {
 	...TOWN,
 	o: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
+		layers: [WALL.sidingLo, DOOR.house],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	j: {
-		layers: [base(1, 56), base(7, 55, 1, 2)],
+		layers: [WALL.boardLo, DOOR.sliding],
 		color: "#6a4a2a",
 		passable: false,
 	},
 	r: {
-		layers: [base(1, 62), base(7, 61, 1, 2)],
+		layers: [WALL.tileLo, DOOR.shop],
 		color: "#a04a3a",
 		passable: false,
 	},
 	c: {
-		layers: [base(1, 60), WIN_LOW_WHITE],
+		layers: [WALL.sidingLo, WIN_LOW_WHITE],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	t: {
-		layers: [base(1, 62), WIN_LOW_BRICK],
+		layers: [WALL.tileLo, WIN_LOW_BRICK],
 		color: "#a04a3a",
 		passable: false,
 	},
 	m: {
-		layers: [base(1, 56), WIN_LOW_WHITE],
+		layers: [WALL.boardLo, WIN_LOW_WHITE],
 		color: "#6a4a2a",
 		passable: false,
 	},
 	"+": {
-		layers: [base(1, 59), base(1, 96)],
+		layers: [WALL.sidingUp, JP.cross],
 		color: "#e8e8e8",
 		passable: false,
 	},
-	q: { layers: [base(1, 68)], color: "#7a7a70", passable: false },
+	q: { layers: [JP.gatePillar], color: "#7a7a70", passable: false },
 	G: {
-		layers: [base(2, 46), base(5, 32)],
+		layers: [JP.schoolGate],
 		color: "#5a5a60",
 		passable: false,
 	},
-	g: { layers: [base(5, 4)], color: "#c8a26a", passable: true },
-	s: { layers: [field(7, 2)], color: "#e8cc90", passable: true },
+	g: { layers: [JP.schoolDirt], color: "#c8a26a", passable: true },
+	s: { layers: [JP.sand], color: "#e8cc90", passable: true },
 	u: {
 		layers: [TURF],
-		above: [base(6, 46, 1, 2)],
+		above: [JP.swing],
 		color: "#8a6a3a",
 		passable: false,
 	},
 	"/": {
 		layers: [TURF],
-		above: [base(6, 49, 1, 2)],
+		above: [JP.slide],
 		color: "#8a8a90",
 		passable: false,
 	},
-	h: { layers: [TURF, base(5, 30)], color: "#8a6a3a", passable: true },
-	_: { layers: [base(2, 46), base(6, 48)], color: "#8a8078", passable: true },
+	h: { layers: [TURF, JP.ropeFence], color: "#8a6a3a", passable: true },
+	_: { layers: [JP.slopeStep], color: "#8a8078", passable: true },
 };
 
 // 北＝小学校（y0-5）と裏の路地（y3・東で street へ）。中央＝上のどおり（y6）・
@@ -508,7 +508,7 @@ export const sumire: MapDef = {
 			id: "tobidashi",
 			x: 1,
 			y: 6,
-			sprite: OBJ.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -798,7 +798,7 @@ export const sumire: MapDef = {
 			id: "parking_sign",
 			x: 6,
 			y: 8,
-			sprite: OBJ.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -814,7 +814,7 @@ export const sumire: MapDef = {
 			id: "mirror",
 			x: 38,
 			y: 12,
-			sprite: PROPS.signpost,
+			sprite: JP.signpost,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {

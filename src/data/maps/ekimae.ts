@@ -29,36 +29,36 @@ import type {
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import { kanShinya, kanTick, yoruAkubi, yoruClock } from "../nostalgia";
-import { base, basePx, PROPS, TOWN } from "../tiles";
+import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
 // TOWN をベースに駅まわりを足す。
 //   i  キオスクの中の床   =  キオスクのカウンター（むこうのおばちゃんに話しかけられる）
 //   c  大きな窓（白壁の下段。窓口・スーパーの店先）   o  しまった戸（白壁）
 //   G  改札口（駅舎の入口。talk イベントを置く）
-const PAVE = base(3, 46);
-const WIN_LOW_WHITE = basePx(48, 1382);
+const PAVE = JP.pave;
+const WIN_LOW_WHITE = WIN.sash;
 const tiles: Record<string, TileDef> = {
 	...TOWN,
 	i: { layers: [PAVE], color: "#9a9a9a", passable: true },
 	"=": {
-		layers: [PAVE, base(2, 98)],
+		layers: [PAVE, JP.counterM],
 		color: "#b8905a",
 		passable: false,
 		counter: true,
 	},
 	c: {
-		layers: [base(1, 60), WIN_LOW_WHITE],
+		layers: [WALL.sidingLo, WIN_LOW_WHITE],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	o: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
+		layers: [WALL.sidingLo, DOOR.house],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	G: {
-		layers: [base(1, 60), base(7, 61, 1, 2)],
+		layers: [WALL.sidingLo, DOOR.shop],
 		color: "#c8c8c8",
 		passable: false,
 	},
@@ -588,7 +588,7 @@ export const ekimae: MapDef = {
 			id: "ekimei",
 			x: 1,
 			y: 10,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -642,7 +642,7 @@ export const ekimae: MapDef = {
 			id: "tokei",
 			x: 13,
 			y: 10,
-			sprite: base(2, 116, 1, 2),
+			sprite: JP.clockPole,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -1006,7 +1006,7 @@ export const ekimae: MapDef = {
 			id: "old_sign",
 			x: 18,
 			y: 3,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {

@@ -30,37 +30,37 @@ import type {
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import { kanHeld, kanLine, kanShinya, kanTick, yoruAkubi } from "../nostalgia";
-import { base, basePx, field, PROPS, TOWN } from "../tiles";
+import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
 //   o  しまった戸（白壁）  j  集会所の戸  c  下段の窓（白壁）  m  下段の窓（板壁）
 //   s  すなば  h  生けがきの通れる一枚（見た目は柵のまま＝無印の隠し）
-const TURF = base(0, 4);
-const WIN_LOW_WHITE = basePx(48, 1382);
+const TURF = JP.ground;
+const WIN_LOW_WHITE = WIN.sash;
 const tiles: Record<string, TileDef> = {
 	...TOWN,
 	o: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
+		layers: [WALL.sidingLo, DOOR.house],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	j: {
-		layers: [base(1, 56), base(7, 55, 1, 2)],
+		layers: [WALL.boardLo, DOOR.sliding],
 		color: "#6a4a2a",
 		passable: false,
 	},
 	c: {
-		layers: [base(1, 60), WIN_LOW_WHITE],
+		layers: [WALL.sidingLo, WIN_LOW_WHITE],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	m: {
-		layers: [base(1, 56), WIN_LOW_WHITE],
+		layers: [WALL.boardLo, WIN_LOW_WHITE],
 		color: "#6a4a2a",
 		passable: false,
 	},
-	s: { layers: [field(7, 2)], color: "#e8cc90", passable: true },
-	h: { layers: [TURF, base(5, 30)], color: "#8a6a3a", passable: true },
+	s: { layers: [JP.sand], color: "#e8cc90", passable: true },
+	h: { layers: [TURF, JP.ropeFence], color: "#8a6a3a", passable: true },
 };
 
 // 北＝A棟（西）・B棟（東）。あいだの縦の道 x16 が kokudo へ。
@@ -346,7 +346,7 @@ export const danchi: MapDef = {
 			id: "kyusuito_ev",
 			x: 3,
 			y: 8,
-			sprite: base(2, 129, 1, 3),
+			sprite: JP.waterTower,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -768,7 +768,7 @@ export const danchi: MapDef = {
 			id: "tetsubo",
 			x: 11,
 			y: 9,
-			sprite: base(5, 32),
+			sprite: JP.tetsubo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -912,7 +912,7 @@ export const danchi: MapDef = {
 			id: "mirror",
 			x: 1,
 			y: 12,
-			sprite: PROPS.signpost,
+			sprite: JP.signpost,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -934,7 +934,7 @@ export const danchi: MapDef = {
 			id: "annaizu",
 			x: 13,
 			y: 13,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			// 二度目で下の層（来なかった未来の点線）に気づく（P0-8。時間帯を問わず同じ文）
@@ -954,7 +954,7 @@ export const danchi: MapDef = {
 			id: "gomi",
 			x: 26,
 			y: 13,
-			sprite: base(7, 125),
+			sprite: JP.gomi,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {

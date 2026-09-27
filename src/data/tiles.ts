@@ -210,6 +210,101 @@ export const TOWN: Record<string, TileDef> = {
 	" ": BLACK,
 };
 
+/**
+ * 地区ごとの部品（town.png の後半）。各地区の独自タイルとイベントの絵に使う。
+ * 壁（下段）・戸・窓の組み合わせは WALL / DOOR / WIN を重ねる：
+ *   しまった戸（白壁）= [WALL.sidingLo, DOOR.house] ・ 大きな窓（白壁の下段）= [WALL.sidingLo, WIN.sash]
+ */
+export const WALL = {
+	sidingUp: T_SIDING_UP,
+	sidingLo: T_SIDING_LO,
+	boardUp: T_BOARD_UP,
+	boardLo: T_BOARD_LO,
+	mortar: T_MORTAR,
+	tileLo: T_TILE,
+} as const;
+export const DOOR = {
+	shop: town(0, 3, 1, 2),
+	house: town(1, 3, 1, 2),
+	sliding: town(2, 3, 1, 2),
+	/** 上下2マスに分けて描くとき（戸の上半分・下半分）。 */
+	houseTop: town(1, 3),
+	houseBottom: town(1, 4),
+	shopTop: town(0, 3),
+	shopBottom: town(0, 4),
+} as const;
+export const WIN = {
+	sash: town(7, 1),
+	grille: town(0, 2),
+} as const;
+export const JP = {
+	pave: T_PAVE,
+	road: T_ROAD,
+	ground: T_GROUND,
+	lightSpill: town(6, 5),
+	sand: town(7, 5),
+	dirtPath: town(5, 6),
+	water: town(6, 6),
+	bridgeV: town(7, 6),
+	paddy: town(5, 7),
+	susuki: town(6, 7),
+	stoneSteps: town(7, 7),
+	ishidatami: town(5, 8),
+	roadCenter: town(6, 8),
+	schoolDirt: town(7, 8),
+	slopeStep: town(0, 9),
+	grassTuft: town(1, 9),
+	counterL: town(2, 9),
+	counterM: town(3, 9),
+	counterR: town(4, 9),
+	gatePillar: town(5, 9),
+	schoolGate: town(6, 9),
+	ropeFence: town(7, 9),
+	carWashTop: town(0, 10),
+	carWashBottom: town(1, 10),
+	stationStairs: town(2, 10),
+	emakake: town(3, 10),
+	bucket: town(4, 10),
+	hanabiAto: town(5, 10),
+	sekihi: town(6, 10),
+	saisen: town(7, 10),
+	tetsubo: town(0, 11),
+	gomi: town(1, 11),
+	tireMarks: town(2, 11),
+	cansCrate: town(3, 11),
+	recordWagon: town(4, 11),
+	polyBucket: town(5, 11),
+	matsuriPoster: town(6, 11),
+	ringoBox: town(7, 11),
+	signpost: town(0, 12),
+	infoSign: town(1, 12),
+	kakoi: town(2, 12),
+	hanataba: town(3, 12),
+	stoneLantern: town(0, 13, 1, 2),
+	komainuA: town(1, 13, 1, 2),
+	komainuB: town(2, 13, 1, 2),
+	clockPole: town(3, 13, 1, 2),
+	postSquare: town(4, 13, 1, 2),
+	postRound: town(5, 13, 1, 2),
+	gasPump: town(6, 13, 1, 2),
+	phoneBox: town(7, 13, 1, 2),
+	swing: town(0, 15, 1, 2),
+	slide: town(1, 15, 1, 2),
+	airTower: town(2, 15, 1, 2),
+	waterTower: town(3, 15, 1, 3),
+	roadInfo: town(4, 15, 2, 2),
+	tree: town(0, 6, 2, 2),
+	hedge: town(4, 2),
+	fence: town(5, 2),
+	flowers: town(6, 2),
+	lamp: town(7, 3, 1, 2),
+	vending: town(3, 3, 1, 2),
+	crate: town(2, 5),
+	aSign: town(3, 5),
+	signBoard: town(1, 2),
+	cross: town(3, 2),
+} as const;
+
 // ───────────────── 屋内（家・店・音楽室） ─────────────────
 // 部屋の上端は「天井 # ＋ 壁2段（H 上段・h 下段）」。16x32 の家具は壁ぎわの床に置くと上段へはみ出して立つ。
 //   #  天井（黒）  H  壁（上段）  h  壁（下段・腰板）  W  窓  Q  絵  k  柱時計（下段）

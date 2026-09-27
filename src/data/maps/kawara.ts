@@ -33,7 +33,7 @@ import type {
 import type { Dir } from "../../engine/types";
 import { npc, warp } from "../helpers";
 import { kanHeld, kanLine, kanTick, yoruAkubi } from "../nostalgia";
-import { base, FIELD, field, PROPS, TOWN } from "../tiles";
+import { DOOR, FIELD, JP, TOWN, WALL } from "../tiles";
 
 // ── タイル ──
 // FIELD をベースに、神社の高台（TOWN の石畳）と社・石段を足す。
@@ -41,18 +41,18 @@ import { base, FIELD, field, PROPS, TOWN } from "../tiles";
 //   h  ススキ（見た目は b と同じ・通れる＝対岸の隠し）   G  石どうろう（常夜灯）
 //   z Z わら屋根（社）   [ ]  板壁   j  社の戸（しまっている）   Y  ご神木（高台のクスノキ）
 //   .  水ぎわ・高台の石畳   =  石段   #  橋   ~  川   L  街灯
-const PAVE = base(5, 48);
+const PAVE = JP.ishidatami;
 const tiles: Record<string, TileDef> = {
 	...FIELD,
 	i: {
-		layers: [FIELD["."].layers[0], base(0, 11)],
+		layers: [JP.paddy],
 		color: "#7a9a3a",
 		passable: false,
 		counter: true,
 	},
 	".": { layers: [PAVE], color: "#8c8c90", passable: true },
 	G: {
-		layers: [PAVE, PROPS.stoneLantern],
+		layers: [PAVE, JP.stoneLantern],
 		color: "#8c8c90",
 		passable: false,
 	},
@@ -61,26 +61,27 @@ const tiles: Record<string, TileDef> = {
 	"[": TOWN["["],
 	"]": TOWN["]"],
 	j: {
-		layers: [base(1, 56), base(7, 55, 1, 2)],
+		layers: [WALL.boardLo, DOOR.sliding],
 		color: "#6a4a2a",
 		passable: false,
 	},
-	"=": { layers: [base(6, 51)], color: "#8a8a8a", passable: true },
+	"=": { layers: [JP.stoneSteps], color: "#8a8a8a", passable: true },
 	Y: {
-		layers: [PAVE, field(3, 8)],
+		layers: [PAVE, JP.tree],
 		color: "#4a7a3a",
 		passable: false,
 	},
 	h: {
-		layers: [FIELD["."].layers[0], base(0, 10)],
+		layers: [JP.ground, JP.susuki],
 		color: "#6fae3a",
 		passable: true,
 	},
-	L: {
-		layers: [FIELD["."].layers[0], "sp:2gTYec"],
-		color: "#6fae3a",
-		passable: false,
-	},
+	L: { ...TOWN.L, layers: [JP.ground, JP.lamp] },
+	// FIELD の地面・土手の道・川・橋も自作チップに（文字の意味は FIELD と同じ）
+	",": { layers: [JP.grassTuft], color: "#6a7a48", passable: true },
+	":": { layers: [JP.dirtPath], color: "#7a6a50", passable: true },
+	"~": { layers: [JP.water], color: "#4a6a88", passable: false },
+	"#": { layers: [JP.bridgeV], color: "#8a8880", passable: true },
 };
 
 // 西＝田んぼとかかし。北＝sumire への道(x5)と、石段の上の神社（ご神木・狛犬・常夜灯）。
@@ -430,7 +431,7 @@ export const kawara: MapDef = {
 			id: "hashi_sekihi",
 			x: 19,
 			y: 10,
-			sprite: PROPS.grave,
+			sprite: JP.sekihi,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -565,7 +566,7 @@ export const kawara: MapDef = {
 			id: "tanbo_sign",
 			x: 4,
 			y: 7,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -626,7 +627,7 @@ export const kawara: MapDef = {
 			id: "komainu_a",
 			x: 29,
 			y: 4,
-			sprite: base(3, 131, 1, 2),
+			sprite: JP.komainuA,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -637,7 +638,7 @@ export const kawara: MapDef = {
 			id: "komainu_b",
 			x: 33,
 			y: 4,
-			sprite: base(4, 131, 1, 2),
+			sprite: JP.komainuB,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -648,7 +649,7 @@ export const kawara: MapDef = {
 			id: "saisen",
 			x: 30,
 			y: 5,
-			sprite: PROPS.chestBrown,
+			sprite: JP.saisen,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -682,7 +683,7 @@ export const kawara: MapDef = {
 			id: "emakake",
 			x: 34,
 			y: 5,
-			sprite: base(5, 30),
+			sprite: JP.emakake,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -748,7 +749,7 @@ export const kawara: MapDef = {
 			id: "kyorihyo",
 			x: 12,
 			y: 7,
-			sprite: PROPS.signpost,
+			sprite: JP.signpost,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -798,7 +799,7 @@ export const kawara: MapDef = {
 			id: "kasen_sign",
 			x: 16,
 			y: 10,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -810,7 +811,7 @@ export const kawara: MapDef = {
 			id: "tsuri_bucket",
 			x: 8,
 			y: 10,
-			sprite: base(1, 124),
+			sprite: JP.bucket,
 			trigger: "talk",
 			fixedDir: true,
 			when: (st) => st.flags.tod !== "shinya",
@@ -849,7 +850,7 @@ export const kawara: MapDef = {
 			id: "hanabi_ato",
 			x: 21,
 			y: 15,
-			sprite: base(2, 190),
+			sprite: JP.hanabiAto,
 			trigger: "talk",
 			through: true,
 			fixedDir: true,

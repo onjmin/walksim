@@ -482,6 +482,540 @@ const lampPole = () => {
 	return s;
 };
 
+// ───────────────── 地区ごとの部品（川・神社・学校・公園・国道・駅・商店街） ─────────────────
+
+/** 道路にこぼれた店の灯り（地面に重ねる。ディザの明るいまだら）。 */
+const lightSpill = () => {
+	const s = sprite();
+	for (let y = 0; y < 16; y++)
+		for (let x = 0; x < 16; x++) {
+			const d = Math.hypot(x - 7.5, y - 7.5) / 9;
+			if (hash(x, y, 40) > d * 1.1 && (x + y) % 2 === 0) s.px(x, y, "L");
+		}
+	return s;
+};
+
+/** すなば。 */
+const sand = () =>
+	noise("y", [
+		["Y", 0.12],
+		["x", 0.05],
+	], 41);
+
+/** 土の道（土手）。 */
+const dirtPath = () => {
+	const s = noise("u", [
+		["U", 0.14],
+		["8", 0.06],
+	], 42);
+	s.hline(0, 4, 3, "U").hline(9, 11, 4, "U");
+	return s;
+};
+
+/** 川の水（横に流れるさざなみ）。 */
+const water = () => {
+	const s = sprite().rect(0, 0, 16, 16, "H");
+	for (let y = 1; y < 16; y += 4)
+		for (let x = 0; x < 16; x++)
+			if (hash(x >> 2, y, 43) < 0.45) s.px((x + y * 3) % 16, y, "X");
+	return s;
+};
+
+/** 橋（縦にわたる。板と両側のらんかん）。 */
+const bridgeV = () => {
+	const s = sprite().rect(0, 0, 16, 16, "c");
+	for (let y = 0; y < 16; y += 3) s.hline(2, y, 12, "C");
+	s.rect(0, 0, 2, 16, "a").vline(1, 0, 16, "A");
+	s.rect(14, 0, 2, 16, "a").vline(14, 0, 16, "A");
+	return s;
+};
+
+/** 田んぼ（水を張った田に苗の列）。 */
+const paddy = () => {
+	const s = sprite().rect(0, 0, 16, 16, "H");
+	for (let y = 0; y < 16; y++) if (hash(3, y, 44) < 0.3) s.px((y * 5) % 16, y, "X");
+	for (let y = 2; y < 16; y += 4)
+		for (let x = 1; x < 15; x += 3) s.px(x, y, "l").px(x, y - 1, "f").px(x + 1, y, "F");
+	s.hline(0, 0, 16, "U");
+	return s;
+};
+
+/** ススキのしげみ。 */
+const susuki = () => {
+	const s = sprite();
+	for (const x of [2, 5, 7, 10, 12, 14]) {
+		const h = 7 + Math.floor(hash(x, 0, 45) * 5);
+		s.vline(x, 15 - h, h, "G");
+		s.px(x, 15 - h, "x").px(x + 1, 15 - h, "j").px(x, 16 - h, "j").px(x - 1, 17 - h, "x");
+	}
+	for (let x = 1; x < 15; x++) s.px(x, 14 + (x % 2), "g");
+	return s;
+};
+
+/** 石段（縦に上る）。 */
+const stoneSteps = () => {
+	const s = sprite();
+	for (let i = 0; i < 4; i++) {
+		s.rect(1, i * 4, 14, 4, i % 2 ? "c" : "j");
+		s.hline(1, i * 4 + 3, 14, "C");
+	}
+	s.vline(0, 0, 16, "g").vline(15, 0, 16, "g");
+	return s;
+};
+
+/** 石畳。 */
+const ishidatami = () => {
+	const s = noise("c", [["j", 0.06]], 46);
+	for (let y = 0; y < 16; y += 5) {
+		s.hline(0, y, 16, "C");
+		const off = (y / 5) % 2 ? 3 : 9;
+		s.vline(off, y, 5, "C").vline((off + 8) % 16, y, 5, "C");
+	}
+	return s;
+};
+
+/** 車道のセンターライン（黄色い実線）。 */
+const roadCenter = () => {
+	const s = asphalt();
+	s.hline(0, 7, 16, "y").hline(0, 8, 16, "Y");
+	return s;
+};
+
+/** 校庭の土。 */
+const schoolDirt = () =>
+	noise("s", [
+		["S", 0.1],
+		["8", 0.04],
+	], 47);
+
+/** 坂の段差（コンクリートの段）。 */
+const slopeStep = () => {
+	const s = pave();
+	s.rect(0, 9, 16, 3, "c").hline(0, 9, 16, "j").hline(0, 12, 16, "J");
+	return s;
+};
+
+/** 草の地面（ひざ丈の草のまじる土手）。 */
+const grassTuft = () => {
+	const s = ground();
+	for (const [x, y] of [
+		[3, 5],
+		[10, 9],
+		[6, 13],
+	])
+		s.px(x, y, "l").px(x - 1, y + 1, "f").px(x + 1, y + 1, "f").px(x, y + 1, "F");
+	return s;
+};
+
+/** 店のカウンター（左・中・右）。 */
+const counter = (part) => {
+	const s = sprite();
+	s.rect(0, 4, 16, 4, "4").hline(0, 4, 16, "y");
+	s.rect(0, 8, 16, 7, "n").hline(0, 14, 16, "N");
+	for (let x = 3; x < 16; x += 5) s.vline(x, 9, 5, "N");
+	if (part === "left") s.vline(0, 4, 11, "N");
+	if (part === "right") s.vline(15, 4, 11, "N");
+	if (part === "mid") s.rect(5, 2, 5, 2, "x").px(7, 1, "z");
+	return s;
+};
+
+/** 校門の門柱（コンクリート・表札）。 */
+const gatePillar = () => {
+	const s = sprite();
+	s.rect(3, 1, 10, 14, "j").vline(3, 1, 14, "c").hline(3, 1, 10, "x");
+	s.rect(5, 4, 6, 6, "a").hline(6, 6, 4, "v").hline(6, 8, 3, "v");
+	s.hline(3, 15, 10, "C");
+	return s;
+};
+
+/** 閉まった校門（鉄の引き戸の柵）。 */
+const schoolGate = () => {
+	const s = asphalt();
+	s.hline(0, 3, 16, "a").hline(0, 12, 16, "A");
+	for (let x = 1; x < 16; x += 3) s.vline(x, 3, 10, "9");
+	s.rect(0, 13, 16, 2, "0");
+	for (let x = 2; x < 16; x += 5) s.px(x, 14, "K");
+	return s;
+};
+
+/** 空き地のロープ柵（杭とトラロープ）。 */
+const ropeFence = () => {
+	const s = sprite();
+	s.vline(2, 5, 9, "u").vline(13, 5, 9, "u");
+	for (let x = 2; x <= 13; x++)
+		s.px(
+			x,
+			6 + Math.round(Math.sin(((x - 2) / 11) * Math.PI) * 2),
+			(x >> 1) % 2 ? "y" : "K",
+		);
+	return s;
+};
+
+/** 洗車機（上・下）。 */
+const carWash = (part) => {
+	const s = sprite();
+	if (part === "top") {
+		s.rect(1, 2, 14, 14, "i").hline(1, 2, 14, "x");
+		s.rect(3, 5, 10, 3, "b").hline(3, 6, 10, "B");
+		s.rect(3, 10, 10, 6, "q");
+		s.vline(1, 2, 14, "I").vline(14, 2, 14, "I");
+	} else {
+		s.rect(1, 0, 14, 14, "i").vline(1, 0, 14, "I").vline(14, 0, 14, "I");
+		s.rect(3, 0, 10, 12, "q");
+		for (let y = 1; y < 12; y += 2) s.hline(4, y, 8, "B");
+		s.hline(1, 14, 14, "J");
+	}
+	return s;
+};
+
+/** 地下へ下りる駅の階段（囲いのおく）。 */
+const stationStairs = () => {
+	const s = sprite();
+	const steps = ["j", "c", "C", "0", "V", "K"];
+	for (let i = 0; i < 6; i++) s.rect(2, 2 + i * 2, 12, 2, steps[i]);
+	s.rect(0, 0, 2, 16, "a").rect(14, 0, 2, 16, "a");
+	s.hline(0, 0, 16, "A");
+	return s;
+};
+
+/** 絵馬かけ。 */
+const emakake = () => {
+	const s = sprite();
+	s.vline(2, 3, 12, "6").vline(13, 3, 12, "6");
+	s.rect(1, 2, 14, 2, "k").hline(1, 2, 14, "7");
+	for (const [x, y] of [
+		[3, 6],
+		[7, 5],
+		[10, 7],
+		[5, 9],
+	])
+		s.rect(x, y, 3, 3, "4").px(x + 1, y, "y");
+	s.hline(2, 12, 12, "k");
+	return s;
+};
+
+/** バケツ（つりの人の）。 */
+const bucket = () => {
+	const s = sprite();
+	s.rect(5, 8, 7, 6, "b").hline(5, 8, 7, "3").rect(6, 9, 5, 1, "H");
+	s.hline(5, 6, 7, "0").px(4, 7, "0").px(12, 7, "0");
+	s.hline(6, 14, 5, "B");
+	return s;
+};
+
+/** 花火のあと（焦げたあとと燃えかす）。 */
+const hanabiAto = () => {
+	const s = sprite();
+	for (let y = 4; y < 14; y++)
+		for (let x = 3; x < 14; x++)
+			if (hash(x, y, 48) < 0.45 - Math.hypot(x - 8, y - 9) * 0.05) s.px(x, y, "V");
+	s.vline(6, 7, 5, "z").vline(9, 9, 4, "p").vline(11, 8, 4, "b");
+	s.px(6, 6, "K").px(9, 8, "K").px(11, 7, "K");
+	return s;
+};
+
+/** 石碑。 */
+const sekihi = () => {
+	const s = sprite();
+	s.rect(4, 1, 8, 12, "c").vline(4, 1, 12, "C").hline(4, 1, 8, "j");
+	for (let y = 3; y < 11; y += 2) s.hline(7, y, 2, "C");
+	s.rect(2, 13, 12, 2, "C").hline(2, 13, 12, "c");
+	return s;
+};
+
+/** さいせん箱。 */
+const saisen = () => {
+	const s = sprite();
+	s.rect(2, 5, 12, 9, "k").hline(2, 5, 12, "7");
+	for (let x = 3; x < 13; x += 2) s.vline(x, 6, 3, "6");
+	s.hline(3, 10, 10, "7").hline(3, 12, 10, "6");
+	s.hline(2, 14, 12, "K");
+	return s;
+};
+
+/** 鉄棒。 */
+const tetsubo = () => {
+	const s = ground();
+	s.vline(2, 3, 11, "0").vline(13, 3, 11, "0").vline(8, 5, 9, "0");
+	s.hline(2, 3, 7, "a").hline(8, 5, 6, "a");
+	return s;
+};
+
+/** ごみ集積所の袋とネット。 */
+const gomi = () => {
+	const s = sprite();
+	for (const [x, y, c] of [
+		[2, 7, "i"],
+		[8, 6, "I"],
+		[5, 10, "i"],
+		[10, 10, "i"],
+	]) {
+		s.rect(x, y, 5, 4, c).px(x + 2, y - 1, "I").px(x + 2, y - 2, "y");
+		s.px(x + 1, y + 1, "a");
+	}
+	s.hline(0, 2, 16, "b");
+	return s;
+};
+
+/** タイヤのあと（アスファルトに重ねる黒い弧）。 */
+const tireMarks = () => {
+	const s = sprite();
+	for (let x = 0; x < 16; x++) {
+		const y = 5 + Math.round(Math.sin(x / 5) * 2);
+		s.px(x, y, "V").px(x, y + 5, "V");
+	}
+	return s;
+};
+
+/** 空き缶の回収かご。 */
+const cansCrate = () => {
+	const s = sprite();
+	s.rect(2, 6, 12, 8, "b").hline(2, 6, 12, "3");
+	for (let x = 3; x < 13; x += 2) s.vline(x, 7, 6, "B");
+	s.px(4, 4, "a").px(5, 4, "a").px(8, 5, "z").px(10, 4, "a").px(11, 5, "y");
+	s.hline(2, 14, 12, "K");
+	return s;
+};
+
+/** 中古レコードのワゴン。 */
+const recordWagon = () => {
+	const s = sprite();
+	s.rect(1, 5, 14, 7, "7").hline(1, 5, 14, "4");
+	const c = ["V", "z", "b", "y", "V", "x"];
+	for (let x = 2; x < 14; x += 2) s.rect(x, 3, 1, 5, c[x % 6]);
+	s.vline(2, 12, 3, "0").vline(13, 12, 3, "0");
+	return s;
+};
+
+/** 勝手口のポリバケツ。 */
+const polyBucket = () => {
+	const s = sprite();
+	s.rect(4, 5, 8, 9, "b").vline(4, 5, 9, "B").hline(3, 4, 10, "3");
+	s.rect(6, 3, 4, 1, "B");
+	s.hline(4, 14, 8, "K");
+	return s;
+};
+
+/** 祭りのポスター（壁に貼る）。 */
+const matsuriPoster = () => {
+	const s = sprite();
+	s.rect(3, 1, 10, 13, "x");
+	s.rect(4, 2, 8, 6, "z").rect(6, 3, 4, 4, "y");
+	s.hline(4, 9, 8, "v").hline(5, 11, 6, "v");
+	s.px(3, 1, "a").px(12, 1, "a");
+	return s;
+};
+
+/** りんご箱（木箱に赤い実）。 */
+const ringoBox = () => {
+	const s = sprite();
+	s.rect(2, 7, 12, 7, "7").hline(2, 7, 12, "4").hline(2, 10, 12, "6");
+	for (let x = 3; x < 13; x += 3) s.rect(x, 5, 2, 2, "z").px(x, 5, "p");
+	s.hline(2, 14, 12, "K");
+	return s;
+};
+
+/** 道しるべ（杭に矢じるしの板）。 */
+const signpost = () => {
+	const s = sprite();
+	s.vline(7, 3, 12, "k").vline(8, 3, 12, "6");
+	s.rect(2, 3, 10, 3, "7").px(12, 4, "7").hline(3, 4, 7, "x");
+	s.rect(5, 7, 10, 3, "7").px(4, 8, "7").hline(6, 8, 7, "x");
+	return s;
+};
+
+/** 案内板（二本足に白い板）。 */
+const infoSign = () => {
+	const s = sprite();
+	s.rect(2, 2, 12, 8, "x").hline(2, 2, 12, "a").hline(2, 9, 12, "I");
+	s.hline(4, 4, 8, "v").hline(4, 6, 6, "v").hline(4, 8, 5, "b");
+	s.vline(3, 10, 5, "0").vline(12, 10, 5, "0");
+	return s;
+};
+
+/** 工事の囲い（白い仮囲いのパネル）。 */
+const kakoi = () => {
+	const s = sprite();
+	s.rect(0, 1, 16, 14, "i").hline(0, 1, 16, "x");
+	s.vline(0, 1, 14, "I").vline(8, 1, 14, "I");
+	s.rect(2, 5, 12, 3, "b").hline(3, 6, 10, "x");
+	for (let x = 0; x < 16; x += 4) s.rect(x, 12, 2, 2, "y");
+	s.hline(0, 15, 16, "J");
+	return s;
+};
+
+/** ガードレールの花たば。 */
+const hanataba = () => {
+	const s = sprite();
+	s.hline(0, 5, 16, "a").hline(0, 6, 16, "A").hline(0, 9, 16, "a");
+	s.rect(6, 7, 5, 6, "x").px(7, 8, "p").px(9, 8, "y").px(8, 9, "z").px(8, 10, "p");
+	s.vline(8, 11, 3, "f");
+	s.vline(2, 5, 10, "0").vline(13, 5, 10, "0");
+	return s;
+};
+
+/** 石どうろう（常夜灯。16x32）。 */
+const stoneLantern = () => {
+	const s = sprite(16, 32);
+	s.rect(3, 6, 10, 3, "c").hline(2, 8, 12, "C").px(7, 5, "c").px(8, 5, "c");
+	s.rect(4, 9, 8, 6, "j").rect(6, 10, 4, 4, "Y").vline(4, 9, 6, "c");
+	s.rect(3, 15, 10, 2, "c");
+	s.rect(6, 17, 4, 10, "j").vline(6, 17, 10, "c");
+	s.rect(3, 27, 10, 3, "c").hline(3, 30, 10, "C");
+	return s;
+};
+
+/** 狛犬（a ほえる口／b 閉じた口。16x32）。 */
+const komainu = (side) => {
+	const s = sprite(16, 32);
+	s.rect(2, 24, 12, 6, "c").hline(2, 24, 12, "j").hline(2, 30, 12, "C");
+	s.art(3, 10, [
+		"...jjjj...",
+		"..jjjjjj..",
+		".jjKjjKjj.",
+		".jjjjjjjc.",
+		side === "a" ? ".jjKKKjjc." : ".jjjKjjjc.",
+		"..jjjjjc..",
+		"..cjjjjc..",
+		".jjjjjjjj.",
+		".jjcjjcjj.",
+		".jjcjjcjj.",
+		".jjjjjjjjc",
+		"..jj..jj..",
+		"..cc..cc..",
+	]);
+	s.px(side === "a" ? 3 : 12, 9, "j");
+	return s;
+};
+
+/** 時計柱（公園・駅前の柱の時計。16x32）。 */
+const clockPole = () => {
+	const s = sprite(16, 32);
+	s.rect(7, 12, 2, 18, "9").vline(7, 12, 18, "0");
+	s.art(3, 1, [
+		"...KKKK...",
+		"..KxxxxK..",
+		".KxxxKxxK.",
+		".KxxxKKxK.",
+		".KxxxxxxK.",
+		".KxxxxxxK.",
+		"..KxxxxK..",
+		"...KKKK...",
+	]);
+	s.rect(5, 9, 6, 3, "9");
+	s.rect(5, 29, 6, 2, "c").hline(5, 31, 6, "C");
+	return s;
+};
+
+/** 郵便ポスト（四角い赤。16x32）。 */
+const postSquare = () => {
+	const s = sprite(16, 32);
+	s.rect(3, 8, 10, 14, "z").vline(3, 8, 14, "Z").hline(3, 8, 10, "p");
+	s.rect(5, 11, 6, 1, "V").rect(5, 15, 6, 3, "x").hline(6, 16, 4, "z");
+	s.rect(6, 22, 4, 8, "0").hline(4, 30, 8, "J");
+	return s;
+};
+
+/** 丸ポスト（となりまちの古い通り。16x32）。 */
+const postRound = () => {
+	const s = sprite(16, 32);
+	s.art(3, 5, ["..zzzzzz..", ".zzpzzzzz.", "zzzzzzzzzz", "ZzzzzzzzzZ"]);
+	s.rect(3, 9, 10, 19, "z").vline(3, 9, 19, "Z").vline(12, 9, 19, "Z");
+	s.rect(5, 12, 6, 1, "V").rect(6, 16, 4, 3, "x");
+	s.rect(3, 28, 10, 2, "Z").hline(2, 30, 12, "J");
+	return s;
+};
+
+/** 給油機（16x32）。 */
+const gasPump = () => {
+	const s = sprite(16, 32);
+	s.rect(3, 6, 10, 23, "i").vline(3, 6, 23, "I").hline(3, 6, 10, "x");
+	s.rect(3, 6, 10, 4, "z").hline(4, 7, 8, "x");
+	s.rect(5, 12, 6, 4, "q").hline(6, 13, 4, "L");
+	s.rect(12, 16, 2, 6, "V").vline(13, 22, 5, "V");
+	s.rect(5, 19, 5, 3, "V");
+	s.rect(2, 29, 12, 2, "c").hline(2, 31, 12, "C");
+	return s;
+};
+
+/** 電話ボックス（緑の枠・ガラス・中に公衆電話。16x32）。 */
+const phoneBox = () => {
+	const s = sprite(16, 32);
+	s.rect(1, 2, 14, 29, "f").rect(1, 2, 14, 3, "F").hline(3, 3, 10, "x");
+	s.rect(3, 6, 10, 23, "Q");
+	s.rect(6, 12, 5, 6, "l").rect(7, 13, 3, 2, "V").px(8, 16, "x");
+	s.rect(3, 6, 3, 8, "m");
+	s.hline(1, 31, 14, "J");
+	return s;
+};
+
+/** ブランコ（柱と2本の鎖と座板。16x32・上の層に描く）。 */
+const swing = () => {
+	const s = sprite(16, 32);
+	s.hline(0, 3, 16, "z").hline(0, 4, 16, "Z");
+	s.vline(0, 3, 27, "z").vline(15, 3, 27, "z");
+	s.vline(4, 5, 16, "A").vline(11, 5, 16, "A");
+	s.rect(3, 21, 10, 2, "y").hline(3, 23, 10, "Y");
+	s.hline(4, 29, 8, "U");
+	return s;
+};
+
+/** すべり台（はしごと滑り面。16x32・上の層に描く）。 */
+const slide = () => {
+	const s = sprite(16, 32);
+	s.vline(2, 4, 26, "0").vline(6, 4, 26, "0");
+	for (let y = 7; y < 30; y += 4) s.hline(2, y, 5, "9");
+	s.rect(2, 2, 6, 3, "b").hline(2, 2, 6, "3");
+	for (let y = 5; y < 30; y++) {
+		const x = 7 + Math.floor(((y - 5) / 25) * 6);
+		s.rect(x, y, 3, 1, "y").px(x + 3, y, "Y");
+	}
+	return s;
+};
+
+/** 空気入れ（スタンドのエアタワー。16x32）。 */
+const airTower = () => {
+	const s = sprite(16, 32);
+	s.rect(5, 8, 6, 21, "b").vline(5, 8, 21, "B").hline(5, 8, 6, "3");
+	s.rect(6, 11, 4, 3, "x").px(7, 12, "z");
+	s.vline(11, 15, 8, "V").px(12, 23, "V");
+	s.rect(4, 29, 8, 2, "c").hline(4, 31, 8, "C");
+	return s;
+};
+
+/** 給水塔（団地の。細い柱に丸いタンク。16x48）。 */
+const waterTower = () => {
+	const s = sprite(16, 48);
+	s.art(1, 1, [
+		"....jjjjjj....",
+		"..jjjjjjjjjj..",
+		".jjjjjjjjjjjj.",
+		"cjjjjjjjjjjjjc",
+		"cjjjjjjjjjjjjc",
+		"cjjjjjjjjjjjjc",
+		"cjjjjjjjjjjjjc",
+		"cccjjjjjjjjccc",
+		".cccccccccccc.",
+		"...cccccccc...",
+	]);
+	s.hline(3, 6, 10, "c");
+	s.rect(6, 11, 4, 35, "j").vline(6, 11, 35, "c");
+	s.vline(10, 14, 30, "0");
+	for (let y = 14; y < 44; y += 3) s.px(11, y, "0");
+	s.rect(3, 45, 10, 3, "c").hline(3, 47, 10, "C");
+	return s;
+};
+
+/** 道路情報板（電光。国道の。32x32）。 */
+const roadInfo = () => {
+	const s = sprite(32, 32);
+	s.vline(3, 12, 20, "9").vline(28, 12, 20, "9");
+	s.rect(1, 2, 30, 12, "0").rect(2, 3, 28, 10, "V");
+	for (let x = 4; x < 28; x += 2) if (hash(x, 1, 49) < 0.6) s.px(x, 6, "y");
+	for (let x = 4; x < 24; x += 2) if (hash(x, 2, 49) < 0.6) s.px(x, 9, "y");
+	return s;
+};
+
 // ───────────────── シートに並べる ─────────────────
 
 const LAYOUT = [
@@ -525,8 +1059,61 @@ const LAYOUT = [
 	[5, 5, bench("right").outline()],
 	[0, 6, tree().outline()],
 	[2, 6, pond().outline()],
+	// 地区ごとの部品（data/tiles.ts の JP）
+	[6, 5, lightSpill()],
+	[7, 5, sand()],
+	[5, 6, dirtPath()],
+	[6, 6, water()],
+	[7, 6, bridgeV()],
+	[5, 7, paddy()],
+	[6, 7, susuki().outline()],
+	[7, 7, stoneSteps()],
+	[5, 8, ishidatami()],
+	[6, 8, roadCenter()],
+	[7, 8, schoolDirt()],
+	[0, 9, slopeStep()],
+	[1, 9, grassTuft()],
+	[2, 9, counter("left").outline()],
+	[3, 9, counter("mid").outline()],
+	[4, 9, counter("right").outline()],
+	[5, 9, gatePillar().outline()],
+	[6, 9, schoolGate()],
+	[7, 9, ropeFence()],
+	[0, 10, carWash("top").outline()],
+	[1, 10, carWash("bottom").outline()],
+	[2, 10, stationStairs()],
+	[3, 10, emakake().outline()],
+	[4, 10, bucket().outline()],
+	[5, 10, hanabiAto()],
+	[6, 10, sekihi().outline()],
+	[7, 10, saisen().outline()],
+	[0, 11, tetsubo()],
+	[1, 11, gomi().outline()],
+	[2, 11, tireMarks()],
+	[3, 11, cansCrate().outline()],
+	[4, 11, recordWagon().outline()],
+	[5, 11, polyBucket().outline()],
+	[6, 11, matsuriPoster().outline()],
+	[7, 11, ringoBox().outline()],
+	[0, 12, signpost().outline()],
+	[1, 12, infoSign().outline()],
+	[2, 12, kakoi().outline()],
+	[3, 12, hanataba()],
+	[0, 13, stoneLantern().outline()],
+	[1, 13, komainu("a").outline()],
+	[2, 13, komainu("b").outline()],
+	[3, 13, clockPole().outline()],
+	[4, 13, postSquare().outline()],
+	[5, 13, postRound().outline()],
+	[6, 13, gasPump().outline()],
+	[7, 13, phoneBox().outline()],
+	[0, 15, swing()],
+	[1, 15, slide().outline()],
+	[2, 15, airTower().outline()],
+	[3, 15, waterTower().outline()],
+	[4, 15, roadInfo().outline()],
 ];
 
 console.log(
-	`town.png ${writeSheet(join(OUT, "town.png"), LAYOUT, PAL, 8, 9)}`,
+	`town.png ${writeSheet(join(OUT, "town.png"), LAYOUT, PAL, 8, 18)}`,
 );

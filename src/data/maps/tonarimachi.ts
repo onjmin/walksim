@@ -30,72 +30,72 @@ import type {
 } from "../../engine/defs";
 import { npc } from "../helpers";
 import { SPR } from "../sprites";
-import { base, basePx, PROPS, TOWN } from "../tiles";
+import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
 //   M  駅の改札（もどりの talk）  i  店の中の床（レコード店・たいやき屋）
 //   < = >  カウンター  o j  しまった戸  d  あいている戸
 //   R  レコード店のあいている戸（下半分）  r  その上半分（店の中の床）
 //   c  下段の窓（白壁）  t  下段の窓（レンガ）  u  すきま（黒く見えるが通れる＝無印の隠し）
-const PAVE = base(3, 46);
-const WIN_LOW_WHITE = basePx(48, 1382);
-const WIN_LOW_BRICK = basePx(16, 1382);
+const PAVE = JP.pave;
+const WIN_LOW_WHITE = WIN.sash;
+const WIN_LOW_BRICK = WIN.sash;
 const tiles: Record<string, TileDef> = {
 	...TOWN,
 	M: {
-		layers: [base(1, 60), PROPS.metalDoor],
+		layers: [WALL.sidingLo, DOOR.shop],
 		color: "#8c8c90",
 		passable: false,
 	},
 	i: { layers: [PAVE], color: "#9a9a9a", passable: true },
 	"<": {
-		layers: [PAVE, base(1, 98)],
+		layers: [PAVE, JP.counterL],
 		color: "#b8905a",
 		passable: false,
 		counter: true,
 	},
 	"=": {
-		layers: [PAVE, base(2, 98)],
+		layers: [PAVE, JP.counterM],
 		color: "#b8905a",
 		passable: false,
 		counter: true,
 	},
 	">": {
-		layers: [PAVE, base(3, 98)],
+		layers: [PAVE, JP.counterR],
 		color: "#b8905a",
 		passable: false,
 		counter: true,
 	},
 	o: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
+		layers: [WALL.sidingLo, DOOR.house],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	j: {
-		layers: [base(1, 56), base(7, 55, 1, 2)],
+		layers: [WALL.boardLo, DOOR.sliding],
 		color: "#6a4a2a",
 		passable: false,
 	},
 	d: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
+		layers: [WALL.sidingLo, DOOR.house],
 		color: "#e8e8e8",
 		passable: true,
 	},
 	// レコード店の戸は上下2マスに分けて描く。16x32 の d のままだと、上半分が店の中 (8,8) で
 	// キャラより手前に描かれ、そこに立つキリコが足ぶみのたびに点滅してしまう。
 	R: {
-		layers: [base(1, 60), base(7, 78)],
+		layers: [WALL.sidingLo, DOOR.houseBottom],
 		color: "#e8e8e8",
 		passable: true,
 	},
-	r: { layers: [PAVE, base(7, 77)], color: "#9a9a9a", passable: true },
+	r: { layers: [PAVE, DOOR.houseTop], color: "#9a9a9a", passable: true },
 	c: {
-		layers: [base(1, 60), WIN_LOW_WHITE],
+		layers: [WALL.sidingLo, WIN_LOW_WHITE],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	t: {
-		layers: [base(1, 62), WIN_LOW_BRICK],
+		layers: [WALL.tileLo, WIN_LOW_BRICK],
 		color: "#a04a3a",
 		passable: false,
 	},
@@ -332,7 +332,7 @@ export const tonarimachi: MapDef = {
 			id: "record_wagon",
 			x: 7,
 			y: 10,
-			sprite: PROPS.crate,
+			sprite: JP.recordWagon,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -464,7 +464,7 @@ export const tonarimachi: MapDef = {
 			id: "matsuri_poster",
 			x: 10,
 			y: 9,
-			sprite: PROPS.notice,
+			sprite: JP.matsuriPoster,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -477,7 +477,7 @@ export const tonarimachi: MapDef = {
 			id: "jihanki_kubomi",
 			x: 16,
 			y: 9,
-			sprite: PROPS.vending,
+			sprite: JP.vending,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -489,7 +489,7 @@ export const tonarimachi: MapDef = {
 			id: "oki_kanban",
 			x: 22,
 			y: 9,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -503,7 +503,7 @@ export const tonarimachi: MapDef = {
 			id: "maru_post",
 			x: 6,
 			y: 12,
-			sprite: base(4, 519, 1, 2),
+			sprite: JP.postRound,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -515,7 +515,7 @@ export const tonarimachi: MapDef = {
 			id: "denwa_box",
 			x: 20,
 			y: 12,
-			sprite: PROPS.console,
+			sprite: JP.phoneBox,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -683,7 +683,7 @@ export const tonarimachi: MapDef = {
 			id: "ringo_box",
 			x: 20,
 			y: 16,
-			sprite: base(5, 125),
+			sprite: JP.ringoBox,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -736,7 +736,7 @@ export const tonarimachi: MapDef = {
 			id: "katteguchi",
 			x: 31,
 			y: 14,
-			sprite: PROPS.crate,
+			sprite: JP.polyBucket,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {

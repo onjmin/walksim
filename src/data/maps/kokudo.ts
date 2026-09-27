@@ -34,54 +34,53 @@ import type {
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import { kanShinya, kanTick, yoruAkubi } from "../nostalgia";
-import { base, basePx, PROPS, TOWN } from "../tiles";
+import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
 //   r  車道（わたれない）  -  車道（センターライン）  =  歩道橋の階段
 //   t  ファミレスの窓（レンガ下段）  j  しまった戸  b  草むら
 //   q  草むら（見た目は b と同じ・通れる＝無印の隠し）
 //   c  スタンド事務所の窓（白壁下段）  o  事務所の戸  M m  洗車機（上・下）
-const ASPHALT = base(3, 46);
-const EDGE_LINE = basePx(96, 1760, 16, 3);
-const WIN_LOW_BRICK = basePx(16, 1382);
-const WIN_LOW_WHITE = basePx(48, 1382);
+const ASPHALT = JP.road;
+const WIN_LOW_BRICK = WIN.sash;
+const WIN_LOW_WHITE = WIN.sash;
 const tiles: Record<string, TileDef> = {
 	...TOWN,
 	r: { layers: [ASPHALT], color: "#55565e", passable: false },
-	"-": { layers: [ASPHALT, EDGE_LINE], color: "#55565e", passable: false },
-	"=": { layers: [base(6, 51)], color: "#8a8a8a", passable: true },
+	"-": { layers: [JP.roadCenter], color: "#55565e", passable: false },
+	"=": { layers: [JP.stoneSteps], color: "#8a8a8a", passable: true },
 	t: {
-		layers: [base(1, 62), WIN_LOW_BRICK],
+		layers: [WALL.tileLo, WIN_LOW_BRICK],
 		color: "#a04a3a",
 		passable: false,
 	},
 	j: {
-		layers: [base(1, 56), base(7, 55, 1, 2)],
+		layers: [WALL.boardLo, DOOR.sliding],
 		color: "#6a4a2a",
 		passable: false,
 	},
 	b: {
-		layers: [TOWN[","].layers[0], base(0, 10)],
+		layers: [JP.ground, JP.susuki],
 		color: "#5f8e2a",
 		passable: false,
 	},
 	q: {
-		layers: [TOWN[","].layers[0], base(0, 10)],
+		layers: [JP.ground, JP.susuki],
 		color: "#5f8e2a",
 		passable: true,
 	},
 	c: {
-		layers: [base(1, 60), WIN_LOW_WHITE],
+		layers: [WALL.sidingLo, WIN_LOW_WHITE],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	o: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
+		layers: [WALL.sidingLo, DOOR.house],
 		color: "#e8e8e8",
 		passable: false,
 	},
-	M: { layers: [base(1, 179)], color: "#7a8a94", passable: false },
-	m: { layers: [base(1, 180)], color: "#7a8a94", passable: false },
+	M: { layers: [JP.carWashTop], color: "#7a8a94", passable: false },
+	m: { layers: [JP.carWashBottom], color: "#7a8a94", passable: false },
 };
 
 // 北＝ファミレス（歩道橋でしか来られない）。南＝歩道・バスだまり・スタンド（y11-13）。
@@ -447,7 +446,7 @@ export const kokudo: MapDef = {
 			id: "famiresu_kanban",
 			x: 12,
 			y: 6,
-			sprite: PROPS.signpost,
+			sprite: JP.signpost,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -462,7 +461,7 @@ export const kokudo: MapDef = {
 			id: "akikan",
 			x: 11,
 			y: 6,
-			sprite: PROPS.crate,
+			sprite: JP.cansCrate,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -473,7 +472,7 @@ export const kokudo: MapDef = {
 			id: "densou_ban",
 			x: 16,
 			y: 6,
-			sprite: PROPS.bigScreen,
+			sprite: JP.roadInfo,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -487,7 +486,7 @@ export const kokudo: MapDef = {
 			id: "nobori",
 			x: 19,
 			y: 6,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -499,7 +498,7 @@ export const kokudo: MapDef = {
 			id: "driveinn_sign",
 			x: 6,
 			y: 6,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -511,7 +510,7 @@ export const kokudo: MapDef = {
 			id: "taiya_ato",
 			x: 22,
 			y: 6,
-			sprite: base(0, 250),
+			sprite: JP.tireMarks,
 			trigger: "talk",
 			through: true,
 			fixedDir: true,
@@ -523,7 +522,7 @@ export const kokudo: MapDef = {
 			id: "shinda_jihanki",
 			x: 30,
 			y: 6,
-			sprite: PROPS.vending,
+			sprite: JP.vending,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -548,7 +547,7 @@ export const kokudo: MapDef = {
 			id: "hanataba",
 			x: 13,
 			y: 9,
-			sprite: base(5, 11),
+			sprite: JP.hanataba,
 			trigger: "talk",
 			through: true,
 			fixedDir: true,
@@ -679,7 +678,7 @@ export const kokudo: MapDef = {
 			id: "gs_kanban",
 			x: 5,
 			y: 11,
-			sprite: PROPS.signpost,
+			sprite: JP.signpost,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -691,7 +690,7 @@ export const kokudo: MapDef = {
 			id: "gs_nobori",
 			x: 13,
 			y: 11,
-			sprite: PROPS.sign,
+			sprite: JP.infoSign,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -749,7 +748,7 @@ export const kokudo: MapDef = {
 			id: "gs_pump",
 			x: 7,
 			y: 12,
-			sprite: PROPS.console,
+			sprite: JP.gasPump,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -775,7 +774,7 @@ export const kokudo: MapDef = {
 			id: "gs_air",
 			x: 9,
 			y: 12,
-			sprite: PROPS.console,
+			sprite: JP.airTower,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {

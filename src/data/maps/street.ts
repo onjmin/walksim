@@ -42,7 +42,7 @@ import {
 	yoruClock,
 } from "../nostalgia";
 import { SPR } from "../sprites";
-import { base, basePx, field, TOWN } from "../tiles";
+import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
 // TOWN をベースに、店先と東端の駅の名残を足す。
@@ -50,58 +50,58 @@ import { base, basePx, field, TOWN } from "../tiles";
 //   o  しまった戸（白壁）   j  しまった戸（板壁）
 //   c  大きな窓（白壁の下段。コンビニ・民家）   t  大きな窓（レンガ壁の下段。電器屋）
 //   m  窓（板壁の下段）   s  すなば   E  囲いのおくの下り階段（見えるだけ・通れない）
-const PAVE = base(3, 46);
-const WIN_LOW_WHITE = basePx(48, 1382);
-const WIN_LOW_BRICK = basePx(16, 1382);
+const PAVE = JP.pave;
+const WIN_LOW_WHITE = WIN.sash;
+const WIN_LOW_BRICK = WIN.sash;
 const tiles: Record<string, TileDef> = {
 	...TOWN,
 	i: { layers: [PAVE], color: "#9a9a9a", passable: true },
 	"<": {
-		layers: [PAVE, base(1, 98)],
+		layers: [PAVE, JP.counterL],
 		color: "#b8905a",
 		passable: false,
 		counter: true,
 	},
 	"=": {
-		layers: [PAVE, base(2, 98)],
+		layers: [PAVE, JP.counterM],
 		color: "#b8905a",
 		passable: false,
 		counter: true,
 	},
 	">": {
-		layers: [PAVE, base(3, 98)],
+		layers: [PAVE, JP.counterR],
 		color: "#b8905a",
 		passable: false,
 		counter: true,
 	},
 	o: {
-		layers: [base(1, 60), base(7, 77, 1, 2)],
+		layers: [WALL.sidingLo, DOOR.house],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	j: {
-		layers: [base(1, 56), base(7, 55, 1, 2)],
+		layers: [WALL.boardLo, DOOR.sliding],
 		color: "#6a4a2a",
 		passable: false,
 	},
 	c: {
-		layers: [base(1, 60), WIN_LOW_WHITE],
+		layers: [WALL.sidingLo, WIN_LOW_WHITE],
 		color: "#e8e8e8",
 		passable: false,
 	},
 	t: {
-		layers: [base(1, 62), WIN_LOW_BRICK],
+		layers: [WALL.tileLo, WIN_LOW_BRICK],
 		color: "#a04a3a",
 		passable: false,
 	},
 	m: {
-		layers: [base(1, 56), WIN_LOW_WHITE],
+		layers: [WALL.boardLo, WIN_LOW_WHITE],
 		color: "#6a4a2a",
 		passable: false,
 	},
-	s: { layers: [field(7, 2)], color: "#e8cc90", passable: true },
+	s: { layers: [JP.sand], color: "#e8cc90", passable: true },
 	E: {
-		layers: [base(2, 46), base(6, 51)],
+		layers: [JP.stationStairs],
 		color: "#3a3a40",
 		passable: false,
 	},
@@ -472,7 +472,7 @@ export const street: MapDef = {
 			id: "kakoi",
 			x: 28,
 			y: 10,
-			sprite: base(5, 32),
+			sprite: JP.kakoi,
 			trigger: "talk",
 			fixedDir: true,
 			when: (st) => st.flags.tod !== "shinya",
@@ -784,7 +784,7 @@ export const street: MapDef = {
 			id: "light_a",
 			x: 18,
 			y: 10,
-			sprite: base(5, 47),
+			sprite: JP.lightSpill,
 			trigger: "talk",
 			through: true,
 			fixedDir: true,
@@ -794,7 +794,7 @@ export const street: MapDef = {
 			id: "light_b",
 			x: 19,
 			y: 10,
-			sprite: base(5, 47),
+			sprite: JP.lightSpill,
 			trigger: "talk",
 			through: true,
 			fixedDir: true,
@@ -806,7 +806,7 @@ export const street: MapDef = {
 			id: "clock_tower",
 			x: 13,
 			y: 12,
-			sprite: base(2, 116, 1, 2),
+			sprite: JP.clockPole,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
@@ -1036,7 +1036,7 @@ export const street: MapDef = {
 			id: "post_ev",
 			x: 21,
 			y: 12,
-			sprite: base(4, 519, 1, 2),
+			sprite: JP.postSquare,
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
