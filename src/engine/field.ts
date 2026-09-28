@@ -329,6 +329,19 @@ export class Field {
 	private hidden(a: Actor, time: number): boolean {
 		const cover = this.cover;
 		if (!cover || !a.visible || !a.sprite) return false;
+		// 足もとのマスに上の層が1画素もかかっていなければ隠れてはいない（絵を読まずにすます）
+		const mw = this.w * TILE;
+		const mh = this.h * TILE;
+		const cx = Math.round(a.fx * TILE);
+		const cy = Math.round(a.fy * TILE);
+		let near = false;
+		for (let y = Math.max(0, cy); y < Math.min(mh, cy + TILE) && !near; y++)
+			for (let x = Math.max(0, cx); x < Math.min(mw, cx + TILE); x++)
+				if (cover[y * mw + x] >= 128) {
+					near = true;
+					break;
+				}
+		if (!near) return false;
 		const s = this.probe ?? document.createElement("canvas");
 		this.probe = s;
 		s.width = PROBE_W;
@@ -340,8 +353,6 @@ export class Field {
 		const by = Math.round(a.fy * TILE) - (PROBE_H - TILE);
 		a.draw(sx, bx, by, time);
 		const { data } = sx.getImageData(0, 0, PROBE_W, PROBE_H);
-		const mw = this.w * TILE;
-		const mh = this.h * TILE;
 		let body = 0;
 		let covered = 0;
 		for (let y = 0; y < PROBE_H; y++) {
@@ -426,7 +437,7 @@ export class Field {
 	/**
 	 * 上の層にほとんど隠れたキャラを、隠れたところだけ薄く描く（本棚の裏に回っても見失わない）。
 	 * 体が少しでも見えているキャラ（木の葉が肩にかかる等）は透かさない。
-	 * who（透かす候補。キリコだけ）は奥から順に。まわりだけを別の画用紙に描き、
+	 * who（透かす候補。キリコと歩く人）は奥から順に。まわりだけを別の画用紙に描き、
 	 * 上の層がある画素だけ残して重ねる。
 	 */
 	drawHidden(

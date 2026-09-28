@@ -721,9 +721,19 @@ export class Game {
 			);
 		}
 		// 上の層とキャラは行の順に重ねる（北の木や棚はキャラの奥・同じ行と南の物は手前）
-		field.drawSorted(ctx, [...field.actors, this.player], ox, oy, this.time);
-		// キリコだけは、本棚や掲示板の裏に回っても薄く見せる（町の人は隠れたまま）
-		field.drawHidden(ctx, [this.player], ox, oy, this.time);
+		const actors = [...field.actors, this.player];
+		field.drawSorted(ctx, actors, ox, oy, this.time);
+		// 本棚や掲示板の裏にほとんど隠れた人は薄く見せる（キリコも町の人も）。
+		// 向きの無い絵（置き物・看板）は地形の一部なので透かさない。奥から順に渡す
+		field.drawHidden(
+			ctx,
+			actors
+				.filter((a) => a === this.player || !a.still)
+				.sort((a, b) => a.fy - b.fy),
+			ox,
+			oy,
+			this.time,
+		);
 		// 雰囲気（DESIGN §3）：イベントのあと・UI の前に、色 → 暗闇 → 粒 の順で重ねる
 		const def = field.def;
 		const passes: TintPass[] | undefined =
