@@ -71,6 +71,11 @@ export type MapDef = {
 	 * "@tod" は時間帯の曲（GameData.todBgm。日常の地区。時間帯が変わると曲も変わる）。
 	 */
 	bgm?: string | null;
+	/**
+	 * bgm が "@tod" の地区で、この地区だけ時間帯の曲を差しかえる（flags.tod → 曲名）。
+	 * 書いていない時間帯は GameData.todBgm の曲。
+	 */
+	todBgm?: Record<string, string>;
 	/** 行の各文字 → タイル。 */
 	tiles: Record<string, TileDef>;
 	/** マップ本体（1文字 = 1マス）。全行同じ長さにする。 */

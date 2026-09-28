@@ -42,6 +42,8 @@ export const apart: MapDef = {
 	id: "apart",
 	name: "アパートの廊下",
 	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
+	// 深夜は自室と同じ曲（room.ts。家の中は外と別の曲で、廊下を出入りしても切れない）
+	todBgm: { shinya: "amb_kansouki" },
 	outside: "#14120e",
 	tiles,
 	rows,

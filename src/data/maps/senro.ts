@@ -271,6 +271,8 @@ export const senro: MapDef = {
 	],
 	name: "せんろぞいのみち",
 	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
+	// 宵と深夜は線路ぞいの長い道の曲（amb_hakuhyo「薄氷の回廊」。ベースの 3+3+2 が線路の継ぎ目）
+	todBgm: { yoru: "amb_hakuhyo", shinya: "amb_hakuhyo" },
 	outdoor: true,
 	outside: "#0c0b09",
 	tiles,

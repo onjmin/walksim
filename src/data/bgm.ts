@@ -42,6 +42,14 @@
 // | amb_asa    | -46.8（12）        | 83 → 84        | -30.1   |
 // | kowareta   | -32.8（8）         | 11             | -30.1   |
 // （→ の右は2回目の結果から式で詰めた最終値。差は 0.5 dB 未満）
+// Dequivsia 系の試作 v2（2026-09-28。dtm 2.1.27。原曲は #volume=80。目標 -30）:
+// | 曲           | 1回目 I（#volume） | 直した #volume | 2回目 I |
+// |--------------|--------------------|----------------|---------|
+// | amb_minasoko | -21.9（80）        | 32             | -29.9   |
+// | amb_kazan    | -21.2（80）        | 29             | -30.0   |
+// | amb_zure     | -20.3（80）        | 26             | -30.0   |
+// | amb_kansouki | -20.1（80）        | 25 → 26        | -30.3   |
+// | amb_hakuhyo  | -22.9（80）        | 35             | -30.0   |
 // 軽量モード（内蔵シンセ）は音色が違うので少しずれる。ending の歌入り（singBgm）は インストより 15.6 dB
 // 小さく鳴るので、engine/audio.ts の SING_GAIN で上げて インストと そろえてある。
 
@@ -49,9 +57,17 @@
 // 柔らかいチップチューンの空気）。title は旧 6c5cd6e3edc4433b「ゲーム音楽っぽい何か」を差し替え
 // （kowareta はその旧 title の変奏なので、そのまま残る）。#volume= は測ってそろえた値（冒頭の表）
 import amb_asa from "./bgm/amb_asa.mml?raw"; // 日常・朝（カリンバ）
+// 2026-09-28 作者提供「Dequivsia 系の試作 v2」（dtm の ambient_cloud・4トラック。作者が dtm で作った曲）。
+// 日常の地区の差しかえ（MapDef.todBgm）として、町はずれと自室の夜にだけ流す。原曲の #loop=on は外した
+// （ループはゲームが決める）。v3（高域の足りない音色を入れ替えた版）が来たら差し替えて測り直す。
+import amb_hakuhyo from "./bgm/amb_hakuhyo.mml?raw"; // 「薄氷の回廊」→ せんろぞいのみち（宵・深夜）
+import amb_kansouki from "./bgm/amb_kansouki.mml?raw"; // 「乾燥機がまわるあいだ」→ 自室・アパート（深夜）
+import amb_kazan from "./bgm/amb_kazan.mml?raw"; // 「活火山の底」→ やまみち（深夜）
+import amb_minasoko from "./bgm/amb_minasoko.mml?raw"; // 「水底にさす光」→ うみべ（宵・深夜）
 import amb_shinya from "./bgm/amb_shinya.mml?raw"; // 日常・深夜（パッドと こだまする矩形波）
 import amb_yoru from "./bgm/amb_yoru.mml?raw"; // 日常・宵（チェレスタ）
 import amb_yu from "./bgm/amb_yu.mml?raw"; // 日常・夕方（ビブラフォン）
+import amb_zure from "./bgm/amb_zure.mml?raw"; // 「ずれる地層」→ こくどう（深夜）
 // 層ごとの曲（roguelike。作曲エージェントが dtm の手書き譜面 docs/handscore.md で書いたもの）
 import deep1 from "./bgm/deep1.mml?raw"; // ハ短調 128・retro_game・8beat（掘る動機の行進）→ 回線の間
 import deep2 from "./bgm/deep2.mml?raw"; // ト短調 90・orchestra（ライン・クリシェ、打楽器なし）→ 黄色い部屋
@@ -90,6 +106,11 @@ export const bgm: Record<string, string> = {
 	amb_yoru,
 	amb_shinya,
 	amb_asa,
+	amb_minasoko,
+	amb_kazan,
+	amb_zure,
+	amb_kansouki,
+	amb_hakuhyo,
 	hub,
 	yellow,
 	kakolog,

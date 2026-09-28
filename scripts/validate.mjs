@@ -226,7 +226,14 @@ try {
 		if (m.bgm === "@tod") {
 			for (const [tod, name] of Object.entries(data.todBgm ?? {}))
 				if (!data.bgm[name]) err(`todBgm.${tod}: BGM "${name}" が無い`);
+			for (const [tod, name] of Object.entries(m.todBgm ?? {})) {
+				if (!(tod in (data.todBgm ?? {})))
+					err(`map ${id}: todBgm の時間帯 "${tod}" が GameData.todBgm に無い`);
+				if (!data.bgm[name]) err(`map ${id}: todBgm.${tod} の BGM "${name}" が無い`);
+			}
 		} else if (m.bgm && !data.bgm[m.bgm]) err(`map ${id}: BGM "${m.bgm}" が無い`);
+		if (m.todBgm && m.bgm !== "@tod")
+			err(`map ${id}: todBgm は bgm が "@tod" の地区でしか使えない`);
 		if (m.dark !== undefined && !(m.dark >= 0 && m.dark <= 1))
 			err(`map ${id}: dark が 0〜1 でない: ${m.dark}`);
 	}

@@ -341,16 +341,21 @@ export class Game {
 			this.player.sprite,
 		];
 		await Promise.race([preloadImages(refs.filter(Boolean)), sleep(2500)]);
-		if (def.bgm !== undefined) this.audio.bgm(this.resolveBgm(def.bgm));
+		if (def.bgm !== undefined) this.audio.bgm(this.resolveBgm(def));
 		this.updateCamera();
 		this.toast(def.name);
 	}
 
-	/** MapDef.bgm の "@tod"（時間帯の曲）を実際の曲名に。 */
-	private resolveBgm(name: string | null): string | null {
+	/**
+	 * MapDef.bgm の "@tod"（時間帯の曲）を実際の曲名に。
+	 * 地区ごとの差しかえ（MapDef.todBgm）が先、なければ全体の GameData.todBgm。
+	 */
+	private resolveBgm(def: MapDef): string | null {
+		const name = def.bgm ?? null;
 		if (name !== "@tod") return name;
 		const tod = this.state.flags.tod;
-		return (typeof tod === "string" && this.data.todBgm?.[tod]) || null;
+		if (typeof tod !== "string") return null;
+		return def.todBgm?.[tod] || this.data.todBgm?.[tod] || null;
 	}
 
 	/** イベントの出現状態を反映する（スクリプトの後などに呼ぶ）。 */
@@ -1146,7 +1151,7 @@ export class Game {
 				this.state.flags[name] = value;
 				// 時間帯が変わったら、時間帯の曲の地区では曲もかえる
 				if (name === "tod" && this.field?.def.bgm === "@tod")
-					this.audio.bgm(this.resolveBgm("@tod"));
+					this.audio.bgm(this.resolveBgm(this.field.def));
 			},
 			warp: async (mapId, x, y, dir, opt) => {
 				const fade = opt?.fade ?? true;

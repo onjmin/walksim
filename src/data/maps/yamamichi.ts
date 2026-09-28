@@ -243,6 +243,8 @@ export const yamamichi: MapDef = {
 	],
 	name: "やまみち",
 	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
+	// 深夜は山の曲（amb_kazan「活火山の底」。峠のむこうが夕暮れの村になる時間帯）
+	todBgm: { shinya: "amb_kazan" },
 	outdoor: true,
 	outside: "#0a0c08",
 	tiles,

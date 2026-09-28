@@ -255,6 +255,8 @@ export const kokudo: MapDef = {
 	],
 	name: "こくどう",
 	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
+	// 深夜は国道の曲（amb_zure「ずれる地層」。車の来ない歩道橋・一瞬灯るファミレスの時間帯）
+	todBgm: { shinya: "amb_zure" },
 	outdoor: true,
 	outside: "#0a0a0c",
 	tiles,

@@ -202,6 +202,8 @@ export const room: MapDef = {
 	id: "room",
 	name: "キリコの部屋",
 	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
+	// 深夜の家（自室とアパート）は amb_kansouki「乾燥機がまわるあいだ」。2:00 の目ざめと、散歩の合間に帰る場所
+	todBgm: { shinya: "amb_kansouki" },
 	outside: "#1b1410",
 	tiles,
 	rows,

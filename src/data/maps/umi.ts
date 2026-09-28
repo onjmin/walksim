@@ -249,6 +249,8 @@ export const umi: MapDef = {
 		{ x: 31, y: 13, w: 13, h: 7 }, // 灯台の先と、駅と線路
 	],
 	bgm: "@tod",
+	// 宵と深夜は海の曲（data/bgm.ts の amb_minasoko「水底にさす光」。灯台のあかりだけの海）
+	todBgm: { yoru: "amb_minasoko", shinya: "amb_minasoko" },
 	outdoor: true,
 	outside: "#070a10",
 	tiles,
