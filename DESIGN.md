@@ -28,7 +28,7 @@
 
 - TypeScript 7.0.2 / Vite 8.3.0（`base: process.env.GITHUB_PAGES ? "/walksim/" : "/"`、outDir `build`、target es2022）
 - Biome 2.5.14（タブ・ダブルクォート）、pnpm 10.17.1 + Node 22.20.0（volta）
-- 依存は `@onjmin/dtm` 2.1.24 のみ（MML BGM + UTAU TTS。初回ジェスチャ内で AudioContext、dynamic import）
+- 依存は `@onjmin/dtm` 2.1.27 のみ（MML BGM + UTAU TTS。初回ジェスチャ内で AudioContext、dynamic import）
 - Canvas 2D、TILE=16px 整数スケール、DOM UI、DotGothic16
 - `.github/workflows/gh-pages.yml` は rpg のコピー（GITHUB_PAGES=true で build → deploy-pages）
 - `pnpm validate`（scripts/validate.mjs）: マップ形状・ワープ先・話者・全角22字×2行・イベント実行を検証
