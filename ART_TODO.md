@@ -26,7 +26,8 @@
 `public/sprites/<name>.png`、32×64（16×16セル・2フレーム×4方向、rpg と同じ並び）。
 現状 `scripts/make-sprites.mjs` の生成品が入っています。描き直すなら:
 
-- nemurin / myaumyau_a / myaumyau_b / myaumyau_c / tsukuyomi / rino / shiyo / aru / zero / ai / ushiro
+- nemurin / myaumyau_a / myaumyau_b / myaumyau_c / tsukuyomi / rino / aru / ai / ushiro
+- kiriko / shiyo / zero は RPGEN に投入された歩行グラ（`sa:vHsmy5` / `sa:y8Kr53` / `sa:KxS5YZ`）を参照しています
 - `hasshaku.png` だけ特殊: 32×128（**16×32の縦長セル**×2フレーム×4方向）。白いワンピース＋帽子の長身シルエット
 - ushiro は全方向「後ろ姿」で描いてあります（仕様です）
 

@@ -15,7 +15,7 @@ export const cast: Record<string, CharDef> = {
 	kiriko: c({
 		id: "kiriko",
 		name: "キリコ",
-		walk: "pub:sprites/kiriko.png",
+		walk: "sa:vHsmy5",
 		color: "#7be0a0",
 		voice: { model: "uc" },
 		portrait: { src: "portraits/kiriko.png", side: "left" },
@@ -130,7 +130,7 @@ export const cast: Record<string, CharDef> = {
 	shiyo: c({
 		id: "shiyo",
 		name: "シヨ",
-		walk: "pub:sprites/shiyo.png",
+		walk: "sa:y8Kr53",
 		portrait: { src: "portraits/shiyo.png", side: "right" },
 		color: "#cfa236",
 		voice: { model: "shiyo" },
@@ -151,7 +151,7 @@ export const cast: Record<string, CharDef> = {
 	zero: c({
 		id: "zero",
 		name: "ゼロ",
-		walk: "pub:sprites/zero.png",
+		walk: "sa:KxS5YZ",
 		portrait: { src: "portraits/zero.png", side: "right" },
 		color: "#8ab0e8",
 	}),

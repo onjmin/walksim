@@ -10,9 +10,7 @@
 // - public/sprites/tsukuyomi.png    … つくよみちゃん（巫女）32x64
 // - public/sprites/hasshaku.png     … 八尺様（白い長身シルエット。1コマ 16x32・シートは 32x128）
 // - public/sprites/rino.png         … 春音リノ（お団子髪・エプロンの女将）32x64
-// - public/sprites/shiyo.png        … 革命シヨ（やきう色ポニテ・猫耳カチューシャ・黒メイド服）32x64
 // - public/sprites/aru.png          … 響化アル（長めマッシュの少年・シャツ）32x64
-// - public/sprites/zero.png         … 解音ゼロ（淡金髪ロング・青いツノ型アンテナ・白×青の和装）32x64
 // - public/sprites/ai.png           … 優音アイ（輪郭線だけのスケッチ姿・半透明）32x64
 // - public/sprites/ushiro.png       … 君野うしろ（赤紫ツインテール。全方向とも後ろ姿）32x64
 //
@@ -711,7 +709,12 @@ walkSheet(
 // キリコの歩行グラを「色を抜いて、冷たい灰色に沈めた」差分。
 // 若草色の髪（ポニテ）は黒っぽい鉄色にして、角刈りっぽい重さを出す。
 
-const src = decodePng(readFileSync(join(OUT, "kiriko.png")));
+// 元の絵は RPGEN「蓄音キリコ」（src/data/cast.ts の sa:vHsmy5）。
+const src = decodePng(
+	Buffer.from(
+		await (await fetch("https://rpgen-search.pages.dev/data/images/sAnims/vHsmy5.png")).arrayBuffer(),
+	),
+);
 const botsu = Buffer.from(src.rgba);
 for (let i = 0; i < botsu.length; i += 4) {
 	const [r, g, b, a] = botsu.subarray(i, i + 4);
@@ -1127,82 +1130,6 @@ walkSheet(
 	FEET_B,
 );
 
-// ───────────────── 革命シヨ ─────────────────
-// やきう色（黄土）のポニーテール・黒メイド服に白エプロン・猫耳カチューシャ・赤目。
-// 丸眼鏡は目のまわりの 1px（G）で示唆する。
-
-walkSheet(
-	"shiyo.png",
-	{
-		K: hex("#1c1820"),
-		E: hex("#2a2433"), // 猫耳カチューシャ
-		Y: hex("#c8a132"), // 髪（やきう色）
-		y: hex("#97781f"),
-		F: hex("#ffe2ca"),
-		R: hex("#c83a3a"), // 赤目
-		G: hex("#d8dce4"), // 丸眼鏡の示唆
-		M: hex("#2c2836"), // メイド服（黒）
-		m: hex("#443e52"),
-		W: hex("#f4f4f8"), // エプロン
-		w: hex("#d8d8e2"),
-		S: hex("#2a2430"),
-	},
-	{
-		down: [
-			"...KK......KK...",
-			"...KEK....KEK...",
-			"..KKEEKKKKEEKK..",
-			"..KYYYYYYYYYYK..",
-			".KYYKKKKKKKKYYK.",
-			".KYKFFFFFFFFKYK.",
-			".KYKGRGFFGRGKYK.",
-			".KYKFFFFFFFFKYK.",
-			"..KYKFFKKFFKYK..",
-			"...KMMMMMMMMK...",
-			"..KMMWWWWWWMMK..",
-			"..KMKWwWWwWKMK..",
-			"..KMKWWWWWWKMK..",
-			"...KKMMMMMMKK...",
-			...FEET,
-		],
-		up: [
-			"...KK......KK...",
-			"...KEK....KEK...",
-			"..KKEEKKKKEEKK..",
-			"..KYYYYYYYYYYK..",
-			".KYYYYYYYYYYYYK.",
-			".KYYYyYYYYyYYYK.",
-			".KYYYYYYYYYYYYK.",
-			"..KYYYYyyYYYYK..",
-			"...KYYKyyKYYK...",
-			"...KMMKyyKMMK...",
-			"..KMMMKyyKMMMK..",
-			"..KMMMKyyKMMMK..",
-			"..KMMMMKKMMMMK..",
-			"...KKMMMMMMKK...",
-			...FEET,
-		],
-		right: [
-			"...KK......KK...",
-			"...KEK....KEK...",
-			"..KKEEKKKKEEKK..",
-			"..KYYYYYYYYYYK..",
-			".KYYYYKKFFFFK...",
-			".KYyYYKFFFFFFK..",
-			".KYyYYKFFGRGFK..",
-			"..KYyYKFFFFFFK..",
-			"..KYyYKFFFFKK...",
-			"..KyyKMMMMMMK...",
-			"..KyyKMWWWWWK...",
-			"...KKKMWwWWWK...",
-			".....KMWWWWWK...",
-			"....KMMMMMMK....",
-			...FEET,
-		],
-	},
-	FEET_B,
-);
-
 // ───────────────── 響化アル ─────────────────
 // hub のエレベーターを計測している科学部の少年。長めのマッシュとシャツ。
 
@@ -1269,80 +1196,6 @@ walkSheet(
 			"..KWWWWwwWWWWK..",
 			"...KWWWWWWWWK...",
 			"...KKDDDDDDKK...",
-			...FEET,
-		],
-	},
-	FEET_B,
-);
-
-// ───────────────── 解音ゼロ ─────────────────
-// 筆談アンドロイド。淡い金髪ロング・青いツノ型アンテナ・白×青の和風衣装。
-// （アンドロイド可変設定：会うたび細部が違ってよいので、仮グラは標準形のみ）
-
-walkSheet(
-	"zero.png",
-	{
-		K: hex("#262a3a"),
-		A: hex("#3a6ae0"), // ツノ型アンテナ
-		Y: hex("#f0e2ac"), // 髪（淡い金）
-		y: hex("#d4c184"),
-		F: hex("#fff0e4"),
-		B: hex("#3a4a6a"),
-		W: hex("#f8f8fc"), // 和装（白）
-		w: hex("#dcdce8"),
-		L: hex("#4a78d0"), // 青の差し色（帯・衿）
-		S: hex("#3a4258"),
-	},
-	{
-		down: [
-			"..KAK......KAK..",
-			"..KAAK....KAAK..",
-			"..KKYYYYYYYYKK..",
-			"..KYYYYYYYYYYK..",
-			".KYYKKKKKKKKYYK.",
-			".KYKFFFFFFFFKYK.",
-			".KYKFBFFFFBFKYK.",
-			".KYKFFFFFFFFKYK.",
-			".KYKKFFFFFFKKYK.",
-			".KYKWWWWWWWWKYK.",
-			".KYKWWLLLLWWKYK.",
-			"..KKWWWWWWWWKK..",
-			"...KWWLWWLWWK...",
-			"...KKWWWWWWKK...",
-			...FEET,
-		],
-		up: [
-			"..KAK......KAK..",
-			"..KAAK....KAAK..",
-			"..KKYYYYYYYYKK..",
-			"..KYYYYYYYYYYK..",
-			".KYYYYYYYYYYYYK.",
-			".KYYyYYYYYYyYYK.",
-			".KYYYYYYYYYYYYK.",
-			".KYYYYyYYyYYYYK.",
-			".KYYYYYYYYYYYYK.",
-			"..KYYYYYYYYYYK..",
-			"..KYYyYYYYyYYK..",
-			"..KKYYYYYYYYKK..",
-			"...KWWWWWWWWK...",
-			"...KKWWWWWWKK...",
-			...FEET,
-		],
-		right: [
-			"...KAK....KAK...",
-			"...KAAK..KAAK...",
-			"..KKYYYYYYYYKK..",
-			"..KYYYYYYYYYYK..",
-			".KYYYYYKKFFFFK..",
-			".KYyYYYKFFFFFK..",
-			".KYyYYYKFFFBFK..",
-			".KYYYYYKFFFFFK..",
-			".KYYYYKKFFFKK...",
-			".KYYYKWWWWWWK...",
-			".KYYYKWWLLWWK...",
-			"..KKKKWWWWWWK...",
-			".....KWWLWWWK...",
-			"....KKWWWWKK....",
 			...FEET,
 		],
 	},
@@ -1452,5 +1305,5 @@ walkSheet(
 );
 
 console.log(
-	"wrote mujje.png, kiriko_botsu.png, phono.png, minors_*.png, nemurin.png, myaumyau_*.png, tsukuyomi.png, hasshaku.png, rino.png, shiyo.png, aru.png, zero.png, ai.png, ushiro.png",
+	"wrote mujje.png, kiriko_botsu.png, phono.png, minors_*.png, nemurin.png, myaumyau_*.png, tsukuyomi.png, hasshaku.png, rino.png, aru.png, ai.png, ushiro.png",
 );

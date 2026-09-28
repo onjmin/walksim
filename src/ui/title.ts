@@ -242,7 +242,7 @@ export const showTitle = (game: Game): Promise<GameState> =>
 
 		// ── 演出ループ（空の一瞬の反転・1文字化け・シルエット横断・ヒグラシ1波） ──
 		let busy = false; // メニュー決定後は SE を足さない（下のメニュー処理と共有）
-		const walkRef = data.cast.kiriko?.walk ?? "pub:sprites/kiriko.png";
+		const walkRef = data.cast.kiriko?.walk ?? "sa:vHsmy5";
 		const walkerCtx = walker.getContext("2d");
 		// 化けられる字の位置（行・字番号）を先に拾っておく
 		const spots = lineEls.flatMap((lineEl, li) => {

@@ -1732,7 +1732,7 @@ body.shake #app {
 	);
 }
 
-/* キリコのシルエット（kiriko.png を brightness(0) で黒く。title.ts が動かす） */
+/* キリコのシルエット（キリコの歩行グラを brightness(0) で黒く。title.ts が動かす） */
 .title-walker {
 	position: absolute;
 	left: 0;
