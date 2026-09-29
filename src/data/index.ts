@@ -115,7 +115,6 @@ export const data: GameData = {
 		"https://kakumeisiyo.my.canva.site/dagkuyjwycs",
 		"",
 		"やきう（なんJ・おんJ の　名無し）",
-		"なんJ・おんJ のみんな",
 		"",
 		"MGRoid・MOTRoid・NYNRoid",
 		"（クッキー☆由来の UTAU 音源。終盤の",

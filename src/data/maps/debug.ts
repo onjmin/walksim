@@ -5,6 +5,7 @@
 import type { EventDef, GameState, MapDef, Story } from "../../engine/defs";
 import type { Dir } from "../../engine/types";
 import { npc, savePoint } from "../helpers";
+import { ALL_RECORDS } from "../records";
 import { SPR } from "../sprites";
 import { INDOOR } from "../tiles";
 
@@ -268,7 +269,7 @@ const jump =
 
 /** 大事なものを配る。 */
 const supply = async (s: Story): Promise<void> => {
-	for (const id of ["rec_a", "rec_b", "rec_c", "omamori", "flashlight"])
+	for (const id of [...ALL_RECORDS, "omamori", "flashlight"])
 		if (!s.has(id)) s.give(id);
 	s.set("flashlight");
 	s.se("item");

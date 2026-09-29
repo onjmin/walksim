@@ -13,7 +13,7 @@
 //   朝    … 光と音が戻る。NPC 5体・セリフ全差し替え・setup/payoff の対（§4）。
 //
 // 物語（STORY.md §5.5）：夕方の 地の文で「キリコが 外の 町で 暮らしはじめた」ことを はっきり 言う。
-// 深夜の バス停で レコード「早番」（rec_q。辞めた 人）。rec_q と 板の 名残の レコード 2枚で、
+// 深夜の バス停で レコード「早番」（rec_q。辞めた 人。名残から もどると その 声が もう一度 聞こえる＝hayaban_echo）。rec_q と 板の 名残の レコード 2枚で、
 // 深夜の この 通りで「窓」の 場面（転：声の 主たちは 窓の むこうで 暮らしていた）→ 夜明け（tod="asa"・
 // ending_ready）→ うみべへ（結は umi.ts）。
 //
@@ -40,7 +40,7 @@ import type {
 import { settings } from "../../engine/settings";
 import { npc, warp } from "../helpers";
 import { kanShinya, kanTick, yoruAkubi, yoruClock } from "../nostalgia";
-import { EPISODE_RECORDS } from "../records";
+import { EPISODE_RECORDS, records } from "../records";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
@@ -617,6 +617,31 @@ export const street: MapDef = {
 				s.set("got_rec_q");
 				await s.record("rec_q");
 				await s.say("kiriko", "……いってらっしゃいンゴ");
+			},
+		},
+		// ── 早番の 声の くりかえし①（名残から もどった 深夜の 通り。夜明けの うみべで 本人の 声を 聞く 前ぶれ。
+		// 聞かなくても 進む。二度目は hub.ts の hayaban_echo） ──
+		{
+			id: "hayaban_echo",
+			x: 6,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: (st) =>
+				st.flags.tod === "shinya" &&
+				(st.items.rec_q ?? 0) > 0 &&
+				EPISODE_RECORDS.some((id) => (st.items[id] ?? 0) > 0) &&
+				!madoReady(st) &&
+				!st.flags.seen_mado,
+			run: async (s) => {
+				await s.wait(600);
+				s.se("needle", { pan: 0.3, volume: 0.6 });
+				await s.narrate("バス停の　ほうで、\nレコードの　まわる　音。");
+				await s.say("rei", "……今日も　早番や", {
+					name: records.rec_q.date,
+					noPortrait: true,
+				});
+				await s.narrate("バス停の　よこには、\nもう　なにも　ない。");
 			},
 		},
 		// ── 転：窓（深夜。早番の レコードと 名残の レコード 2枚で。エンディングは umi.ts） ──

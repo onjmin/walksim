@@ -6,13 +6,14 @@
 //   下り階段 touch (2,11)→kakolog2(3,2)、kakolog2 からの戻り位置 (3,11)
 //   南扉 touch (10,13)→street(27,10)、street からの戻り位置 (10,12)
 //   東改札 touch (18,7)→train(2,3)
-// 人：ネムリン（改札の番人・ノート数で3段階）。2作目の 村の 仲間（ロゼ・フェリス・シヨ・ゼロ）と 住人（アル・リノ）は 3作目には 出ない。
+// 人：ネムリン（改札の番人・ノート数で3段階）。早番の 声の くりかえし②（hayaban_echo）。2作目の 村の 仲間（ロゼ・フェリス・シヨ・ゼロ）と 住人（アル・リノ）は 3作目には 出ない。
 // クリア後: ベンチに無題のレコード『　』（bgm "kowareta"）。
 
 import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
 import { hasClearMark } from "../../engine/save";
 import { npc, warp } from "../helpers";
 import { notes } from "../notes";
+import { EPISODE_RECORDS, records } from "../records";
 import { SPR } from "../sprites";
 import { HUB, STN } from "../tiles-station";
 
@@ -113,7 +114,7 @@ const nemurin = async (s: Story): Promise<void> => {
 		await s.say("nemurin", "ノート、ふえてる？\n……いいなあピロ");
 		await s.say(
 			"nemurin",
-			"……おもての　バス停にも、\nレコード　あったピロ……む〜ん",
+			"……おもての　バス停の　レコード、\n夢で　見たピロ……む〜ん",
 		);
 		return;
 	}
@@ -179,6 +180,30 @@ export const hub: MapDef = {
 				if (!s.flag("seen_hub_train")) await firstTrain(s);
 				await s.narrate("改札が　ひらいている。");
 				await s.warp("train", 2, 3, "right", { se: "train" });
+			},
+		},
+
+		// ── 早番の 声の くりかえし②（名残を 1枚 もって もどった 待合室。一度目は street.ts の hayaban_echo。
+		// 聞かなくても 進む） ──
+		{
+			id: "hayaban_echo",
+			x: 19,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: (st) =>
+				(st.items.rec_q ?? 0) > 0 &&
+				EPISODE_RECORDS.some((id) => (st.items[id] ?? 0) > 0) &&
+				!st.flags.seen_mado,
+			run: async (s) => {
+				await s.wait(600);
+				s.se("needle", { volume: 0.6 });
+				await s.narrate("スピーカーが、\nぷつりと　鳴った。");
+				await s.say("rei", "……今日も　早番や", {
+					name: records.rec_q.date,
+					noPortrait: true,
+				});
+				await s.narrate("――それきり、\nなにも　聞こえない。");
 			},
 		},
 

@@ -429,7 +429,7 @@ export const room: MapDef = {
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("ふとんを、なおした。\n……けっきょく、ねなかった。");
+					await s.narrate("ふとんを、なおした。\n……あれから、ねむれなかった。");
 					// かゆみ・福引券は一度だけ（レシート・日記の読み返しとそろえる。2回目からは上の1行だけ）
 					if (
 						s.flag("seen_makura_asa") ||
