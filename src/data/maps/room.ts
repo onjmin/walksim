@@ -541,6 +541,7 @@ export const room: MapDef = {
 					}
 					await s.narrate("『ロゼ：麻婆豆腐、\nつくりすぎたアル』");
 					await s.narrate("『シヨ：……だれか、\nたべに　きなさいよ』");
+					await s.narrate("『フェリス：はーい、\nいく〜』");
 					return;
 				}
 				if (t === "shinya") {

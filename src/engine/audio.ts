@@ -75,7 +75,7 @@ const hasIntro = (mml: string): boolean =>
 /**
  * コア音源（ボイスON時に prepareSpeech。DESIGN §5「声の音源」）。
  * キーワードは dtm の lyrics.ts（KOE_VOICEBANKS）のもの。
- * 2作目の 村の 仲間（ロゼ・シヨ・アル・リノ）は 3作目に 出ないので 外した（STORY.md §5.97）。
+ * 2作目の 村の 仲間と 住人の 声（ロゼ・シヨ・アル・リノ）は 3作目に 出ないので 外した（STORY.md §5.97）。
  */
 const CORE_VOICE_MODELS = ["uc", "rei", "tsukuyomi", "teto"] as const;
 
