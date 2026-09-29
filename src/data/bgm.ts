@@ -10,14 +10,13 @@
 // 直し方: 新しい #volume = 今の #volume × 10^((目標 − 測った I) / 20) を整数に丸める。
 // 曲を足したり書き換えたりしたら、測って同じ式で直す。#volume= 以外は変えない。
 //
-// rpg での実測（2026-09。secret は rpg で -24 にそろえた寄り道の曲）:
+// rpg での実測（2026-09）:
 // | 曲       | 測った I | #volume | 直した後 |
 // |----------|----------|---------|----------|
 // | title    | -21.8    | 17 → 15 | -22.9    |
 // | tense    | -30.1    | 15 → 34 | -23.0    |
 // | sad      | -24.9    | 26 → 29 | -24.0    |
 // | ending   | -23.6    | 18 → 17 | -24.1    |
-// | secret   | -17.0    | 50 → 22 | -24.1    |
 // roguelike での実測（2026-09。dev/bgm-measure.ts で1周鳴らして測ったもの。
 // 大きい #volume では dtm のリミッタで つぶれて比例しない。測り直して決めること）:
 // | 曲       | 測った I               | #volume | 直した後 |
@@ -79,13 +78,10 @@ import kakolog from "./bgm/kakolog.mml?raw"; // 過去ログの地層（オル�
 // title の「壊れた再演」（#edo=31・t72・2トラック・長い休符・2音だけ約39セントずれ）
 // → クリア後の 無題のレコード『　』（docs/style-kaiwai.md §3-1）。朗読なしで、これを流すだけ。
 // #volume=11 で -30 LUFS（2026-09-27 測定。冒頭の表）。
-// ※ zerouta.mml（ゼロの代読歌）は BGM ではないのでここに登録しない。
-//   terminus のスクリプトが ?raw で import して engine/audio.ts の singOnce(mml) に渡す。
 import kowareta from "./bgm/kowareta.mml?raw";
 // うんｊレゼ の 名無し155 の曲（使ってよい曲として もらったもの）
 import retro from "./bgm/retro.mml?raw"; // post/1316 の >>9 30b7932c9e1a4102「今回はメロディ手で書いたわ。正直こっちのが好き」
 import sad from "./bgm/sad.mml?raw"; // 155deb066bc94429「イ短調（Aマイナー）」→ 夕暮れの村
-import secret from "./bgm/secret.mml?raw"; // a91d232600e24c6a「修正版。オクターブ計算ミスってメロディがガタガタやったの直した」→ 供養スレ駅
 import tense from "./bgm/tense.mml?raw"; // 1d9e7eed2db44ce7「荒ぶるメロディライン」→ きさらぎ駅
 import title from "./bgm/title.mml?raw"; // タイトル（夕方の日常・変ニ長調のローファイ）
 import village from "./bgm/village.mml?raw"; // 夕暮れの村（都節の箏と尺八）
@@ -95,7 +91,6 @@ export const bgm: Record<string, string> = {
 	title,
 	ending,
 	sad,
-	secret,
 	tense,
 	deep1,
 	deep2,

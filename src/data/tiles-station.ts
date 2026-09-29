@@ -1,4 +1,4 @@
-// 駅と終電のマップチップ（回線の間・終電・きさらぎ駅・供養スレ駅）。
+// 駅と終電のマップチップ（回線の間・終電・きさらぎ駅）。
 //
 // 絵は自作チップ（public/assets/walksim/station.png。scripts/make-station-tiles.mjs）。
 // 文字の意味（通れる・通れない・カウンター）は旧版（WOLF 風・RPGEN 風チップ）のまま、
@@ -6,7 +6,7 @@
 // （16x32 の物は下端そろえで上のマスへはみ出し、キャラより手前に描かれる）。
 
 import type { TileDef } from "../engine/defs";
-import { JP, TOWN, WALL } from "./tiles";
+import { JP } from "./tiles";
 
 const STATION_PNG = "pub:assets/walksim/station.png";
 /** station.png の (c, r) マスから w×h マス。 */
@@ -34,7 +34,6 @@ export const STN = {
 	steps: station(3, 0),
 	gravel: station(4, 0),
 	track: station(5, 0),
-	trackOld: station(6, 0),
 	oppEdge: station(7, 0),
 	// 待合室と車内の地・壁
 	hubFloor: station(0, 1),
@@ -54,7 +53,6 @@ export const STN = {
 	chalkCircle: station(5, 2),
 	signal: station(6, 2),
 	flower: station(7, 2),
-	grave: station(0, 3),
 	bufferStop: station(1, 3),
 	// 16x32 の物
 	clock: station(0, 4, 1, 2),
@@ -73,9 +71,6 @@ export const STN = {
 	phone: station(4, 6, 1, 2),
 	noticeBoard: station(5, 6, 1, 2),
 	lamp: station(6, 6, 1, 2),
-	waitingDoor: station(7, 6, 1, 2),
-	timetableL: station(0, 8, 1, 2),
-	timetableR: station(1, 8, 1, 2),
 } as const;
 
 // ───────────────── 回線の間（無人駅の待合室） ─────────────────
@@ -157,27 +152,5 @@ export const KISARAGI: Record<string, TileDef> = {
 	I: { ...solid(C_PLAT, PLAT, STN.pillar), thin: true },
 	"~": solid("#4a4b52", STN.oppEdge),
 	'"': solid("#44454c", PLAT),
-	" ": BLACK,
-};
-
-// ───────────────── 供養スレ駅（終点） ─────────────────
-//   ( )  駅舎の白壁（上段・下段。TOWN のサイディング）  w  窓（TOWN）
-//   k K  時刻表（左右。なにも書かれていない）  D  待合室の扉（あかない）
-//   .  ホーム  -  ホームの端  t  線路の名残（通れない）
-//   V  自販機  L  常夜灯  B b  ベンチ（左右）
-export const TERMINUS: Record<string, TileDef> = {
-	"(": TOWN["("],
-	")": TOWN[")"],
-	w: TOWN.w,
-	k: solid("#e8e8e8", WALL.sidingLo, STN.timetableL),
-	K: solid("#e8e8e8", WALL.sidingLo, STN.timetableR),
-	D: solid("#e8e8e8", WALL.sidingLo, STN.waitingDoor),
-	".": floor(C_PLAT, PLAT),
-	"-": floor("#9aa0a8", STN.platformEdge),
-	t: solid("#2e2620", STN.trackOld),
-	V: solid(C_PLAT, PLAT, JP.vending),
-	L: { ...solid(C_PLAT, PLAT, STN.lamp), thin: true },
-	B: solid(C_PLAT, PLAT, STN.benchL),
-	b: solid(C_PLAT, PLAT, STN.benchR),
 	" ": BLACK,
 };

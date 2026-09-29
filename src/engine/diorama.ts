@@ -161,21 +161,6 @@ const DREAM: Record<string, Scene> = {
 		["#3a1a04", "#8a4a10", "#f09030", "#ffd890"],
 		"none",
 	),
-	// 供養スレ駅（終点）：やわらかい常夜灯（日常の箱にもどる＝縁は断面・星）
-	terminus: f(
-		[
-			"#080a14",
-			"#161a2c",
-			"#262c48",
-			"#3e4666",
-			"#62688a",
-			"#9aa0b8",
-			"#e8e4dc",
-		],
-		["#3a2410", "#8a5a28", "#f0b860", "#fff0c8"],
-		"stars",
-		"cut",
-	),
 };
 
 const SCENES: Record<string, Scene> = {

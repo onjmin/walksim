@@ -108,7 +108,7 @@ export type MapDef = {
 	boxes?: { x: number; y: number; w: number; h: number }[];
 	/**
 	 * ジオラマ表示の場面（怪異の地区だけ）。engine/diorama.ts の DREAM のキー
-	 * （hub / yellow / village / sepia / kisaragi / train / tunnel / terminus）。
+	 * （hub / yellow / village / sepia / kisaragi / train / tunnel）。
 	 * 色合い・箱の縁（ほどける）・虚空（砂あらし・まっくら）が日常と変わる。省略時は時間帯の場面。
 	 */
 	scene?: string;
@@ -130,7 +130,7 @@ export type MapDef = {
 // ───────────────── キャラ ─────────────────
 
 export type VoiceDef = {
-	/** dtm の koe 音源キーワード（uc / roze / rei / tsukuyomi …）。 */
+	/** dtm の koe 音源キーワード（uc / rei / tsukuyomi / teto …）。 */
 	model: string;
 	pitchOffset?: number;
 	emotion?: "neutral" | "happy" | "sad" | "angry";

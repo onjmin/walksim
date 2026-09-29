@@ -6,7 +6,7 @@
 // - dtm のシーケンサは 0.5 秒以上止まる（タブ切替・画面ロック・重い処理）と黙って再生をやめる。
 //   onStop で「自分で止めたのではない」停止を見分け、最後の位置から鳴らし直す。
 // - 読み上げは既定 OFF（初回に約35MBの TTS データを取得するため）。設定で ON にする。
-//   頭が欠けないよう、合成の最初のかたまり（＋声ごとの貯め。SPEECH_BUFFER_SEC）が出来てから
+//   頭が欠けないよう、合成の最初のかたまり（＋少しの貯め。SPEECH_BUFFER_SEC）が出来てから
 //   頭から鳴らす（awaitRender: "first-chunk"）。合成が追いつかなければ後ろをずらす（言葉は欠けない）。
 //   鳴り始める時刻を返すので、メッセージ窓は文字送りをそこまで待たせる（ui/message.ts）。
 // - dtm は重いので、最初の音が要るまで動的 import で遅らせる。
@@ -143,12 +143,10 @@ export const speechText = (raw: string): string | null => {
 /**
  * 読み上げを鳴らし始める前に合成しておく秒数（dtm の minBufferSec。最初のモーラから）。
  * 最初のかたまりは数モーラしかないので、合成が再生に追いつかないと行の途中に間が空く
- * （dtm が後ろをずらす）。少し貯めてから鳴らすと減る。合成の遅い roze は多めにする。
+ * （dtm が後ろをずらす）。少し貯めてから鳴らすと減る。
  * 鳴り出しはそのぶん遅れる（メッセージ窓の文字送りは声の頭まで待つ。ui/message.ts）。
  */
-const SPEECH_BUFFER_SEC: Readonly<Record<string, number>> = { roze: 0.4 };
-/** {@link SPEECH_BUFFER_SEC} に無い声の貯め（秒）。 */
-const SPEECH_BUFFER_DEFAULT_SEC = 0.2;
+const SPEECH_BUFFER_SEC = 0.2;
 
 /** 読み上げの鳴り始め（{@link GameAudio.speak} の started）。 */
 export type SpeechStart = {
@@ -177,17 +175,8 @@ export type Speaking = {
 	started?: Promise<SpeechStart | null>;
 };
 
-/** いまのゲームの音（{@link GameAudio} は main.ts で1つだけ作られる）。{@link singOnce} が引く。 */
+/** いまのゲームの音（{@link GameAudio} は main.ts で1つだけ作られる）。{@link prepareCameoVoices} が引く。 */
 let currentAudio: GameAudio | null = null;
-
-/**
- * 歌入りの短い MML を1回だけ流す（前の 筋の 解音ゼロの 代読歌が 使っていた。いまは 呼ぶ 所が 無い。
- * data/bgm/zerouta.mml を ?raw で import して渡す）。今の BGM を一時停止し、
- * 歌い終わる（か鳴らせないと分かる）と resolve して元の曲の続きへ戻す。
- * ミュート・BGM OFF・音のアンロック前は何もせずすぐ resolve する。
- */
-export const singOnce = (mml: string): Promise<void> =>
-	currentAudio ? currentAudio.singOnce(mml) : Promise.resolve();
 
 /**
  * カメオ音源の追加読み込み（まちのどおりの 窓の 場面が 呼ぶ）。
@@ -250,7 +239,7 @@ export class GameAudio {
 	onVoiceProgress: (() => void) | null = null;
 
 	constructor(bgm: Record<string, string>, sfx: Record<string, string>) {
-		currentAudio = this; // main.ts で1つだけ作られる（モジュール関数 singOnce が使う）
+		currentAudio = this; // main.ts で1つだけ作られる（モジュール関数 prepareCameoVoices が使う）
 		this.bgmData = bgm;
 		this.sfxData = sfx;
 		let prev = {
@@ -394,93 +383,6 @@ export class GameAudio {
 		this.bgmName = name;
 		this.sing = settings.voice && settings.bgm === "hq";
 		this.restartBgm(0);
-	}
-
-	/**
-	 * 歌入りの短い MML を1回だけ流す（終点・解音ゼロの代読歌。data/bgm/zerouta.mml）。
-	 * 今の BGM を一時停止し、歌い終わったら同じ曲の続きから戻す。
-	 * ボイス OFF・軽量モードのときは歌わずインストで流す（{@link singBgm} と同じ扱い）。
-	 * ミュート・BGM OFF・アンロック前は何もせずすぐ戻る。
-	 */
-	async singOnce(mml: string): Promise<void> {
-		const ctx = this.ctx;
-		if (!ctx || !this.canPlayBgm()) return;
-		// 今の曲を一時停止。bgmName を外しておくと、歌の間の設定変更（restartBgm）が
-		// 元の曲を歌に重ねて鳴らし直すことはない（下で bgmPlayback に登録するので、
-		// ミュート・曲質の切り替えは stopBgmPlayback 経由で歌ごと止まる）。
-		const prevName = this.bgmName;
-		const prevStep = this.bgmLastStep;
-		this.stopBgmPlayback();
-		this.bgmName = null;
-		const token = this.bgmToken;
-		const volume = this.volumeFor(mml);
-		try {
-			await new Promise<void>((resolve) => {
-				let done = false;
-				const finish = () => {
-					if (done) return;
-					done = true;
-					resolve();
-				};
-				void (async () => {
-					try {
-						// 1回きりなので loop: false。鳴り終わる（か止められる）と onStop → finish
-						const common = {
-							loop: false,
-							onStop: finish,
-							pauseWhenHidden: false,
-						};
-						let pb: MmlPlayback | null = null;
-						if (settings.bgm === "hq") {
-							const studio = await this.studio();
-							if (settings.voice) {
-								try {
-									pb = await studio.playSingingMML(mml, common);
-									pb.setVolume(Math.min(100, volume * SING_GAIN));
-								} catch (e) {
-									console.warn(
-										"[audio] 歌声つきで流せなかったのでインストにします",
-										e,
-									);
-								}
-							}
-							if (!pb) {
-								pb = studio.play(mml, common);
-								pb.setVolume(volume);
-							}
-						} else {
-							const dtm = await loadDtm();
-							pb = dtm.playMML(mml, {
-								...common,
-								audioContext: ctx,
-								destination: ctx.destination,
-							});
-							pb.setVolume(volume);
-						}
-						if (token !== this.bgmToken || done) {
-							this.dispose(pb);
-							finish();
-							return;
-						}
-						this.bgmPlayback = pb;
-					} catch (e) {
-						console.warn("[audio] 歌を流せませんでした", e);
-						finish();
-					}
-				})();
-			});
-		} finally {
-			if (token === this.bgmToken) {
-				// 何事もなく歌い終わった：元の曲の続きから戻す
-				this.bgmName = prevName;
-				this.restartBgm(prevStep);
-			} else if (this.bgmName === null && !this.canPlayBgm()) {
-				// 歌の途中でミュート等：曲名だけ戻す（解除の restartBgm がその曲を鳴らす）
-				this.bgmName = prevName;
-				this.bgmLastStep = prevStep;
-			}
-			// それ以外（歌の間に bgm() で曲が切り替わった）は、新しい曲を尊重して何もしない
-		}
 	}
 
 	private canPlayBgm(): boolean {
@@ -847,7 +749,7 @@ export class GameAudio {
 		this.voiceReady ??= (async () => {
 			try {
 				const studio = await this.studio();
-				// コア8音源（DESIGN §5。カメオ音源は改札が開いてから prepareCameoVoices で）
+				// コア音源（DESIGN §5。カメオ音源は まちのどおりの 窓の 場面で prepareCameoVoices が）
 				await studio.prepareSpeech(CORE_VOICE_MODELS, {
 					onProgress: (loaded: number, total: number) => {
 						this.voiceProgress = { loaded: Math.min(loaded, total), total };
@@ -930,8 +832,7 @@ export class GameAudio {
 					// 飛ばさずに後ろをずらす（lateChunks の既定 "shift"）
 					awaitRender: "first-chunk",
 					at,
-					minBufferSec:
-						SPEECH_BUFFER_SEC[voice.model] ?? SPEECH_BUFFER_DEFAULT_SEC,
+					minBufferSec: SPEECH_BUFFER_SEC,
 					signal: entry.abort.signal,
 				});
 				if (this.speaking !== entry || entry.abort.signal.aborted) {

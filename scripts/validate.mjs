@@ -31,14 +31,12 @@ const MAX_PATHS = 48; // 選び方の組み合わせをたどる本数（フラ�
 const TYPED = 4; // 2周目（set された値を入れる）のフラグの組の数
 const MENU_REPEAT = 12; // 同じ選択肢がこれ以上出たら、やめる側（cancel か最後）を選ぶ
 // 読み上げの音源（engine/audio.ts の CORE_VOICE_MODELS + CAMEO_VOICE_MODELS と合わせる。
-// 春音リノの現行版キーワードは rino121。カメオ5音源は終盤専用＝records の trueVoice 等）
+// カメオ音源は終盤専用＝朝のスレの 住民の 一言）
 const VOICE_MODELS = [
 	"uc",
 	"rei",
 	"tsukuyomi",
 	"teto",
-	"ruko_male",
-	"ruko_female",
 	"mgroid",
 	"motroid",
 	"nynroid",
@@ -674,7 +672,7 @@ try {
 	for (const k of setFlags.keys())
 		if (!FLAG_OK.test(k))
 			warn(
-				`フラグの約束: "${k}" が決めた形（done:/hide:/seen_/got_/rule_/note_/found_/gate_open/clear/ending_ready/ending_seen/keep_clear/flashlight/tod）に無い`,
+				`フラグの約束: "${k}" が決めた形（done:/hide:/seen_/got_/rule_/note_/found_/clear/ending_ready/ending_seen/keep_clear/flashlight/debug/tod）に無い`,
 			);
 
 	// ── 開始位置・デバッグルーム ──

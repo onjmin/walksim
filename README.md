@@ -96,7 +96,7 @@ http://localhost:5180/?map=kura&x=4&y=5&dir=up&flags={"flashlight":true}&items=r
 - やきう（なんJ・おんJ の名無し）: なんJ・おんJ のみんな
 - MGRoid・MOTRoid・NYNRoid（クッキー☆由来の UTAU 音源。終盤のカメオ音声として、声のみ使用しています）: 利用条件の所在 … [MGRoid](https://x.com/nisusansu/status/1048825378188353536) / [MOTRoid](https://www.nicovideo.jp/watch/sm40031282) / [NYNRoid](https://www.bilibili.com/video/BV1V24y1a7qs)
 - ミャウミャウ・ネムリン・おんちゃん・にぃちぇ・ムッジェ: おんJ のみんな（設定は [おんJwiki](https://w.atwiki.jp/openj3/) を参考にした、非公式のファン創作です）
-- 優音アイ・君野うしろ・雲地アル: おんJ・おーぷん2ちゃんねるの企画スレ発キャラクターの、非公式のファン創作です
+- 優音アイ・君野うしろ: おんJ・おーぷん2ちゃんねるの企画スレ発キャラクターの、非公式のファン創作です
 - 本作のキャラクターの口調・設定の一部は非公式の創作です
 
 ### スタッフ

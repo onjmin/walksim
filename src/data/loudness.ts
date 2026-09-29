@@ -83,25 +83,19 @@ export const VOICE_TARGET = -21;
 /**
  * 声ごとの大きさ（studio.speak の volume 1.0 でのセリフの I、LUFS）。
  * ブラウザで最終出力を録って測った（2026-09、data/ の実際のセリフ4つをつないで）。
- * いちばん大きいロゼといちばん小さいキリコ（uc）で 3.9 LU ちがう。
+ * いちばん大きいテトといちばん小さいキリコ（uc）で 2.3 LU ちがう。
  */
 export const VOICE_LUFS: Record<string, number> = {
 	uc: -18.4,
-	roze: -14.5,
 	teto: -16.1,
 	rei: -16.9,
-	// ── ここから下は未測定の仮値（4人の中くらい）。鳴らして録れたら測って直す ──
-	rino121: -16.5,
-	shiyo: -16.5,
-	hibika_aru: -16.5,
-	ruko_male: -16.5,
-	ruko_female: -16.5,
+	// ── ここから下は未測定の仮値（測った 声の 中くらい）。鳴らして録れたら測って直す ──
 	mgroid: -16.5,
 	motroid: -16.5,
 	nynroid: -16.5,
 };
 
-/** 測っていない声は、4人の中くらいとみなす。 */
+/** 測っていない声は、測った 声の 中くらいとみなす。 */
 const VOICE_LUFS_DEFAULT = -16.5;
 
 /**

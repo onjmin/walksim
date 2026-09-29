@@ -349,7 +349,7 @@ export const kakolog2: MapDef = {
 					);
 					return;
 				}
-				// 考察: 黄色い部屋の先客（技法6。テトの「31年」と食い違う）
+				// 考察: 黄色い部屋の先客（技法6。テトは 仕事の 合間に ここへも 来る）
 				if (s.has("rec_a") > 0 && !s.flag("seen_kk_rino_teto")) {
 					s.set("seen_kk_rino_teto");
 					await say(s, "あんた、黄色いほうにも\n行ったんやろ");

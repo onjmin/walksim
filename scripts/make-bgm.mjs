@@ -1,7 +1,7 @@
 // BGM を作る（node scripts/make-bgm.mjs）。src/data/bgm/<名前>.mml を書き出す。
 //
 // 作者判断（2026-09-27）で新しく作曲する：参考作品（静かな夜のローファイ／柔らかいチップチューン）の空気。
-// 旧曲（rpg・roguelike・名無し155 の曲）のうち物語に結びついた ending / secret / kowareta は残す。
+// 旧曲（rpg・roguelike・名無し155 の曲）のうち物語に結びついた ending / kowareta は残す。
 // 手打ちの MML を数えまちがえないよう、和音・旋律を「音名と長さ」の並びで書いて組み立て、
 // トラックの長さ（1ループ）が全部そろっているかをここで検算する。
 // head.volume（#volume）は dev/bgm.html で測ってそろえた値（data/bgm.ts 冒頭の表。曲を変えたら測り直す）。
