@@ -84,11 +84,7 @@ const CORE_VOICE_MODELS = ["uc", "rei", "tsukuyomi", "teto"] as const;
  * まちのどおりの 窓の 場面（転。data/maps/street.ts）が prepareCameoVoices を呼ぶ。
  * 用途は 朝のスレの住民の一言（と、レコードの trueVoice。いまは 使っていない）。
  */
-const CAMEO_VOICE_MODELS = [
-	"mgroid",
-	"motroid",
-	"nynroid",
-] as const;
+const CAMEO_VOICE_MODELS = ["mgroid", "motroid", "nynroid"] as const;
 
 /**
  * 効果音が MML か（data/sfx.ts の値。MML は `#volume=` ヘッダから始める約束にして

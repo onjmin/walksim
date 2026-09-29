@@ -529,7 +529,9 @@ export const room: MapDef = {
 				if (t === "yu" || t === "yoru") {
 					if (!s.flag("seen_hoshumura")) {
 						s.set("seen_hoshumura");
-						await s.narrate("保守村。人の　散った　おんJに\n残った　みんなの　スレ。");
+						await s.narrate(
+							"保守村。人の　散った　おんJに\n残った　みんなの　スレ。",
+						);
 					}
 					await s.narrate("保守村の　スレは、\nこんやも　にぎやかだ。");
 					// テレビの中継が打ち切られたあとは、スレもその話（nostalgia.md P0-2。

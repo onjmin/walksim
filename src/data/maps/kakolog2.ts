@@ -307,10 +307,7 @@ export const kakolog2: MapDef = {
 				// 初回: 注文（＞＞1 おでん / ＞＞2 みそしる）
 				if (!s.flag("seen_kk_rino_met")) {
 					s.set("seen_kk_rino_met");
-					await say(
-						s,
-						"あら、見ない顔やねぇ。\nおすわり。夜は　冷えるでね",
-					);
+					await say(s, "あら、見ない顔やねぇ。\nおすわり。夜は　冷えるでね");
 					await s.narrate(
 						"カウンターの　むこうで、\n鍋が　ことこと　いっている。",
 					);
@@ -344,10 +341,7 @@ export const kakolog2: MapDef = {
 					s.set("seen_kk_rino_gyu");
 					await s.say("kiriko", "……『牛の首』って、\nなんのスレンゴ？");
 					await say(s, "牛の首？　ああ……\nたのんだ人は　おらんねぇ");
-					await say(
-						s,
-						"聞いた客は　みぃんな、\n階段を　駆けあがってくと",
-					);
+					await say(s, "聞いた客は　みぃんな、\n階段を　駆けあがってくと");
 					await s.say("kiriko", "……逃げきれるンゴ？");
 					await say(
 						s,
@@ -360,12 +354,12 @@ export const kakolog2: MapDef = {
 					s.set("seen_kk_rino_teto");
 					await say(s, "あんた、黄色いほうにも\n行ったんやろ");
 					await s.say("kiriko", "……椅子の先輩が　いたンゴ");
-					await say(s, "あの黄色い部屋の子？\n仕事の　合間に、ふらっと　来るよ");
-					await s.say("kiriko", "……休憩中って　言ってたンゴ");
 					await say(
 						s,
-						"おでん、食べてったわ。\nはんぺんだけ　残してねぇ",
+						"あの黄色い部屋の子？\n仕事の　合間に、ふらっと　来るよ",
 					);
+					await s.say("kiriko", "……休憩中って　言ってたンゴ");
+					await say(s, "おでん、食べてったわ。\nはんぺんだけ　残してねぇ");
 					return;
 				}
 				await say(s, "まいど。\nあったまって　いきない");

@@ -85,7 +85,10 @@ const nemurin = async (s: Story): Promise<void> => {
 		await s.say("nemurin", "……ふぁ。おきゃくさん\nピロ？　めずらしい");
 		await s.say("kiriko", "ここ、どこンゴ？");
 		await s.say("nemurin", "かいせんのま。……終電の、\n待合室みたいなとこ");
-		await s.say("nemurin", "ここから　いろんな　とこに\nつながってる……って、夢で見たピロ");
+		await s.say(
+			"nemurin",
+			"ここから　いろんな　とこに\nつながってる……って、夢で見たピロ",
+		);
 		await s.say("kiriko", "夢で見ただけンゴ？");
 		await s.narrate("……すう、すう。\nもう　寝ている。");
 		return;
@@ -108,12 +111,18 @@ const nemurin = async (s: Story): Promise<void> => {
 	}
 	if (found >= 1) {
 		await s.say("nemurin", "ノート、ふえてる？\n……いいなあピロ");
-		await s.say("nemurin", "……おもての　バス停にも、\nレコード　あったピロ……む〜ん");
+		await s.say(
+			"nemurin",
+			"……おもての　バス停にも、\nレコード　あったピロ……む〜ん",
+		);
 		return;
 	}
 	// 板の 名残の ありか（地続きの 4か所: こくどうのファミレスの おく・やまみちの峠のむこう・この駅の下・終電のさき）
 	await s.say("nemurin", "レコード……灯りのきえた\n店のおくと、山のむこう");
-	await s.say("nemurin", "ここの　したと、終電の　さき。\nおもての　バス停……すぴぴ");
+	await s.say(
+		"nemurin",
+		"ここの　したと、終電の　さき。\nおもての　バス停……すぴぴ",
+	);
 };
 
 // ───────────────── クリア後: 無題のレコード『　』（進行に無関係） ─────────────────

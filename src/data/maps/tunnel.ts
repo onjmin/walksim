@@ -49,7 +49,9 @@ export const tunnel: MapDef = {
 			trigger: "touch",
 			through: true,
 			run: async (s) => {
-				await s.narrate("トンネルを　ぬけると、\n見おぼえの　ある　踏切だった。");
+				await s.narrate(
+					"トンネルを　ぬけると、\n見おぼえの　ある　踏切だった。",
+				);
 				await s.warp("senro", 31, 7, "down");
 			},
 		},

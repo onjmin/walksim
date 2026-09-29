@@ -322,7 +322,9 @@ export const umi: MapDef = {
 				await s.narrate("スマホの　画面に、\n保守村の　スレ。");
 				await s.say("nanj", "おう。……早いな");
 				await s.say("kiriko", "……やきうンゴ");
-				await s.narrate("保守村で　いちばん　長く\n保守していた、名無しの　おんJ民。");
+				await s.narrate(
+					"保守村で　いちばん　長く\n保守していた、名無しの　おんJ民。",
+				);
 				await s.say("nanj", "外で　見とる　言うたやろ");
 				await s.narrate("キリコは、となりに\nすわった。");
 				await s.narrate("スマホを　だして、\n書きこんだ。「保守」");

@@ -1,4 +1,5 @@
 ﻿// まちのどおり（日常レイヤーの主舞台）。DESIGN §4 時間帯システム・docs/style-everyday.md・
+
 // docs/content-briefs.md「日常レイヤー」。30×20・outdoor（TOD_PRESETS が tint/outside を乗せる）・
 // BGM null（ヒグラシ・チャイム・電車などの生活音が音楽のかわり）。
 //
@@ -28,6 +29,7 @@
 // 不穏の種（夕方の時点では完全に日常）: ①工事のお知らせ掲示（開始すぐ・東端）
 // ②下校の子の「道の下から線路が出た」 ③バス停のらくがき『2じ』
 
+import { prepareCameoVoices } from "../../engine/audio";
 import type {
 	EventDef,
 	GameState,
@@ -35,15 +37,9 @@ import type {
 	Story,
 	TileDef,
 } from "../../engine/defs";
-import { prepareCameoVoices } from "../../engine/audio";
 import { settings } from "../../engine/settings";
 import { npc, warp } from "../helpers";
-import {
-	kanShinya,
-	kanTick,
-	yoruAkubi,
-	yoruClock,
-} from "../nostalgia";
+import { kanShinya, kanTick, yoruAkubi, yoruClock } from "../nostalgia";
 import { EPISODE_RECORDS } from "../records";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
@@ -334,11 +330,15 @@ const mado = async (s: Story): Promise<void> => {
 	await s.narrate("ヘッドホンごしの　声が、\n窓の　むこうで　笑っている。");
 	await s.narrate("みじかい　文を　打っては、\n消している　指。");
 	// 辞めた 人（早番）：夜明けに うみべで すれ違う
-	await s.narrate("……ひとつ、あかりが　消えた。\n玄関で、くつひもを　むすぶ　音。");
+	await s.narrate(
+		"……ひとつ、あかりが　消えた。\n玄関で、くつひもを　むすぶ　音。",
+	);
 	// 朝の スレの 住民の 声（カメオ音源）を ここで 読み込む（ボイス OFF なら 何もしない）
 	if (settings.voice) {
 		const ready = prepareCameoVoices();
-		await s.narrate("（窓の　むこうで、いくつもの\n声が　めを　さましていく――）");
+		await s.narrate(
+			"（窓の　むこうで、いくつもの\n声が　めを　さましていく――）",
+		);
 		await ready.catch(() => {});
 	}
 	await s.wait(500);
@@ -415,7 +415,9 @@ export const street: MapDef = {
 				s.se("chime17");
 				await s.wait(1600);
 				await s.narrate("――チャイムが、\n鳴りおわった。");
-				await s.narrate("キリコが　おんJを　出て、\n外の　町で　暮らしはじめて　ひと月。");
+				await s.narrate(
+					"キリコが　おんJを　出て、\n外の　町で　暮らしはじめて　ひと月。",
+				);
 				await s.say("kiriko", "はらへったンゴ。晩ごはん\n買って、帰るンゴ");
 			},
 		},
