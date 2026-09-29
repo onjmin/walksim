@@ -1,12 +1,12 @@
 // 素材が見つからなかったドット絵を作る（node scripts/make-sprites.mjs）。
 //
-// - public/sprites/mujje.png        … ムッジェ ΣΩΩ>（赤い毛むくじゃら）。RPGEN 歩行グラ規格 32x64
+// - public/sprites/mujje.png        … ムッジェ ΣΩΩ>（赤い 毛の 柱・柄の 先の 目玉・横に つき出た 口・白い 手袋）。RPGEN 歩行グラ規格 32x64
 // - public/sprites/kiriko_botsu.png … ボツキリコ。キリコの歩行グラを灰色に沈めた差分 32x64
 // - public/sprites/phono.png        … ちいさな蓄音機（置物）16x16
 // - public/sprites/minors_*.png     … おんJマイナーズ（にぃちぇ・おんすちゃん・ンゴ姉・パン松・ヤヤポジ）32x64
 // - public/sprites/metalngo.png     … メタルンゴ（隠し狩場のレア敵。銀色の しずく）32x64
 // - public/sprites/nemurin.png      … ネムリン（ナイトキャップの寝ぼすけ）32x64
-// - public/sprites/myaumyau_*.png   … ミャウミャウ A/B/C（紙袋頭の小柄な人影。出会うたび姿が違う）32x64
+// - public/sprites/myaumyau_*.png   … ミャウミャウ A/B/C（紙袋の 服を 着た エルフ。出会うたび姿が違う）32x64
 // - public/sprites/tsukuyomi.png    … つくよみちゃん（巫女）32x64
 // - public/sprites/hasshaku.png     … 八尺様（白い長身シルエット。1コマ 16x32・シートは 32x128）
 // - public/sprites/rino.png         … 春音リノ（お団子髪・エプロンの女将）32x64
@@ -145,150 +145,6 @@ const paint = (sheet, sheetW, cx, cy, art, pal) =>
 
 const mirror = (art) => art.map((r) => [...r].reverse().join(""));
 
-// ───────────────── ムッジェ ΣΩΩ> ─────────────────
-// 板のバナーに出る赤い毛むくじゃら（ムック＋J民）。大きな口「>」と、頭のプロペラ。
-
-const MUJJE_PAL = {
-	K: hex("#3a0d0a"), // 輪郭
-	R: hex("#d8352a"), // 毛
-	r: hex("#9e1f17"), // 毛の影
-	P: hex("#f27a5e"), // 毛のつや
-	W: hex("#ffffff"),
-	B: hex("#141414"),
-	M: hex("#5a0f12"), // 口の中
-	T: hex("#ff9aa2"), // 舌
-	Y: hex("#f6c945"), // プロペラ
-	y: hex("#b98a1a"),
-};
-
-const mujjeDown = [
-	[
-		".....YYKYY......",
-		".......K........",
-		"....KKKKKKKK....",
-		"...KRPRRRRPRK...",
-		"..KRRRRRRRRRRK..",
-		"..KRWWRRRRWWRK..",
-		".KRRWBRRRRWBRRK.",
-		".KRRRRRRRRRRRRK.",
-		".KRRKKKKKKKKRRK.",
-		".KRRKMMMMMMKRRK.",
-		".KRRKMTTTTMKRRK.",
-		"..KRRKKKKKKRRK..",
-		"..KRrRRrRRrRRK..",
-		"...KRrKRRKrRK...",
-		"...KKK.KK.KKK...",
-		"................",
-	],
-	[
-		"......YKYYY.....",
-		".......K........",
-		"....KKKKKKKK....",
-		"...KRPRRRRPRK...",
-		"..KRRRRRRRRRRK..",
-		"..KRWWRRRRWWRK..",
-		".KRRWBRRRRWBRRK.",
-		".KRRRRRRRRRRRRK.",
-		".KRRKKKKKKKKRRK.",
-		".KRRKMMMMMMKRRK.",
-		".KRRKMTTTTMKRRK.",
-		"..KRRKKKKKKRRK..",
-		"..KRrRRrRRrRRK..",
-		"...KRrKRRKrRK...",
-		"....KK.KK.KK....",
-		"....KK....KK....",
-	],
-];
-
-const mujjeUp = [
-	[
-		".....YYKYY......",
-		".......K........",
-		"....KKKKKKKK....",
-		"...KRRRRRRRRK...",
-		"..KRrRRrRRrRRK..",
-		"..KRRRRRRRRRRK..",
-		".KRRrRRrRRrRRRK.",
-		".KRRRRRRRRRRRRK.",
-		".KRrRRrRRrRRrRK.",
-		".KRRRRRRRRRRRRK.",
-		".KRRrRRrRRrRRRK.",
-		"..KRRRRRRRRRRK..",
-		"..KRrRRrRRrRRK..",
-		"...KRrKRRKrRK...",
-		"...KKK.KK.KKK...",
-		"................",
-	],
-	[
-		"......YKYYY.....",
-		".......K........",
-		"....KKKKKKKK....",
-		"...KRRRRRRRRK...",
-		"..KRrRRrRRrRRK..",
-		"..KRRRRRRRRRRK..",
-		".KRRrRRrRRrRRRK.",
-		".KRRRRRRRRRRRRK.",
-		".KRrRRrRRrRRrRK.",
-		".KRRRRRRRRRRRRK.",
-		".KRRrRRrRRrRRRK.",
-		"..KRRRRRRRRRRK..",
-		"..KRrRRrRRrRRK..",
-		"...KRrKRRKrRK...",
-		"....KK.KK.KK....",
-		"....KK....KK....",
-	],
-];
-
-// 右向き：顔が右に寄り、口「>」が右を向く
-const mujjeRight = [
-	[
-		".....YYKYY......",
-		".......K........",
-		"....KKKKKKKK....",
-		"...KRRRRRPRRK...",
-		"..KRRRRRRRRRRK..",
-		"..KRRRRRWWRRRK..",
-		".KRRrRRRWBRRRK..",
-		".KRRRRRRRRRRRKK.",
-		".KRrRRRRKKKKKKK.",
-		".KRRRRRRKMMMMK..",
-		".KRRrRRRKMTTK...",
-		"..KRRRRRKKKK....",
-		"..KRrRRrRRRK....",
-		"...KRrKRRKK.....",
-		"...KKK.KKK......",
-		"................",
-	],
-	[
-		"......YKYYY.....",
-		".......K........",
-		"....KKKKKKKK....",
-		"...KRRRRRPRRK...",
-		"..KRRRRRRRRRRK..",
-		"..KRRRRRWWRRRK..",
-		".KRRrRRRWBRRRK..",
-		".KRRRRRRRRRRRKK.",
-		".KRrRRRRKKKKKKK.",
-		".KRRRRRRKMMMMK..",
-		".KRRrRRRKMTTK...",
-		"..KRRRRRKKKK....",
-		"..KRrRRrRRRK....",
-		"...KRrKRRKK.....",
-		"....KKKK.KK.....",
-		"....KK....K.....",
-	],
-];
-
-// RPGEN 規格の行順: 後(上)・右・前(下)・左
-const mujje = Buffer.alloc(32 * 64 * 4);
-for (let f = 0; f < 2; f++) {
-	paint(mujje, 32, f, 0, mujjeUp[f], MUJJE_PAL);
-	paint(mujje, 32, f, 1, mujjeRight[f], MUJJE_PAL);
-	paint(mujje, 32, f, 2, mujjeDown[f], MUJJE_PAL);
-	paint(mujje, 32, f, 3, mirror(mujjeRight[f]), MUJJE_PAL);
-}
-writeFileSync(join(OUT, "mujje.png"), encodePng(32, 64, mujje));
-
 // ───────────────── おんJマイナーズ ─────────────────
 // おんJwiki の「おんJマイナーズ」まわりの顔文字キャラ。顔文字の特徴だけを 16x16 に落とす。
 // 1コマ目の絵を描き、2コマ目は足もと（下の2行）だけ差し替える。左向きは右向きの反転。
@@ -310,13 +166,88 @@ const walkSheet = (file, pal, { up, right, down }, feet) => {
 const FEET = [".....SS..SS.....", "................"];
 const FEET_B = ["....SS....SS....", "................"];
 
-// にぃちぇ ξ◉ω◉)ξ … 両わきの ξ のドリル、見ひらいた目、ω の口。日曜日の子。
+// ───────────────── ムッジェ ΣΩΩ> ─────────────────
+// おんJ 初期の お絵かきスレ「(´・ω・`)ここはぼくたちのあたらしい縄張りだからね」（2014）生まれ。板の バナーにも いる。
+// 元絵：頭と 胴が ひとつづきの 赤い 柱（首は ない）に、ムックの ような まばらな 毛（短い 黒い 毛が ぴんぴん）。
+// てっぺんから 目玉が 2つ 柄で 生え（ΩΩ）、横へ つき出た くちばしの ような 大きな 口（>。よく 開いている）。
+// 手は 小さな 白い 手袋。足は ほとんど 見えない。roguelike の scripts/make-minors.mjs と 同じ 絵。
+walkSheet(
+	"mujje.png",
+	{
+		K: hex("#3a0d0a"),
+		k: hex("#1a0604"),
+		R: hex("#e0301f"),
+		r: hex("#9e1f17"),
+		W: hex("#ffffff"),
+		B: hex("#141414"),
+		M: hex("#5a0f12"),
+		G: hex("#ffffff"),
+		S: hex("#7a1a12"),
+	},
+	{
+		down: [
+			"....KK...KK.....",
+			"...KWBK.KBWK....",
+			"....KK...KK.....",
+			"....KRK.KRK.....",
+			"...KRRRRRRRRK...",
+			"..kKRrRRRRrRK...",
+			"...KRKMMMMKRK...",
+			"...KRKMMMMKRKk..",
+			"...KRRKKKKRRK...",
+			"..GKRrRRRRrRKG..",
+			".GGKRRRRrRRRKGG.",
+			"..kKRRrRRRRRK...",
+			"...KRRRRRrRRKk..",
+			"..kKrRRRRRRrK...",
+			...FEET,
+		],
+		up: [
+			"....KK...KK.....",
+			"...KWWK.KWWK....",
+			"....KK...KK.....",
+			"....KRK.KRK.....",
+			"...KRRRRRRRRK...",
+			"..kKRrRRRRrRK...",
+			"...KRRRrRRRRK...",
+			"...KRRRRRRrRKk..",
+			"...KrRRRRRRRK...",
+			"..GKRRRrRRRRKG..",
+			".GGKRRRRRRrRKGG.",
+			"..kKRrRRRRRRK...",
+			"...KRRRRrRRRKk..",
+			"..kKrRRRRRRrK...",
+			...FEET,
+		],
+		right: [
+			".......KK.KK....",
+			"......KWBKWBK...",
+			".......KK.KK....",
+			".......KRKRK....",
+			"....KRRRRRRK....",
+			"...kKRRRRRRRKK..",
+			"....KRrRRRRRRRK.",
+			"....KRRRRKMMMMK.",
+			"...kKRRRRRRRRK..",
+			"....KRRrRRKK....",
+			"....KRRRGGK.....",
+			"...kKRrRGGK.....",
+			"....KRRRRRKk....",
+			"...kKrRRRrK.....",
+			...FEET,
+		],
+	},
+	FEET_B,
+);
+
+// にぃちぇ ξ◉ω◉)ξ … 両わきの ξ のドリル（金髪の 縦ロール）、見ひらいた目、ω の口。日曜日の子。
+// 髪の 色は おんJwiki（にぃちぇ）の 色つきの 絵に 合わせた。
 walkSheet(
 	"minors_nichie.png",
 	{
-		K: hex("#2a1a3a"),
-		H: hex("#b48be0"),
-		h: hex("#7d5aa8"),
+		K: hex("#4a3010"),
+		H: hex("#f2c94c"),
+		h: hex("#c79a22"),
 		F: hex("#ffe0c8"),
 		W: hex("#ffffff"),
 		B: hex("#141414"),
@@ -449,107 +380,110 @@ walkSheet(
 	FEET_B,
 );
 
-// ンゴ姉 ﾝ´ヮ｀ｺﾞ … やきうの お姉ちゃん。やきう帽、´ ｀ の目、ヮ の口、長い髪。
+// ンゴ姉 ﾝ´ヮ｀ｺﾞ（人間型）… 誤変換「んごねぇ」から 生まれた お姉ちゃん。おんJwiki（ンゴ姉）の 絵に 合わせて：
+// 銀の 長い 髪・頭の 両わきに「ン」「ゴ」の 黄色い 髪どめ・にっこり 閉じた 目（´ ｀）・ヮ の 口・青い セーター。
 walkSheet(
 	"minors_ngoane.png",
 	{
-		K: hex("#2a1a10"),
+		K: hex("#2a1a2a"),
+		H: hex("#dcd6ee"),
+		h: hex("#a89cc8"),
 		Y: hex("#f5d142"),
-		H: hex("#6a3a1e"),
-		h: hex("#4a2612"),
-		F: hex("#ffdcbc"),
-		B: hex("#2a1a10"),
-		M: hex("#b8303a"),
-		O: hex("#f08a3a"),
-		o: hex("#c0602a"),
-		S: hex("#3a2a2a"),
+		F: hex("#ffe0c8"),
+		B: hex("#2a1a2a"),
+		M: hex("#c8404a"),
+		D: hex("#3a5ac8"),
+		d: hex("#2a4096"),
+		S: hex("#3a2a3a"),
 	},
 	{
 		down: [
 			"....KKKKKKKK....",
-			"...KYYYYYYYYK...",
-			"..KYYYYYYYYYYK..",
-			".KKKKKKKKKKKKKK.",
+			"...KHHHHHHHHK...",
+			"..KHHHHHHHHHHK..",
+			".KYHHHHHHHHHHYK.",
+			".KYHFFFFFFFFHYK.",
+			".KHHFBBFFBBFHHK.",
 			".KHHFFFFFFFFHHK.",
-			".KHFFBFFFFBFFHK.",
-			".KHFBFFFFFFBFHK.",
-			".KHFFFKKKKFFFHK.",
+			".KHHFFFKKFFFHHK.",
 			".KHHFFKMMKFFHHK.",
-			".KHHKFFKKFFKHHK.",
-			".KHHHKKKKKKHHHK.",
-			".KHHKOOOOOOKHHK.",
-			"..KKKOoOOoOKKK..",
-			"...KOOOOOOOOK...",
+			".KHHHFFKKFFHHHK.",
+			".KHHHKDDDDKHHHK.",
+			".KHHKDDDDDDKHHK.",
+			".KHKDDdDDdDDKHK.",
+			"..KKDDDDDDDDKK..",
 			...FEET,
 		],
 		up: [
 			"....KKKKKKKK....",
-			"...KYYYYYYYYK...",
-			"..KYYYYYYYYYYK..",
-			".KKYYYYYYYYYYKK.",
+			"...KHHHHHHHHK...",
+			"..KHHHHHHHHHHK..",
+			".KYHHHHHHHHHHYK.",
+			".KYHHHHHHHHHHYK.",
+			".KHHHhHHHHhHHHK.",
 			".KHHHHHHHHHHHHK.",
 			".KHHhHHHHHHhHHK.",
 			".KHHHHHHHHHHHHK.",
-			".KHHhHHHHHHhHHK.",
+			".KHHHhHHHHhHHHK.",
 			".KHHHHHHHHHHHHK.",
 			".KHHhHHHHHHhHHK.",
-			".KHHHHHHHHHHHHK.",
-			".KHHKOOOOOOKHHK.",
-			"..KKKOoOOoOKKK..",
-			"...KOOOOOOOOK...",
+			".KHHHHDDDDHHHHK.",
+			"..KKDDDDDDDDKK..",
 			...FEET,
 		],
 		right: [
 			"....KKKKKKKK....",
-			"...KYYYYYYYYK...",
-			"...KYYYYYYYYYK..",
-			"..KKKKKKKKKKKKKK",
-			"..KHHHHFFFFFFK..",
-			"..KHHHHFFFFBFK..",
-			"..KHHHHFFFFFBK..",
-			"..KHHHHFFFFKKK..",
-			"..KHHHHFFFKMK...",
-			"..KHHHHKFFKKK...",
-			"..KHHHHKKKK.....",
-			"..KHHKOOOOOOK...",
-			"...KKOoOOoOK....",
-			"....KOOOOOOK....",
+			"...KHHHHHHHHK...",
+			"..KHHHHHHHHHHK..",
+			".KHHHHHHHHHHYK..",
+			".KHHHHHFFFFFYK..",
+			".KHHHHHFFFBBFK..",
+			".KHHHHHFFFFFFK..",
+			".KHHHHHFFFFKKK..",
+			".KHHHHHFFFKMK...",
+			".KHHHHHHFFKK....",
+			".KHHHHHKDDK.....",
+			".KHHHHKDDDDK....",
+			".KHHHKDDdDDDK...",
+			"..KKKDDDDDDDK...",
 			...FEET,
 		],
 	},
 	FEET_B,
 );
 
-// パン松 |｀°Ο°´| … 食パン。｀´ の眉、° の目、Ο の口。パン板から おんJを 侵略しに来る。
-const PAN_TOP = ["..KKKKK..KKKKK..", ".KCCCCCKKCCCCCK.", ".KCWWWWWWWWWWCK."];
+// パン松 |｀°Ο°´| … パン板の 食パン。おんJwiki（パン松）の 絵に 合わせて：山型の 耳（上だけ 茶色）の 白い 食パンの 体に
+// 細い 白い 手足・｀´ の 眉・° の 目・Ο の 口（まるい 輪）。パン板から おんJを 侵略しに来る。
+const PAN_TOP = ["...KKKK..KKKK...", "..KCCCCKKCCCCK..", "..KCWWWWWWWWCK.."];
+const PAN_ARMS = "KWKWWWWWWWWWWKWK";
 const PAN_BOTTOM = [
-	".KCCCCCCCCCCCCK.",
-	".KKKKKKKKKKKKKK.",
-	"....KK....KK....",
-	"....KK....KK....",
+	".KKWWWWWWWWWWKK.",
+	"..KWWWWWWWWWWK..",
+	"..KwwwwwwwwwwK..",
+	"..KKKKKKKKKKKK..",
+	"....KWK..KWK....",
+	"....KKK..KKK....",
 ];
-const PLAIN = ".KCWWWWWWWWWWCK.";
+const PLAIN = "..KWWWWWWWWWWK..";
 walkSheet(
 	"minors_panmatsu.png",
 	{
 		K: hex("#3a2210"),
 		C: hex("#c98a3e"),
 		W: hex("#fff3d6"),
+		w: hex("#e8d8b0"),
 		B: hex("#3a2210"),
-		M: hex("#8a3a2a"),
 	},
 	{
 		down: [
 			...PAN_TOP,
-			".KCWBWWWWWWBWCK.",
-			".KCWWBWWWWBWWCK.",
-			".KCWWKWWWWKWWCK.",
+			"..KWBWWWWWWBWK..",
+			"..KWWBWWWWBWWK..",
+			"..KWWKWWWWKWWK..",
 			PLAIN,
-			".KCWWWWKKWWWWCK.",
-			".KCWWWKMMKWWWCK.",
-			".KCWWWWKKWWWWCK.",
-			"KKCWWWWWWWWWWCKK",
-			PLAIN,
+			"..KWWWWKKWWWWK..",
+			"KWKWWWKWWKWWWKWK",
+			"KWKWWWWKKWWWWKWK",
 			...PAN_BOTTOM,
 		],
 		up: [
@@ -559,27 +493,23 @@ walkSheet(
 			PLAIN,
 			PLAIN,
 			PLAIN,
-			PLAIN,
-			PLAIN,
-			"KKCWWWWWWWWWWCKK",
-			PLAIN,
+			PAN_ARMS,
+			PAN_ARMS,
 			...PAN_BOTTOM,
 		],
 		right: [
 			...PAN_TOP,
-			".KCWWWBWWWWWBCK.",
-			".KCWWWWBWWWBWCK.",
-			".KCWWWWKWWWKWCK.",
+			"..KWWBWWWWWBWK..",
+			"..KWWWBWWWBWWK..",
+			"..KWWWKWWWKWWK..",
 			PLAIN,
-			".KCWWWWWWKKWWCK.",
-			".KCWWWWWKMMKWCK.",
-			".KCWWWWWWKKWWCK.",
-			".KCWWWWWWWWWWCKK",
-			PLAIN,
+			"..KWWWWWKKWWWK..",
+			"KWKWWWWKWWKWWKWK",
+			"KWKWWWWWKKWWWKWK",
 			...PAN_BOTTOM,
 		],
 	},
-	["....KK....KK....", "...KK......KK..."],
+	["...KWK....KWK...", "...KKK....KKK..."],
 );
 
 // ヤヤポジ (*^△^*) … ポジハメを ひかえめにした子。青いやきう帽、^ の目、△ の口、* のほっぺ。
@@ -848,87 +778,102 @@ walkSheet(
 );
 
 // ───────────────── ミャウミャウ A/B/C ─────────────────
-// 紙袋頭の小柄な人影（白基調）。公式にデザイン未確定のキャラなので、出会うたび姿が違う。
-// A: まるい目穴 / B: 細い目穴と描かれた口 / C: 高さのそろわない目穴。袋の色も少しずつ変える。
+// おんJwiki（ミャウミャウ）の 絵に 合わせて：紙袋は 服（茶色い 紙袋の ワンピース）。銀の 長い 髪・とがった エルフの 耳・
+// 頭に イカの 胴の ような 頭巾（顔面：ダイオウイカ）・・ワ・ の 顔・はだし。roguelike の minors_miaumiau.png と 同じ 形。
+// 公式にも 絵が 定まっていないので、出会うたび 頭巾・髪・袋の 色が ちがう（A：桃色の 頭巾 / B：白い 頭巾に 垂れた 触手 /
+// C：藤色の 頭巾に「無印」の 帯の 袋）。
 
-const myauSheet = (file, bagPal, face) => {
+const myauSheet = (file, colors, { band = false, tentacles = false } = {}) => {
 	const pal = {
-		K: hex("#3a3630"),
-		C: hex(bagPal[0]), // 紙袋
-		c: hex(bagPal[1]),
-		W: hex("#f4f2ea"), // 体
-		w: hex("#d8d4c8"),
-		B: hex("#201c18"), // 目穴
-		M: hex("#8a4a3a"), // 描かれた口
-		S: hex("#55504a"),
+		K: hex("#3a2a3a"),
+		Q: hex(colors.hood[0]),
+		q: hex(colors.hood[1]),
+		H: hex(colors.hair[0]),
+		h: hex(colors.hair[1]),
+		F: hex("#ffe0c8"),
+		B: hex("#141414"),
+		M: hex("#c84a5a"),
+		G: hex(colors.bag[0]),
+		g: hex(colors.bag[1]),
+		R: hex("#8a2a2a"), // 袋の 帯
+		S: hex("#f2c8a8"), // はだしの 足
 	};
-	const bagTop = [
-		"..KKKKKKKKKKKK..",
-		".KCCCCCCCCCCCCK.",
-		".KCcCCCCCCCCcCK.",
-		".KCCCCCCCCCCCCK.",
+	const hood = [
+		".....KKKKKK.....",
+		"....KQQQQQQK....",
+		"...KQQqQQqQQK...",
+		"..KQQQQQQQQQQK..",
 	];
-	const bagBottom = [
-		".KCcCCCCCCCCcCK.",
-		".KCCCCCCCCCCCCK.",
-		"..KKKKKKKKKKKK..",
+	// 頭巾の ふちから 垂れる 触手（B）
+	const side = tentacles ? "q" : "H";
+	const down = [
+		...hood,
+		".KHHHHHHHHHHHHK.",
+		"FKHFFFFFFFFFFHKF",
+		`.K${side}FBFFFFFFBF${side}K.`,
+		`.K${side}FFFFMMFFFF${side}K.`,
+		`.K${side}HFFFFFFFFH${side}K.`,
+		".KHHKGGGGGGKHHK.",
+		".KHKFGGGGGGFKHK.",
+		band ? ".KHKRRRRRRRRKHK." : ".KHKGGgGGgGGKHK.",
+		"..KKGGGGGGGGKK..",
+		"...KgGgGGgGgK...",
+		...FEET,
 	];
-	const body = [
-		"...KWWWWWWWWK...",
-		"...KWwWWWWwWK...",
-		"...KWWWWWWWWK...",
-		"....KWWWWWWK....",
+	const up = [
+		...hood,
+		".KHHHHHHHHHHHHK.",
+		"FKHHHHHHHHHHHHKF",
+		".KHHhHHHHHHhHHK.",
+		".KHHHHHHHHHHHHK.",
+		".KHHHhHHHHhHHHK.",
+		".KHHHHHHHHHHHHK.",
+		".KHHhHHHHHHhHHK.",
+		".KHHHHHHHHHHHHK.",
+		"..KKGGGGGGGGKK..",
+		"...KgGgGGgGgK...",
+		...FEET,
 	];
-	const plain = [
-		".KCCCCCCCCCCCCK.",
-		".KCCCCcCCCCCCCK.",
-		".KCCCCCCCCCCCCK.",
+	const right = [
+		...hood,
+		".KHHHHHHHHHHHK..",
+		"FKHHHHFFFFFFFK..",
+		".KHHHHFFFFFBFK..",
+		".KHHHHFFFFFFMK..",
+		`.KHHH${side}HFFFFFK...`,
+		".KHHHHKGGGGK....",
+		".KHHHKGGGFGK....",
+		band ? ".KHHKRRRRRRK...." : ".KHHKGGgGGGK....",
+		"..KKGGGGGGGK....",
+		"...KgGgGGgK.....",
+		...FEET,
 	];
-	const dir = (rows) => [...bagTop, ...rows, ...bagBottom, ...body, ...FEET];
-	walkSheet(
-		file,
-		pal,
-		{ down: dir(face.down), up: dir(plain), right: dir(face.right) },
-		FEET_B,
-	);
+	walkSheet(file, pal, { down, up, right }, FEET_B);
 };
 
-myauSheet("myaumyau_a.png", ["#e8dcc0", "#c8b890"], {
-	down: [
-		".KCCBBCCCCBBCCK.",
-		".KCCBBCCCCBBCCK.",
-		".KCCCCCCCCCCCCK.",
-	],
-	right: [
-		".KCCCCCBBCCBBCK.",
-		".KCCCCCBBCCBBCK.",
-		".KCCCCCCCCCCCCK.",
-	],
+myauSheet("myaumyau_a.png", {
+	hood: ["#f2cfe2", "#c88aae"],
+	hair: ["#eceaf4", "#b8b4cc"],
+	bag: ["#b08050", "#8a6038"],
 });
-myauSheet("myaumyau_b.png", ["#ddd2b6", "#bfae86"], {
-	down: [
-		".KCCBBBCCBBBCCK.",
-		".KCCCCCCCCCCCCK.",
-		".KCCCCMMMMCCCCK.",
-	],
-	right: [
-		".KCCCCBBBCBBBCK.",
-		".KCCCCCCCCCCCCK.",
-		".KCCCCCCMMMMCCK.",
-	],
-});
-myauSheet("myaumyau_c.png", ["#d8c8a8", "#b4a078"], {
-	down: [
-		".KCBBCCCCCCCCCK.",
-		".KCCCCCCCCCBBCK.",
-		".KCCCCCCCCCCCCK.",
-	],
-	right: [
-		".KCCCBBCCCCCCCK.",
-		".KCCCCCCCCCBBCK.",
-		".KCCCCCCCCCCCCK.",
-	],
-});
+myauSheet(
+	"myaumyau_b.png",
+	{
+		hood: ["#f6f4f8", "#c8c0d8"],
+		hair: ["#e4e8f2", "#aab0c8"],
+		bag: ["#a87848", "#7e5630"],
+	},
+	{ tentacles: true },
+);
+myauSheet(
+	"myaumyau_c.png",
+	{
+		hood: ["#dccff0", "#a890cc"],
+		hair: ["#f0eef6", "#c0bcd4"],
+		bag: ["#b88a5a", "#906a40"],
+	},
+	{ band: true },
+);
 
 // ───────────────── つくよみちゃん ─────────────────
 // 村の神社の巫女。黒髪のおかっぱ、白い着物、赤い袴、胸元にリボン。

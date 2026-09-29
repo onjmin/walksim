@@ -13,7 +13,7 @@ export const SPR = {
 	lantern: PROPS.lantern,
 
 	// ── 新しく描いた歩行グラ（scripts/make-sprites.mjs） ──
-	/** ミャウミャウ（紙袋頭。出会うたび姿が違うので A/B/C をイベント側で使い分ける） */
+	/** ミャウミャウ（紙袋の 服・イカの 頭巾の エルフ。出会うたび姿が違うので A/B/C をイベント側で使い分ける） */
 	myaumyauA: "pub:sprites/myaumyau_a.png",
 	myaumyauB: "pub:sprites/myaumyau_b.png",
 	myaumyauC: "pub:sprites/myaumyau_c.png",

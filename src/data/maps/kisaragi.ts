@@ -418,7 +418,7 @@ export const kisaragi: MapDef = {
 			run: async (s: Story) => {
 				s.face("player", "down");
 				await s.narrate("むこうのホームに、\nだれか　いる。");
-				await s.narrate("紙袋あたま。……こっちに\n手を　ふっている。");
+				await s.narrate("紙袋の　服。……こっちに\n手を　ふっている。");
 				await s.say("kiriko", "み、ミャウミャウンゴ！\nどうやって　そっちに――");
 				await s.say("myaumyau", "……こっちは　だめぷ");
 				await s.fadeOut(200);

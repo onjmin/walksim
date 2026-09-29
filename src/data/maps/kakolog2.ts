@@ -429,9 +429,9 @@ export const kakolog2: MapDef = {
 					const dx = 17 - s.state.x;
 					s.face("player", dx > 0 ? "right" : dx < 0 ? "left" : "down");
 					await s.narrate(
-						"棚のあいだに、紙袋あたまの\nちいさい人が　立っている。",
+						"棚のあいだに、紙袋の　服を\n着た　ちいさい人が　立っている。",
 					);
-					await s.narrate("（紙袋の下で、なにか\n言っている気がする。）");
+					await s.narrate("（イカの　頭巾の　かげで、なにか\n言っている気がする。）");
 					await s.say("myaumyau", "ぷゆゆ🥺", { name: "？？？" });
 					await s.move("myau2", "d");
 					s.hide("myau2");

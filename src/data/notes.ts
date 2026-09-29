@@ -246,7 +246,7 @@ export const notes: Record<string, NoteDef> = {
 		id: "myaumyau",
 		title: "ミャウミャウ",
 		lines: [
-			"紙袋あたまの、ちいさい人。",
+			"紙袋の　服を　着た、ちいさい人。",
 			"会うたび、すがたが違う。",
 			"侵略者を　自称している。",
 			"……敵意は、感じないンゴ。",
