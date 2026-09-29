@@ -92,17 +92,18 @@ const lightsScene = async (s: Story): Promise<void> => {
 	await s.note("yellow");
 };
 
-// ───────────────── ガイド: テト（3層＋rec_a 反応） ─────────────────
+// ───────────────── テト（去った 側。STORY.md §5.97：就職して 忙しい 名残。3層＋rec_a 反応） ─────────────────
+// 1作目で キリコの 先輩だった テトは、いまは 外で 忙しく 歌っている。この 終わらない 事務所で ひと休み している。
 
 const tetoTalk = async (s: Story): Promise<void> => {
-	// 初回: 椅子の話しかしない（この場所の説明はしない）
+	// 初回: 椅子の話と、忙しい ことだけ（この場所の説明はしない）
 	if (!s.flag("seen_teto")) {
 		s.set("seen_teto");
-		await s.say("teto", "……先客よ。この椅子は\nゆずらないから");
-		await s.say("kiriko", "ここ、会議室か\nなにかンゴ？");
-		await s.say("teto", "待合室……だった気がする。\n……なんの、だったかしら");
-		await s.say("kiriko", "椅子、一きゃくしか\nない……");
-		await s.say("teto", "べ、別に　あんたのぶんを\n用意する筋合い　ないでしょ");
+		await s.say("kiriko", "……テト先輩ンゴ？");
+		await s.say("teto", "……あら。ひさしぶりね");
+		await s.say("teto", "休憩中よ。この椅子は\nゆずらないから");
+		await s.say("kiriko", "おんJ、ぜんぜん\n来なくなったンゴ");
+		await s.say("teto", "べ、別に　忘れてたわけじゃ\nないわよ。……忙しいの");
 		return;
 	}
 	// 考察会話（note_yellow か note_exit8 のあと・1回だけ）: ポスター → 31年 → 椅子でオチ
@@ -113,7 +114,7 @@ const tetoTalk = async (s: Story): Promise<void> => {
 		s.set("seen_teto_kosatsu");
 		await s.say("kiriko", "ここのポスター、だれが\nはってるンゴ？");
 		await s.say("teto", "さあ。はりかえてるところは\n見たこと　ないけど");
-		await s.say("teto", "……31年、見てないわね。\nここに来てから、だけど");
+		await s.say("teto", "……31年くらい　働いてる\n気が　するわ。この事務所");
 		await s.say("kiriko", "31ねん……");
 		await s.say("teto", "べ、別に　長くないでしょ。\n椅子が　いいのよ、椅子が");
 		return;
@@ -121,14 +122,14 @@ const tetoTalk = async (s: Story): Promise<void> => {
 	// レコードAを拾ったあと（1回だけ）
 	if (s.has("rec_a") && !s.flag("seen_teto_rec")) {
 		s.set("seen_teto_rec");
-		await s.say("teto", "……それ、拾ったのね");
-		await s.say("kiriko", "きくンゴ？");
-		await s.say("teto", "……鳴らすなら、外で\n鳴らしてよね");
+		await s.say("teto", "……それ、終電の　人のね");
+		await s.say("kiriko", "スレ、見る　ヒマ\nないって　言ってたンゴ");
+		await s.say("teto", "……ときどき　ROMってる、\nとも　言ってたでしょ");
 		await s.narrate("テトは、椅子ごと　すこし\n背を向けた。");
 		return;
 	}
 	// 待機
-	await s.say("teto", "……椅子、ゆずらないから");
+	await s.say("teto", "……休憩、あと　5分だけ");
 };
 
 // ───────────────── モブ・小物 ─────────────────
@@ -290,8 +291,8 @@ export const yellow: MapDef = {
 				s.set("got_rec_a");
 				await s.narrate("机の上の　黒いレコードを\nひろった。");
 				await s.record("rec_a");
-				// 途切れた日常のあとに、日常の一言（dialogue-guide §3）
-				await s.say("kiriko", "……おふろ、ながいンゴ");
+				// 去った 人の その後に、日常の 一言（dialogue-guide §3）
+				await s.say("kiriko", "……おつかれさまンゴ");
 			},
 		},
 		{

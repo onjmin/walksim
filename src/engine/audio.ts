@@ -75,27 +75,16 @@ const hasIntro = (mml: string): boolean =>
 /**
  * コア音源（ボイスON時に prepareSpeech。DESIGN §5「声の音源」）。
  * キーワードは dtm の lyrics.ts（KOE_VOICEBANKS）のもの。
- * 春音リノは現行版 = rino121（rino は旧 ver0.3）。
+ * 2作目の 村の 仲間（ロゼ・シヨ・アル・リノ）は 3作目に 出ないので 外した（STORY.md §5.97）。
  */
-const CORE_VOICE_MODELS = [
-	"uc",
-	"roze",
-	"rei",
-	"tsukuyomi",
-	"rino121",
-	"teto",
-	"shiyo",
-	"hibika_aru",
-] as const;
+const CORE_VOICE_MODELS = ["uc", "rei", "tsukuyomi", "teto"] as const;
 
 /**
  * カメオ音源（終盤専用。DESIGN §5）。コアと同時に落とすと重いので、
- * 改札が開いた時点（gate_open）でハブ側の演出が prepareCameoVoices を呼ぶ。
- * 用途は ①終点の一斉再生の「本人の声」（rec_a/b/c）②朝のスレの住民の一言。
+ * まちのどおりの 窓の 場面（転。data/maps/street.ts）が prepareCameoVoices を呼ぶ。
+ * 用途は 朝のスレの住民の一言（と、レコードの trueVoice。いまは 使っていない）。
  */
 const CAMEO_VOICE_MODELS = [
-	"ruko_male",
-	"ruko_female",
 	"mgroid",
 	"motroid",
 	"nynroid",
@@ -196,7 +185,7 @@ export type Speaking = {
 let currentAudio: GameAudio | null = null;
 
 /**
- * 歌入りの短い MML を1回だけ流す（終点・解音ゼロの代読歌が使う。
+ * 歌入りの短い MML を1回だけ流す（前の 筋の 解音ゼロの 代読歌が 使っていた。いまは 呼ぶ 所が 無い。
  * data/bgm/zerouta.mml を ?raw で import して渡す）。今の BGM を一時停止し、
  * 歌い終わる（か鳴らせないと分かる）と resolve して元の曲の続きへ戻す。
  * ミュート・BGM OFF・音のアンロック前は何もせずすぐ resolve する。
@@ -205,7 +194,7 @@ export const singOnce = (mml: string): Promise<void> =>
 	currentAudio ? currentAudio.singOnce(mml) : Promise.resolve();
 
 /**
- * カメオ音源の追加読み込み（DESIGN §5。改札が開いた演出＝hub の gate_open が呼ぶ）。
+ * カメオ音源の追加読み込み（まちのどおりの 窓の 場面が 呼ぶ）。
  * 進み具合は {@link GameAudio.voiceProgress} に流す（せっていの「ボイス」欄に出る）。
  * ボイス OFF・音のアンロック前は何もせずすぐ resolve する。
  */
@@ -879,8 +868,8 @@ export class GameAudio {
 	}
 
 	/**
-	 * カメオ音源の準備（DESIGN §5。終点の一斉再生・朝のスレの声）。
-	 * コアと同時に落とすと重いので、改札が開いた時点（gate_open）の演出が呼ぶ。
+	 * カメオ音源の準備（朝のスレの声）。
+	 * コアと同時に落とすと重いので、まちのどおりの 窓の 場面（転）が 呼ぶ。
 	 * 失敗しても進行は止めない：準備できていない声は speak が null を返し、文字だけで進む。
 	 */
 	prepareCameoVoices(

@@ -2,7 +2,7 @@
 // 24×6・dark 0.85・BGM null の一本道＝余白の極限（style-spaces）。
 // 中間で照明が消える（flash 黒 700ms →「――2:45」）。出口ちかくで人影の言及（地の文のみ・実体なし）。
 // s.note: yamanoke（壁の落書き「テン　ソウ　メツ」）。
-// 東 (23,3) → kisaragi (1,7)・西 (0,3) → terminus (13,5)（どちらも両道）。
+// 東 (23,3) → kisaragi (1,7)・西 (0,3) → senro (31,7)（まちの 踏切へ ぬける。STORY.md §5.97）。
 
 import type { GameState, MapDef, Story } from "../../engine/defs";
 import { TUNNEL } from "../tiles-underground";
@@ -15,7 +15,7 @@ const rows = [
 	"########################", // y0
 	"WWWWWWWWWWWWWWWWWWWWWWWW", // y1
 	"wwwwwwwwwwwwwwwwwwwwwwww", // y2  落書き (7,2)・照明 (9,2)・水音 (14,2)・たいひこう (16,2)・プレート (19,2)
-	"tttttttttttttttttttttttt", // y3  西 (0,3) → terminus ／ 東 (23,3) → kisaragi
+	"tttttttttttttttttttttttt", // y3  西 (0,3) → senro（まちの 踏切）／ 東 (23,3) → kisaragi
 	"WWWWWWWWWWWWWWWWWWWWWWWW", // y4
 	"########################", // y5
 ];
@@ -41,14 +41,16 @@ export const tunnel: MapDef = {
 				await s.warp("kisaragi", 1, 7, "right");
 			},
 		},
+		// 西の 口は、まちの せんろぞいの 踏切へ ぬける（板の 名残から 町へ 歩いて もどる。STORY.md §5.97）
 		{
-			id: "to_terminus",
+			id: "to_senro",
 			x: 0,
 			y: 3,
 			trigger: "touch",
 			through: true,
 			run: async (s) => {
-				await s.warp("terminus", 13, 5, "left");
+				await s.narrate("トンネルを　ぬけると、\n見おぼえの　ある　踏切だった。");
+				await s.warp("senro", 31, 7, "down");
 			},
 		},
 

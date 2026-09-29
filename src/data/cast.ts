@@ -1,16 +1,26 @@
 // 登場人物（DESIGN §5）。歩行グラは RPGEN 形式（16x16・2コマ×4方向）。
-// 新キャラ（ネムリン・ミャウミャウ・つくよみちゃん・八尺様・リノ・シヨ・アル・ゼロ・アイ・うしろ）は
+// 2作目の 村の 仲間（ロゼ・シヨ・ゼロ・アル・リノ）は 3作目には 出ない（STORY.md §5.97）。
+// 新キャラ（ネムリン・ミャウミャウ・つくよみちゃん・八尺様・アイ・うしろ）は
 // scripts/make-sprites.mjs で作った仮グラ。
 // 立ち絵（portrait.src）は public/portraits/ に透過 PNG を置けば表示される。無ければダミー表示。
 // 立ち絵は右向きで描けば、右側に立つときは自動で左右反転する（ui/message.ts）。
-// 声（voice）はコア8音源 uc / roze / rei / tsukuyomi / rino121 / teto / shiyo / hibika_aru
-// （engine/audio.ts の CORE_VOICE_MODELS と合わせる。春音リノの現行版キーワードは rino121）。
+// 声（voice）はコア4音源 uc / rei / tsukuyomi / teto（engine/audio.ts の CORE_VOICE_MODELS と合わせる）。
 
 import type { CharDef } from "../engine/defs";
 
 const c = (d: CharDef) => d;
 
 export const cast: Record<string, CharDef> = {
+	/**
+	 * やきう（名無しの おんJ民。猛虎弁。UTAU の 声は 無い）。2作目の 結末で 外へ 出た。
+	 * 3作目では 夜明けの うみべの ベンチで スマホの 保守村の スレを 見ている（STORY.md §5.9）。
+	 */
+	nanj: c({
+		id: "nanj",
+		name: "やきう",
+		walk: "sa:4rSOzo",
+		color: "#f5d142",
+	}),
 	/** 主人公。一人称「吾輩」・語尾「ンゴ」。夢の中では口数少なめ。 */
 	kiriko: c({
 		id: "kiriko",
@@ -66,15 +76,6 @@ export const cast: Record<string, CharDef> = {
 		walk: "pub:sprites/mujje.png",
 		color: "#d8352a",
 	}),
-	/** 終点で待つ先輩。「〜アル」。 */
-	roze: c({
-		id: "roze",
-		name: "ロゼ",
-		walk: "sa:mHhx69",
-		color: "#ff6f91",
-		voice: { model: "roze" },
-		portrait: { src: "portraits/roze.png", side: "right" },
-	}),
 	/**
 	 * 駅の自動アナウンス。レコードの朗読音声もレイの機械音声。
 	 * 姿はマップに出さない（歩行グラは rpg と同じものを念のため引き当てておく）。
@@ -114,47 +115,6 @@ export const cast: Record<string, CharDef> = {
 		voice: { model: "teto" },
 		portrait: { src: "portraits/teto.png", side: "right" },
 	}),
-	/** 過去ログの地層の小さな食堂の女将。45歳・伊勢出身。生活感のある落ち着き。 */
-	rino: c({
-		id: "rino",
-		name: "リノ",
-		walk: "pub:sprites/rino.png",
-		portrait: { src: "portraits/rino.png", side: "right" },
-		color: "#c88a5a",
-		voice: { model: "rino121" },
-	}),
-	/**
-	 * hub の壊れた自販機に小銭を入れ続けている。16歳・ツンデレ・一人称「あたす」。
-	 * 照れ・動揺の瞬間だけ津軽弁が一瞬漏れる。
-	 */
-	shiyo: c({
-		id: "shiyo",
-		name: "シヨ",
-		walk: "sa:y8Kr53",
-		portrait: { src: "portraits/shiyo.png", side: "right" },
-		color: "#cfa236",
-		voice: { model: "shiyo" },
-	}),
-	/** hub の開かないエレベーターを調べている科学部の18歳。計測はするが説明はしない。 */
-	aru: c({
-		id: "aru",
-		name: "アル",
-		walk: "pub:sprites/aru.png",
-		portrait: { src: "portraits/aru.png", side: "right" },
-		color: "#7ab8d4",
-		voice: { model: "hibika_aru" },
-	}),
-	/**
-	 * 筆談アンドロイド（声のないUTAU・史実）。セリフは全て
-	 * 「（スケッチブックを見せている）」形式＋地の文なので voice は持たない。
-	 */
-	zero: c({
-		id: "zero",
-		name: "ゼロ",
-		walk: "sa:KxS5YZ",
-		portrait: { src: "portraits/zero.png", side: "right" },
-		color: "#8ab0e8",
-	}),
 	/**
 	 * 2日で消えた3番目の企画（史実）。お絵かき掲示板の「描きかけの絵」の正体。
 	 * 台詞は遺構の2行だけ。声は無い。
@@ -177,7 +137,7 @@ export const cast: Record<string, CharDef> = {
 	}),
 	/**
 	 * 朝のスレの「名無しさん」の声その1（クッキー☆由来の UTAU。声のみ使用・DESIGN §5）。
-	 * 姿はマップに出さない（terminus の朝の書き込みを noPortrait＋名前欄「名無しさん」で読む。
+	 * 姿はマップに出さない（キリコの 部屋の 朝の スレの 書き込みを noPortrait＋名前欄「名無しさん」で読む。
 	 * 歩行グラは念のため同梱の汎用グラを引き当てておく）。
 	 */
 	mgroid: c({

@@ -11,8 +11,9 @@
 //   深夜 … NPC 0体必達。灯台のあかりだけの海。防波堤のふちに すわれる（seen_suwari_umi）。
 //           脇道の違和感は一つだけ: 沖のあかり（seen_umi_okibi。まばたきで消える・いさり火かも）
 //   朝   … 漁船がかえってくる。NPC 4体（あみ番・つり人・ジョギングの人・…船は音と文）。
-//           エンディングの帰り道を兼ねる: terminus → umi (42,17) 左向き・tod="asa"・ending_ready で
-//           トンネルから歩いて出てくる（yoake_arrive）。そのまま坂をのぼって町へ帰る
+//           結（STORY.md §5.5・§5.9）：まちのどおりの 窓の 場面（転）の あと、団地の 坂を くだって 来る
+//           （tod="asa"・ending_ready）。坂で 辞めた 人（早番）と すれ違い（yoake_arrive）、
+//           駅の ベンチの やきうの となりで「保守」と 書いて おわる（yakiu_end → まとめカード）
 //
 // 座標: 北 (20,0)→danchi(15,22)・danchi からの着地 (20,1) 下向き。
 // 線路 y17（x35〜42 が歩ける）。(43,17) はトンネルの口（決してワープしない・一歩押しもどす）。
@@ -26,7 +27,16 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
-import { kanHeld, kanLine, kanTick, yoruAkubi, yoruClock } from "../nostalgia";
+import {
+	kanHeld,
+	kanLine,
+	kanTick,
+	NIKKI_TITLE,
+	nikkiSummary,
+	yoruAkubi,
+	yoruClock,
+} from "../nostalgia";
+import { ALL_RECORDS } from "../records";
 import { base, DOOR, FIELD, JP, TOWN, WALL, WIN } from "../tiles";
 import { STN } from "../tiles-station";
 
@@ -272,7 +282,8 @@ export const umi: MapDef = {
 		else if (t === "asa") s.se("suzume", { pan: -0.3, volume: 0.6 });
 	},
 	events: [
-		// ── 夜明け（terminus から歩いて帰ってきた朝。ほかの arrive より先に置く） ──
+		// ── 夜明け（窓の 場面の あと、団地の 坂を くだって 来た 朝。ほかの arrive より先に置く） ──
+		// 結①：辞めた 人（レコード「早番」の 声の 主）と すれ違う。もう 何も 見ていない。キリコにも 気づかない
 		{
 			id: "yoake_arrive",
 			x: 4,
@@ -286,21 +297,72 @@ export const umi: MapDef = {
 			run: async (s) => {
 				s.set("seen_yoake_umi");
 				await s.wait(800);
-				if (s.flag("seen_kaeri") === "train") {
-					await s.narrate("トンネルの　出口で、\nレールの上に　おりた。");
-				} else {
-					await s.narrate("トンネルを　ぬけると、\nレールの先に　海があった。");
-				}
-				await s.narrate("空の　はしっこが、\nしろく　なっている。");
+				await s.narrate("坂を　くだると、\n海が　しろく　ひかっていた。");
 				s.se("tick", { volume: 0.7 });
 				await s.wait(500);
-				s.se("tick", { volume: 0.7 });
-				await s.narrate("ホームの時計の、秒針が\nうごいている。");
-				await s.narrate("とおくで、漁船の\nエンジンの音。");
-				await s.wait(500);
-				await s.say("kiriko", "……かえるンゴ");
+				await s.narrate("ジョギングの　人が、\n坂を　のぼってくる。");
+				await s.say(null, "……今日も　早番や", {
+					name: "ジョギングの人",
+					noPortrait: true,
+				});
+				await s.narrate("……夜に、レコードで\n聞いた　声だった。");
+				await s.say("kiriko", "……おはようンゴ");
+				await s.narrate("会釈だけして、\n坂を　のぼっていった。");
+				await s.narrate("とおくの　駅の　ベンチに、\nだれか　すわっている。");
 			},
 		},
+		// 結②（頂点）：駅の ベンチの やきう。キリコが 外から「保守」と 書く → まとめカード
+		npc(
+			"yakiu_end",
+			39,
+			15,
+			"char:nanj",
+			async (s) => {
+				await s.narrate("野球帽の　人が、朝つゆも\n気に　せず　すわっている。");
+				await s.narrate("スマホの　画面に、\n保守村の　スレ。");
+				await s.say("nanj", "おう。……早いな");
+				await s.say("kiriko", "……やきうンゴ");
+				await s.narrate("保守村で　いちばん　長く\n保守していた、名無しの　おんJ民。");
+				await s.say("nanj", "外で　見とる　言うたやろ");
+				await s.narrate("キリコは、となりに\nすわった。");
+				await s.narrate("スマホを　だして、\n書きこんだ。「保守」");
+				s.se("item");
+				await s.narrate("やきうの　画面に、\nレスが　ひとつ　ふえた。");
+				await s.say("nanj", "……草");
+				await s.wait(700);
+				await s.narrate("漁船の　エンジンの　音が、\nちかづいてくる。");
+				s.set("seen_hoshu_end");
+				s.set("clear");
+				s.set("ending_seen");
+				const recs = ALL_RECORDS.filter((id) => s.has(id) > 0).length;
+				const myau = ["seen_myau1", "seen_myau2", "seen_myau3"].filter(
+					(f) => !!s.flag(f),
+				).length;
+				const lines = [
+					`レコード　${recs}まい`,
+					`ミャウミャウ目撃　${myau}かい`,
+				];
+				if (s.flag("found_miniwai")) lines.push("ミニワイに　会った（もきゅ）");
+				if (s.flag("seen_yobigoe_reply")) lines.push("呼び声に　へんじをした");
+				else if (s.flag("note_yobigoe")) lines.push("呼び声に　だまっていた");
+				lines.push("やきうの　となりで　保守した");
+				await s.ending({
+					summary: {
+						sections: [
+							{ title: NIKKI_TITLE, lines: nikkiSummary(s) },
+							{ title: "こんやの　きろく", lines },
+						],
+					},
+				});
+			},
+			{
+				dir: "up",
+				when: (st) =>
+					st.flags.tod === "asa" &&
+					!!st.flags.ending_ready &&
+					!st.flags.seen_hoshu_end,
+			},
+		),
 
 		// ── 着いたとき（時間帯ごとに一度だけ） ──
 		{
@@ -904,6 +966,10 @@ export const umi: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "asa") {
+					if (s.flag("seen_hoshu_end")) {
+						await s.narrate("ベンチに、朝つゆ。\n……ふたりぶん、かわいている。");
+						return;
+					}
 					await s.narrate("ベンチに、朝つゆ。\nすわるのは、やめておく。");
 					return;
 				}
@@ -1096,7 +1162,11 @@ export const umi: MapDef = {
 				}
 				await s.narrate("坂の下で、ひとつ\nのびを　していった。");
 			},
-			{ wander: true, when: (st) => st.flags.tod === "asa" },
+			// 結の 朝は 出さない（坂で すれ違った 辞めた 人と 重ねない）
+			{
+				wander: true,
+				when: (st) => st.flags.tod === "asa" && !st.flags.ending_ready,
+			},
 		),
 	],
 };

@@ -1,7 +1,7 @@
 // きさらぎ駅（きさらぎ線・無人ホーム→線路歩き）。DESIGN §4・content-briefs「line:」。
 // 30×12 横長のフィルムストリップ。BGM null・ambient static 弱・outside 純黒（style-spaces）。
 // 原典の時刻進行を地の文で刻む: ――0:25（駅名標）→ 1:12（線路へ）→ 1:30（太鼓と鈴）→ 2:09（片足の老人）。
-// レイのアナウンスはレコード枚数で揺らぐ（DESIGN §5 縦糸）。末尾に右パン小音量の「ぽ」（考察バイト技法7）。
+// 板の 名残「別の 掲示板へ 移った 人」（STORY.md §5.97。レコード rec_d）。レイ（去った 側）のアナウンスはレコード枚数で揺らぐ。末尾に右パン小音量の「ぽ」（考察バイト技法7）。
 // 信号灯の長短パターンは和文モールスで「ミツケテクレテ アリガトウ」（技法2。答え合わせはしない。
 // テキストに書き起こすのは冒頭の1組だけ＝採譜はプレイヤーの仕事。規則のヒントはクレジットに1行）。
 // s.note: kisaragi（駅名標）・mary（電話に出た）・taiko・oldman・myaumyau（目撃③）・
@@ -10,6 +10,7 @@
 
 import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
 import type { Dir } from "../../engine/types";
+import { ALL_RECORDS } from "../records";
 import { SPR } from "../sprites";
 import { KISARAGI, STN } from "../tiles-station";
 
@@ -103,9 +104,7 @@ export const kisaragi: MapDef = {
 			run: async (s: Story) => {
 				s.set("seen_housou");
 				await s.wait(300);
-				const recs = ["rec_a", "rec_b", "rec_c"].filter(
-					(id) => s.has(id) > 0,
-				).length;
+				const recs = ALL_RECORDS.filter((id) => s.has(id) > 0).length;
 				if (recs >= 3) {
 					await announce(s, "本日の……　運行は、\n終了　しました");
 					await announce(s, "おかえりは――");
@@ -117,6 +116,25 @@ export const kisaragi: MapDef = {
 				await announce(s, "本日の　運行は\n終了しました");
 			},
 		})),
+
+		// ── レコード「あっちの実況」（ホームの 柱の 手前。別の 掲示板へ 移った 人の 名残。STORY.md §5.97） ──
+		{
+			id: "rec_d_ev",
+			x: 11,
+			y: 4,
+			sprite: SPR.record,
+			trigger: "talk",
+			fixedDir: true,
+			when: (st: GameState) => !(st.items.rec_d ?? 0),
+			run: async (s: Story) => {
+				s.se("item");
+				s.give("rec_d");
+				s.set("got_rec_d");
+				await s.narrate("ホームに、黒いレコード。\nまだ、すこし　あたたかい。");
+				await s.record("rec_d");
+				await s.say("kiriko", "……あっちで、元気ンゴ");
+			},
+		},
 
 		// ── 駅名標（――0:25。note kisaragi） ──
 		{

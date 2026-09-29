@@ -1,8 +1,8 @@
-// 終電（きさらぎ線・車内）。DESIGN §4・content-briefs「line: train / kisaragi / tunnel / terminus」。
+// 終電（きさらぎ線・車内）。DESIGN §4・content-briefs「line: train / kisaragi / tunnel」。板の 名残「別の 掲示板へ 移った 人」（STORY.md §5.97）。
 // 14×6。hub の改札から乗る（着地 (2,3)）。眠る乗客×5（起きない）。
 // タイムスタンプ「――23:14」で目がさめる。レイのアナウンス（voice rei）のあと、
 // 東のドア (12,3) から降車 → kisaragi (4,4)。**片道**（うしろの車両のドアは開かない。
-// 電車は きさらぎ駅で去る。帰りは 終点から線路づたいに歩いて、海ぞい（umi）へ出る。地続き）。
+// 電車は きさらぎ駅で去る。帰りは トンネルを ぬけて、まちの せんろぞいの 踏切へ 出る。地続き）。
 // s.note: saruyume（乗客の寝言）・isanuki（窓の外の駅名。kisaragi 西端の看板でも呼ぶ）。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";

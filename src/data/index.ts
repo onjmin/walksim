@@ -19,7 +19,6 @@ import { senro } from "./maps/senro";
 import { street } from "./maps/street";
 import { sumire } from "./maps/sumire";
 import { suupaa } from "./maps/suupaa";
-import { terminus } from "./maps/terminus";
 import { tonarimachi } from "./maps/tonarimachi";
 import { train } from "./maps/train";
 import { tunnel } from "./maps/tunnel";
@@ -58,7 +57,6 @@ export const data: GameData = {
 		train,
 		kisaragi,
 		tunnel,
-		terminus,
 		debug,
 	},
 	cast,
@@ -113,24 +111,11 @@ export const data: GameData = {
 		"　公式の利用規約に　したがっています）",
 		"https://tyc.rei-yumesaki.net/",
 		"",
-		"春音リノ（音源 rino121）",
-		"https://harunerino.vercel.app/",
-		"",
-		"革命シヨ",
+		"革命シヨ（スレの　書きこみ）",
 		"https://kakumeisiyo.my.canva.site/dagkuyjwycs",
 		"",
-		"響化アル",
-		"https://hibikaaru.wixsite.com/aruofficial/利用規約",
-		"",
-		"解音ゼロ",
-		"（声の収録がない UTAU 企画。本作では",
-		"　音声合成を使わず、筆談キャラクター",
-		"　として登場します）",
-		"https://zero-tokine-test.my.canva.site",
-		"おーぷん2ちゃんねるの企画スレのみなさん",
-		"",
-		"欲音ルコ♂・♀（終盤のカメオ音声）",
-		"https://long-sleeper.net/index.php?id=22",
+		"やきう（なんJ・おんJ の　名無し）",
+		"なんJ・おんJ のみんな",
 		"",
 		"MGRoid・MOTRoid・NYNRoid",
 		"（クッキー☆由来の UTAU 音源。終盤の",
@@ -144,7 +129,7 @@ export const data: GameData = {
 		"（おんJwiki 出典の　非公式ファン創作）",
 		"なんJ・おんJ のみんな",
 		"",
-		"優音アイ・君野うしろ・雲地アル",
+		"優音アイ・君野うしろ",
 		"（おんJ・おーぷん2ちゃんねるの企画スレ発",
 		"　キャラクターの　非公式ファン創作）",
 		"",

@@ -187,7 +187,7 @@ export type ItemDef = {
 };
 
 /**
- * レコード盤（消えたおんJ民の「最終レス」）。Story.record(id) が再生する。
+ * レコード盤（去った おんJ民の、今夜の 声。STORY.md §4.5）。Story.record(id) が再生する。
  * 入手は各マップのスクリプトが give で行い、持ちものとしては items に入る
  * （id は data/index.ts の items にも同じ id で登録しておく）。
  */
@@ -198,11 +198,11 @@ export type RecordDef = {
 	/** 朗読の声（省略すると声なしで文字だけ）。 */
 	voice?: { model: string; pitchOffset?: number };
 	/**
-	 * 「本人の声」（DESIGN §6）。終点・供養スレ駅の一斉再生
+	 * 「本人の声」（Story.record の opt.trueVoice で使う。前の 筋の 終点の 一斉再生の 名残
 	 * （Story.record の opt.trueVoice）でだけ、voice の代わりに使う。
 	 */
 	trueVoice?: { model: string; pitchOffset?: number };
-	/** 日付表記（「2021/03/15(月) 03:0X」風）。再生中は名前欄に出る。 */
+	/** 日付表記（「2032/03/16(火) 01:12」風）。再生中は名前欄に出る。 */
 	date: string;
 	/** 本文（1要素 = メッセージ窓1枚。全角22字×2行まで）。 */
 	lines: string[];
@@ -314,7 +314,7 @@ export type Story = {
 	/**
 	 * レコード再生演出（回転ノイズSE → 音声つき朗読 → 針の上がる音）。
 	 * data/records.ts の定義を再生する共通処理。
-	 * opt.trueVoice は終点の一斉再生専用：レコードに trueVoice があれば
+	 * opt.trueVoice は「本人の声」で 鳴らすとき：レコードに trueVoice があれば
 	 * 「本人の声」で読む（DESIGN §6）。
 	 */
 	record(id: string, opt?: { trueVoice?: boolean }): Promise<void>;

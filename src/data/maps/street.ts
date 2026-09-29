@@ -10,8 +10,11 @@
 //   深夜  … 無人（NPC 0体・必達）。時計は全部 2:00（2つ目で s.note("nisen")）。
 //           囲いが駅の入口に変わっている（触れると hub へ）。違和感はこの3系統だけ
 //   朝    … 光と音が戻る。NPC 5体・セリフ全差し替え・setup/payoff の対（§4）。
-//           囲いの前のイベントが flags.ending_ready でエンディング（まとめカードは
-//           旧 terminus.ts の組み立てをそのまま移設。帰り方はフラグ seen_kaeri を読む）
+//
+// 物語（STORY.md §5.5）：夕方の 地の文で「キリコが 外の 町で 暮らしはじめた」ことを はっきり 言う。
+// 深夜の バス停で レコード「早番」（rec_q。辞めた 人）。rec_q と 板の 名残の レコード 2枚で、
+// 深夜の この 通りで「窓」の 場面（転：声の 主たちは 窓の むこうで 暮らしていた）→ 夜明け（tod="asa"・
+// ending_ready）→ うみべへ（結は umi.ts）。
 //
 // 座標凍結v2: (2,9)→apart(10,5)／apart 階段→(2,10)／東端の駅入口 (28,10)→hub(10,12)
 // （深夜のみ）／hub 南口→(27,10)。開始位置は (24,10) 西向き（data/index.ts）。
@@ -32,15 +35,16 @@ import type {
 	Story,
 	TileDef,
 } from "../../engine/defs";
+import { prepareCameoVoices } from "../../engine/audio";
+import { settings } from "../../engine/settings";
 import { npc, warp } from "../helpers";
 import {
 	kanShinya,
 	kanTick,
-	NIKKI_TITLE,
-	nikkiSummary,
 	yoruAkubi,
 	yoruClock,
 } from "../nostalgia";
+import { EPISODE_RECORDS } from "../records";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
@@ -302,39 +306,50 @@ const tenshuAsa = async (s: Story): Promise<void> => {
 	});
 };
 
-// ── エンディング（朝・囲いの前。まとめカードは旧 terminus.ts の組み立てを移設） ──
+// ── 転：窓（STORY.md §5.5・§5.97）。rec_q と 板の 名残の レコード 2枚で 開く ──
 
-const endingAtKakoi = async (s: Story): Promise<void> => {
-	s.face("player", "right");
-	await s.wait(400);
-	await s.narrate("囲いのむこうから、\n工事の音がしている。");
+/** 窓の 場面を 見られるか（深夜・早番の レコードと 名残の レコード 2枚・まだ 見ていない）。 */
+export const madoReady = (st: GameState): boolean =>
+	st.flags.tod === "shinya" &&
+	!st.flags.seen_mado &&
+	(st.items.rec_q ?? 0) > 0 &&
+	EPISODE_RECORDS.filter((id) => (st.items[id] ?? 0) > 0).length >= 2;
+
+const mado = async (s: Story): Promise<void> => {
+	s.set("seen_mado");
 	await s.wait(600);
-	await s.say("kiriko", "……朝めし、たべるンゴ");
-	s.set("clear");
-	s.set("ending_seen");
-	// まとめカード（帰り方は terminus が s.set("seen_kaeri", "walk"|"train") で残す）
-	const recs = ["rec_a", "rec_b", "rec_c", "rec_last"].filter(
-		(id) => s.has(id) > 0,
-	).length;
-	const myau = ["seen_myau1", "seen_myau2", "seen_myau3"].filter(
-		(f) => !!s.flag(f),
-	).length;
-	const lines = [`レコード　${recs}まい`, `ミャウミャウ目撃　${myau}かい`];
-	if (s.flag("found_miniwai")) lines.push("ミニワイに　会った（もきゅ）");
-	if (s.flag("seen_yobigoe_reply")) lines.push("呼び声に　へんじをした");
-	else if (s.flag("note_yobigoe")) lines.push("呼び声に　だまっていた");
-	lines.push(
-		s.flag("seen_kaeri") === "train" ? "終電で　帰った" : "あるいて　帰った",
-	);
-	// 先頭に「きのうの　にっき」（宵の一行・消しゴムのあと・まっさら のどれか。1〜2行・数は出さない）
-	await s.ending({
-		summary: {
-			sections: [
-				{ title: NIKKI_TITLE, lines: nikkiSummary(s) },
-				{ title: "こんやの　きろく", lines },
-			],
-		},
-	});
+	await s.narrate("まちのどおりの　窓に、\nあかりが　ついていた。");
+	await s.narrate("ひとつ、また　ひとつ。\n……時計は、2:00の　ままなのに。");
+	// 拾った レコードの 声の 主（名残の 4話）
+	if (s.has("rec_a") > 0)
+		await s.narrate("二階の　窓。\nネクタイを　ほどく　かげ。");
+	if (s.has("rec_b") > 0)
+		await s.narrate("となりの　窓。\n赤ちゃんを　あやす　声。");
+	if (s.has("rec_c") > 0)
+		await s.narrate("角の　家。\n釣りざおを　そろえる　音。");
+	if (s.has("rec_d") > 0)
+		await s.narrate("むかいの　窓。\n画面の　光と、ちいさな　笑い声。");
+	// 名残を 使わない 去り方（受験・鯖・ミスキー。STORY.md §4.5）
+	await s.narrate("机の　あかり。\n単語帳を　めくる　音。");
+	await s.narrate("ヘッドホンごしの　声が、\n窓の　むこうで　笑っている。");
+	await s.narrate("みじかい　文を　打っては、\n消している　指。");
+	// 辞めた 人（早番）：夜明けに うみべで すれ違う
+	await s.narrate("……ひとつ、あかりが　消えた。\n玄関で、くつひもを　むすぶ　音。");
+	// 朝の スレの 住民の 声（カメオ音源）を ここで 読み込む（ボイス OFF なら 何もしない）
+	if (settings.voice) {
+		const ready = prepareCameoVoices();
+		await s.narrate("（窓の　むこうで、いくつもの\n声が　めを　さましていく――）");
+		await ready.catch(() => {});
+	}
+	await s.wait(500);
+	await s.say("kiriko", "……みんな、窓の　むこうに\nいたンゴ");
+	await s.narrate("レコードの　声の　主は、\nこの　町で　くらしていた。");
+	await s.wait(700);
+	await s.narrate("空の　はしっこが、\nしろく　なってきた。");
+	await s.say("kiriko", "……海、見にいくンゴ");
+	s.set("tod", "asa");
+	s.set("ending_ready");
+	await s.warp("street", s.state.x, s.state.y, s.state.dir, { fade: true });
 };
 
 export const street: MapDef = {
@@ -400,6 +415,7 @@ export const street: MapDef = {
 				s.se("chime17");
 				await s.wait(1600);
 				await s.narrate("――チャイムが、\n鳴りおわった。");
+				await s.narrate("キリコが　おんJを　出て、\n外の　町で　暮らしはじめて　ひと月。");
 				await s.say("kiriko", "はらへったンゴ。晩ごはん\n買って、帰るンゴ");
 			},
 		},
@@ -583,15 +599,33 @@ export const street: MapDef = {
 		...waveBelt("wave_m", 14, 0),
 		...waveBelt("wave_e", 21, 0.4),
 
-		// ── エンディング（朝・囲いの手前。terminus の書き換えが ending_ready を立てる） ──
+		// ── レコード「早番」（深夜の バス停の よこ。辞めた 人の 声。STORY.md §4.5） ──
 		{
-			id: "ending_ev",
-			x: 27,
-			y: 10,
-			trigger: "touch",
-			through: true,
-			when: (st) => st.flags.tod === "asa" && !!st.flags.ending_ready,
-			run: endingAtKakoi,
+			id: "rec_q_ev",
+			x: 22,
+			y: 12,
+			sprite: SPR.record,
+			trigger: "talk",
+			fixedDir: true,
+			when: (st) => st.flags.tod === "shinya" && !(st.items.rec_q ?? 0),
+			run: async (s) => {
+				await s.narrate("バス停の　よこに、\n黒いレコードが　おいてある。");
+				s.se("item");
+				s.give("rec_q");
+				s.set("got_rec_q");
+				await s.record("rec_q");
+				await s.say("kiriko", "……いってらっしゃいンゴ");
+			},
+		},
+		// ── 転：窓（深夜。早番の レコードと 名残の レコード 2枚で。エンディングは umi.ts） ──
+		{
+			id: "mado_ev",
+			x: 5,
+			y: 0,
+			trigger: "auto",
+			once: true,
+			when: madoReady,
+			run: mado,
 		},
 
 		// ── 夕方の人たち（くだらない雑談だけ。説明しない） ──

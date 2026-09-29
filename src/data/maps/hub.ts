@@ -1,22 +1,16 @@
-// 回線の間（無人駅の待合室・拠点）。DESIGN §4・§5 縦糸・content-briefs 品質ノルマ＋hub 小ネタ。
-// 20×14。東に閉じた改札（回送表示）、西に開かないエレベーター、
-// 南は黒の海にうかぶ売店と一本道の廊下。廊下の西はしの階段は、さらに下（過去ログの地層）へ。
-// 2026-09-28 作者指示「walksim は地続き」: 北壁の扉3つ（黄色い部屋・夕暮れの村・過去ログの地層へ飛ぶ）は
-// やめた。黄色い部屋は こくどうのファミレスの通用口、夕暮れの村は やまみちの峠、過去ログの地層は
-// この駅の下へ、それぞれ歩いてつながる。
+// 回線の間（無人駅の待合室）。板の 名残（オムニバス）の 入口の 待合室（STORY.md §5.97）。
+// 20×14。東に改札（終電は いつでも 来る → きさらぎ駅の 名残）、西に開かないエレベーター、
+// 南は黒の海にうかぶ売店と一本道の廊下。廊下の西はしの階段は、さらに下（過去ログの地層の 名残）へ。
+// 黄色い部屋は こくどうのファミレスの通用口、夕暮れの村は やまみちの峠から、それぞれ歩いてつながる。
 // 座標は凍結（COORDINATE FREEZE）:
 //   下り階段 touch (2,11)→kakolog2(3,2)、kakolog2 からの戻り位置 (3,11)
-//   南扉 touch (10,13)→street(27,10)（座標凍結v2: 旧 room 行きを差し替え）、street からの戻り位置 (10,12)
-//   東改札 touch (18,7)→train(2,3)（gate_open のときだけ）
-// 縦糸: ネムリン（改札の番人・ノート数で3段階）／響化アル（西のエレベーターを計測）／
-// 革命シヨ（自販機。改札が開くと消えて小銭が残る）／ロゼ（レコード1・2・3枚でベンチに現れる）／
-// つくよみちゃん（改札が開いた夜、お守りに鈴を結ぶ）。
-// クリア後: ベンチに無題のレコード『　』（bgm "kowareta" は音響担当が bgm.ts に追加する）。
+//   南扉 touch (10,13)→street(27,10)、street からの戻り位置 (10,12)
+//   東改札 touch (18,7)→train(2,3)
+// 人：ネムリン（改札の番人・ノート数で3段階）。2作目の 村の 仲間（ロゼ・シヨ・アル）は 3作目には 出ない。
+// クリア後: ベンチに無題のレコード『　』（bgm "kowareta"）。
 
-import { prepareCameoVoices } from "../../engine/audio";
 import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
 import { hasClearMark } from "../../engine/save";
-import { settings } from "../../engine/settings";
 import { npc, warp } from "../helpers";
 import { notes } from "../notes";
 import { SPR } from "../sprites";
@@ -53,127 +47,31 @@ const rows = [
 const announce = (s: Story, text: string) =>
 	s.say("rei", text, { name: "アナウンス", noPortrait: true });
 
-/** 持っているレコードの枚数（0〜3）。 */
-const recCount = (st: GameState): number =>
-	((st.items.rec_a ?? 0) > 0 ? 1 : 0) +
-	((st.items.rec_b ?? 0) > 0 ? 1 : 0) +
-	((st.items.rec_c ?? 0) > 0 ? 1 : 0);
-
-/** ロゼのベンチの場面を何回見たか（seen_roze。0〜3）。 */
-const rozeSeen = (st: GameState): number => {
-	const v = Number(st.flags.seen_roze ?? 0);
-	return Number.isFinite(v) ? v : 0;
-};
-
 /** かいいノートの発見数。 */
 const noteCount = (st: GameState): number =>
 	Object.keys(notes).filter((id) => !!st.flags[`note_${id}`]).length;
 
 const NOTE_TOTAL = Object.keys(notes).length;
 
-// ───────────────── ロゼ（ベンチの場面 ×3。DESIGN §5 縦糸） ─────────────────
+// ───────────────── 改札（終電は いつでも 来る。はじめての 夜だけ アナウンス） ─────────────────
 
-const roze1 = async (s: Story): Promise<void> => {
-	await s.wait(400);
-	await s.narrate("ベンチに、しらない女の人が\nすわっている。");
-	await s.say("kiriko", "……あの、ここの人ンゴ？");
-	await s.say("roze", "ちがうアル");
-	s.face("roze_ev", "right");
-	await s.narrate("改札のほうを、じっと\n見ている。");
-	await s.say("roze", "……まだ、鳴らないアル");
-	s.hide("roze_ev");
-	await s.narrate("つぎに　まばたきしたとき、\nもう　いなかった。");
-	s.set("seen_roze", 1);
-	// hide の印は消しておく（次の場面で when がまた出せるように。いまは when が偽なので出ない）
-	s.show("roze_ev");
-};
-
-const roze2 = async (s: Story): Promise<void> => {
-	s.show("roze_ev");
-	await s.wait(400);
-	await s.narrate("ベンチに、またあの人が\nすわっている。");
-	await s.say("kiriko", "二まい目、ひろったンゴ");
-	await s.say("roze", "……知ってるアル");
-	await s.say("kiriko", "なんで　知ってるンゴ？");
-	await s.say("roze", "…………");
-	s.face("roze_ev", "right");
-	await s.narrate("改札を　見たまま、\nこたえなかった。");
-	await s.say("roze", "あと一枚アル");
-	s.hide("roze_ev");
-	await s.narrate("目を　はなした　すきに、\nいなくなっていた。");
-	s.set("seen_roze", 2);
-	s.show("roze_ev"); // hide の印だけ消す（when は偽）
-};
-
-const roze3 = async (s: Story): Promise<void> => {
-	s.show("roze_ev");
-	await s.wait(400);
-	await s.narrate("ベンチのまえに、\n立っている。");
-	await s.say("roze", "三枚アル");
-	await s.say("roze", "……先に行って、\n待ってるアル");
-	await s.say("kiriko", "先って、どこンゴ？");
-	s.hide("roze_ev");
-	await s.narrate("こたえの　かわりに、\nベンチだけが　のこった。");
-	s.set("seen_roze", 3);
-	s.show("roze_ev"); // hide の印だけ消す（when は偽）
-};
-
-// ───────────────── 改札が開く夜（auto once） ─────────────────
-
-const gateOpen = async (s: Story): Promise<void> => {
-	await s.wait(500);
+const firstTrain = async (s: Story): Promise<void> => {
+	s.set("seen_hub_train");
 	s.se("chapter");
 	await announce(s, "――まもなく――");
 	await s.wait(400);
 	await announce(s, "まもなく、しゅうでんが\nまいります");
+	await s.narrate("……どこかで　聞いた　声の\nアナウンスだった。");
 	await s.narrate("電光板の『回送』が、\n『きさらぎ』に　かわった。");
-	s.set("gate_open");
-	s.hide("shiyo"); // 自販機のまえから、いつのまにか消えている（小銭が残る）
-	// カメオ音源の追加読み込み（DESIGN §5。ボイス OFF なら黙って何もしない。
-	// 進み具合は engine/audio.ts が「せってい」のボイス欄に流す）
-	if (settings.voice) {
-		const ready = prepareCameoVoices();
-		await s.narrate(
-			"（回線の　おくで、いくつもの\n声が　めを　さましていく――）",
-		);
-		await ready.catch(() => {});
-	}
-	// つくよみちゃんが hub まで来る（once。お守りがあれば鈴を結ぶ）
-	s.se("kane");
-	s.set("seen_tsuku_hub");
-	s.show("tsukuyomi_hub");
-	s.place("tsukuyomi_hub", s.state.x, s.state.y + 1, "up");
-	s.face("player", "down");
-	await s.narrate("ふりかえると、巫女さんが\n立っていた。");
-	if (s.has("omamori")) {
-		await s.say("tsukuyomi", "お守り、もっていて\nくださったんですね");
-		await s.narrate("お守りのひもに、小さな鈴を\nむすんでくれた。");
-		s.se("suzu");
-		s.set("got_suzu");
-		await s.say(
-			"tsukuyomi",
-			"いってらっしゃいませ。\nいい夜に　なりますように",
-		);
-	} else {
-		await s.say("tsukuyomi", "いってらっしゃいませ。\n……どうか、お気をつけて");
-	}
-	await s.fadeOut(400);
-	s.hide("tsukuyomi_hub");
-	await s.fadeIn(400);
-	await s.narrate(
-		s.flag("got_suzu")
-			? "……鈴の音だけが、\nしばらく　のこっていた。"
-			: "……もう、だれも\nいなかった。",
-	);
 };
 
 // ───────────────── ネムリン（改札の番人。3層＋ノート数で3段階） ─────────────────
 
 const nemurin = async (s: Story): Promise<void> => {
-	if (s.flag("gate_open")) {
+	if (s.flag("seen_hub_train")) {
 		if (!s.flag("seen_nemurin_gate")) {
 			s.set("seen_nemurin_gate");
-			await s.say("nemurin", "あいた……。\nうち、はじめて　見たピロ");
+			await s.say("nemurin", "終電、来たピロ。\n……今夜も　来たピロ");
 			await s.say("nemurin", "終電はね、むこうに\nついたら、もどらないって");
 			await s.say("nemurin", "……いってらっしゃい\nむ〜ん");
 			return;
@@ -187,7 +85,7 @@ const nemurin = async (s: Story): Promise<void> => {
 		await s.say("nemurin", "……ふぁ。おきゃくさん\nピロ？　めずらしい");
 		await s.say("kiriko", "ここ、どこンゴ？");
 		await s.say("nemurin", "かいせんのま。……終電の、\n待合室みたいなとこ");
-		await s.say("nemurin", "きっぷは　黒いレコード\n3まい……って、夢で見たピロ");
+		await s.say("nemurin", "ここから　いろんな　とこに\nつながってる……って、夢で見たピロ");
 		await s.say("kiriko", "夢で見ただけンゴ？");
 		await s.narrate("……すう、すう。\nもう　寝ている。");
 		return;
@@ -210,60 +108,12 @@ const nemurin = async (s: Story): Promise<void> => {
 	}
 	if (found >= 1) {
 		await s.say("nemurin", "ノート、ふえてる？\n……いいなあピロ");
-		await s.say("nemurin", "うちは　ここから\nうごけないむ〜ん");
+		await s.say("nemurin", "……おもての　バス停にも、\nレコード　あったピロ……む〜ん");
 		return;
 	}
-	// レコードのありか（地続きの3か所: こくどうのファミレスの おく・やまみちの峠のむこう・この駅の下）
+	// 板の 名残の ありか（地続きの 4か所: こくどうのファミレスの おく・やまみちの峠のむこう・この駅の下・終電のさき）
 	await s.say("nemurin", "レコード……灯りのきえた\n店のおくと、山のむこう");
-	await s.say("nemurin", "それと、ここの　した\nピロ……すぴぴ");
-};
-
-// ───────────────── 響化アル（西のエレベーター。3層） ─────────────────
-
-const aru = async (s: Story): Promise<void> => {
-	if (!s.flag("seen_aru")) {
-		s.set("seen_aru");
-		await s.narrate("エレベーターの前で、少年が\nメジャーを　あてている。");
-		await s.say("aru", "……動かないで。\nいま、はかってる");
-		await s.say("kiriko", "なにをンゴ？");
-		await s.say("aru", "扉と、ゆかのすきま。\n0.3ミリ、ずれてる");
-		await s.say("aru", "……昨日より");
-		return;
-	}
-	// 考察会話（note_elevator のあと1回だけ）
-	if (s.flag("note_elevator") && !s.flag("seen_aru_elev")) {
-		s.set("seen_aru_elev");
-		await s.say("aru", "よこのメモ、読んだ？");
-		await s.say("kiriko", "4、2、6、2、10……ンゴ");
-		await s.say("aru", "押す順番らしいよ。\nボタンの");
-		await s.say("kiriko", "ボタン、ないンゴ");
-		await s.say("aru", "うん。……ないね");
-		await s.narrate("アルは、メジャーを\nまきなおした。");
-		return;
-	}
-	// 改札が開いた夜だけ、計測の結果がちがう（結論は言わない）
-	if (s.flag("gate_open")) {
-		await s.say("aru", "……すきまが、閉じてる。\n今夜だけ");
-		return;
-	}
-	await s.say("aru", "0.3……いや、0.4。\n……話しかけないで");
-};
-
-// ───────────────── 革命シヨ（自販機。改札が開くと消える） ─────────────────
-
-const shiyo = async (s: Story): Promise<void> => {
-	if (!s.flag("seen_shiyo")) {
-		s.set("seen_shiyo");
-		await s.narrate("自販機のまえで、女の子が\n小銭を　さがしている。");
-		await s.narrate("……ちいさく、鼻歌が\n聞こえる。");
-		await s.say("shiyo", "……あ？　なんだよ。\n息くせーぞジジイ");
-		await s.say("kiriko", "ジ、ジジイじゃ\nないンゴ");
-		await s.say("shiyo", "あたすの五十円が\nのまれた。それだけだ");
-		await s.say("shiyo", "見てないで　行けよ。\n……出るまで　やる");
-		return;
-	}
-	await s.narrate("……鼻歌が、ぴたりと\nやんだ。");
-	await s.say("shiyo", "聞くな。\n……まだ　出ねー");
+	await s.say("nemurin", "ここの　したと、終電の　さき。\nおもての　バス停……すぴぴ");
 };
 
 // ───────────────── クリア後: 無題のレコード『　』（進行に無関係） ─────────────────
@@ -291,47 +141,6 @@ export const hub: MapDef = {
 	tiles,
 	rows,
 	events: [
-		// ── 自動イベント（並び順＝優先順。ロゼの場面 → 改札が開く夜） ──
-		{
-			id: "roze1",
-			x: 2,
-			y: 7,
-			trigger: "auto",
-			once: true,
-			when: (st) =>
-				!st.flags.gate_open && recCount(st) >= 1 && rozeSeen(st) < 1,
-			run: roze1,
-		},
-		{
-			id: "roze2",
-			x: 3,
-			y: 7,
-			trigger: "auto",
-			once: true,
-			when: (st) =>
-				!st.flags.gate_open && recCount(st) >= 2 && rozeSeen(st) < 2,
-			run: roze2,
-		},
-		{
-			id: "roze3",
-			x: 4,
-			y: 7,
-			trigger: "auto",
-			once: true,
-			when: (st) =>
-				!st.flags.gate_open && recCount(st) >= 3 && rozeSeen(st) < 3,
-			run: roze3,
-		},
-		{
-			id: "gate_open_ev",
-			x: 5,
-			y: 7,
-			trigger: "auto",
-			once: true,
-			when: (st) => !st.flags.gate_open && recCount(st) >= 3,
-			run: gateOpen,
-		},
-
 		// ── 出入り口（座標は凍結） ──
 		// 廊下の西はしの階段は、さらに下へ（過去ログの地層）
 		warp(
@@ -350,7 +159,7 @@ export const hub: MapDef = {
 			{ se: "door" },
 		),
 
-		// ── 改札（gate_open で train へ。閉まっている間は乗れない） ──
+		// ── 改札（終電は いつでも 来る。きさらぎ駅の 名残へ） ──
 		{
 			id: "gate",
 			x: 18,
@@ -358,18 +167,7 @@ export const hub: MapDef = {
 			trigger: "touch",
 			through: true,
 			run: async (s) => {
-				if (!s.flag("gate_open")) {
-					s.se("cancel");
-					await s.narrate("改札は　しまっている。\n電光板は『回送』のまま。");
-					await announce(
-						s,
-						"――レコードを　おもちでない\n方は、ごじょうしゃできません",
-					);
-					await s.move("player", "l");
-					return;
-				}
-				// 乗車のとき、遠くで鈴の音（つくよみの鈴。だれも言及しない）
-				if (s.flag("got_suzu")) s.se("kane", { volume: 0.6, pan: -0.4 });
+				if (!s.flag("seen_hub_train")) await firstTrain(s);
 				await s.narrate("改札が　ひらいている。");
 				await s.warp("train", 2, 3, "right", { se: "train" });
 			},
@@ -377,58 +175,6 @@ export const hub: MapDef = {
 
 		// ── 人たち ──
 		npc("nemurin", 16, 8, "char:nemurin", nemurin, { dir: "up" }),
-		npc("aru", 1, 4, "char:aru", aru, { dir: "left" }),
-		npc("shiyo", 6, 10, "char:shiyo", shiyo, {
-			dir: "left",
-			when: (st) => !st.flags.gate_open,
-		}),
-		// ロゼ（レコードを拾うたびベンチに現れる。場面は auto 側が進める）
-		npc(
-			"roze_ev",
-			6,
-			6,
-			"char:roze",
-			async (s) => {
-				await s.say("roze", "…………");
-			},
-			{
-				dir: "right",
-				when: (st) => !st.flags.gate_open && recCount(st) > rozeSeen(st),
-			},
-		),
-		// つくよみちゃん（改札が開いた夜だけ。場面は gate_open_ev の中）
-		npc(
-			"tsukuyomi_hub",
-			10,
-			3,
-			"char:tsukuyomi",
-			async (s) => {
-				await s.say("tsukuyomi", "いい夜に\nなりますように");
-			},
-			{
-				dir: "up",
-				when: (st) => !!st.flags.seen_tsuku_hub,
-			},
-		),
-
-		// ── シヨの小銭（改札が開いたあと、自販機のまえに落ちている） ──
-		{
-			id: "coin",
-			x: 6,
-			y: 10,
-			trigger: "touch",
-			through: true,
-			once: true,
-			when: (st) => !!st.flags.gate_open,
-			run: async (s) => {
-				await s.narrate("自販機のまえに、五十円玉が\nおちている。");
-				s.se("item");
-				await s.narrate("ひろった。……まだ、すこし\nあたたかい。");
-				await s.say("kiriko", "……あとで、かえすンゴ");
-				s.set("got_coin");
-			},
-		},
-
 		// ── クリア後: 無題のレコード『　』（西のベンチの上） ──
 		{
 			id: "norec",
@@ -494,7 +240,7 @@ export const hub: MapDef = {
 			y: 6,
 			trigger: "talk",
 			run: async (s) => {
-				if (s.flag("gate_open")) {
+				if (s.flag("seen_hub_train")) {
 					await s.narrate("電光板。\n『――きさらぎ――』");
 					return;
 				}
@@ -531,8 +277,8 @@ export const hub: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("つめたいベンチ。\nすこしだけ、くぼんでいる。");
-				if (rozeSeen(s.state) >= 1)
-					await s.narrate("……だれかが、ここに\nすわっていた。");
+				if (s.flag("seen_hub_train"))
+					await s.narrate("……だれかが、ここで\n終電を　待っていた。");
 			},
 		},
 		{

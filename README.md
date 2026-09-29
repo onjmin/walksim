@@ -8,8 +8,12 @@
 - **ヘッドホン推奨**です。音の左右・遠近が、そのまま演出です。
 - 右上の 🔊 で BGM・効果音をまとめてミュートできます。
 - セリフの読み上げ（ボイス）は既定で OFF です。メニューの「せってい」→「ボイス」で ON にできます。初回に数十MBの音声データを取得します（ブラウザに保存され（Cache API）、2回目からはすぐ始まります）。終盤に一度だけ、追加の音源を読み込む場面があります（進捗表示が出ます）。
-- セーブはメニューの「きろく」（またはマップのセーブ点）でいつでも。夢の中で行き詰まっても、メニューの「めをさます」でいつでも自室のベッドに帰れます（進みは失いません）。
+- セーブはメニューの「きろく」（またはマップのセーブ点）でいつでも。夜の町は どこからも 歩いて 部屋へ 帰れます。
 - 公開サイトでは、アクセス解析のために Google アナリティクスを使っています（Cookie を使います。個人を特定する情報は集めません）。
+
+## 物語
+
+物語の 正本は [STORY.md](./STORY.md)（3作の 設計書）。2作目「蓄音キリコと 過去ログの底」の あと、外の 町で 暮らしはじめた キリコが、眠れない 夜に 町を 歩き、おんJを 去った 人たちの その後に ふれる 話です。真の 筋（夕方 → 深夜 → 窓 → 夜明けの うみべ）と、1話 完結の「板の 名残」（オムニバス）で できています。
 
 ## コンテンツノート
 
@@ -59,7 +63,7 @@ http://localhost:5180/?map=kura&x=4&y=5&dir=up&flags={"flashlight":true}&items=r
 ```
 
 - `?map=&x=&y=&dir=` … 開始マップと位置・向き
-- `&flags={"gate_open":true}` … フラグの決め打ち（JSON）
+- `&flags={"seen_mado":true}` … フラグの決め打ち（JSON）
 - `&items=rec_a:1,omamori:1` … 持ちものの決め打ち（数を省くと 1、`:0` で なくす）
 - `&date=MMDD&time=HHMM&wday=0〜6` … 端末の日時・曜日の決め打ち（`src/data/weekday.ts`。0 が日曜。にぃちぇの曜日ギミックの確認に）
 - `?debug` … タイトルに「デバッグルーム」を出す（これだけは公開版でも効きます。開発中は常に出ています）
@@ -88,11 +92,8 @@ http://localhost:5180/?map=kura&x=4&y=5&dir=up&flags={"flashlight":true}&items=r
 - 重音テト © 線・小山乃舞世／TWINDRILL https://kasaneteto.jp/ （[音源利用規約](https://kasaneteto.jp/guidelines/voice.html)）
 - 足立レイ © Mechanical Girl https://mechanicalgirl.jp/ （[利用規約](https://mechanicalgirl.jp/guidelines/)）
 - つくよみちゃん © Rei Yumesaki（フリー素材キャラクター） https://tyc.rei-yumesaki.net/ （[UTAU音源利用規約](https://tyc.rei-yumesaki.net/material/utau/terms/)）
-- 春音リノ（音源 rino121） [公式サイト・利用規約](https://harunerino.vercel.app/)
 - 革命シヨ [公式サイト・利用規約](https://kakumeisiyo.my.canva.site/dagkuyjwycs)（非営利利用OK・クレジット記載）
-- 響化アル [公式サイト・利用規約](https://hibikaaru.wixsite.com/aruofficial/利用規約)
-- 解音ゼロ（声の収録がない UTAU 企画。本作では音声合成を使わず、筆談キャラクターとして登場します） [公式サイト](https://zero-tokine-test.my.canva.site) と、おーぷん2ちゃんねるの企画スレのみなさん
-- 欲音ルコ♂・♀（終盤のカメオ音声） [利用規約](https://long-sleeper.net/index.php?id=22)
+- やきう（なんJ・おんJ の名無し）: なんJ・おんJ のみんな
 - MGRoid・MOTRoid・NYNRoid（クッキー☆由来の UTAU 音源。終盤のカメオ音声として、声のみ使用しています）: 利用条件の所在 … [MGRoid](https://x.com/nisusansu/status/1048825378188353536) / [MOTRoid](https://www.nicovideo.jp/watch/sm40031282) / [NYNRoid](https://www.bilibili.com/video/BV1V24y1a7qs)
 - ミャウミャウ・ネムリン・おんちゃん・にぃちぇ・ムッジェ: おんJ のみんな（設定は [おんJwiki](https://w.atwiki.jp/openj3/) を参考にした、非公式のファン創作です）
 - 優音アイ・君野うしろ・雲地アル: おんJ・おーぷん2ちゃんねるの企画スレ発キャラクターの、非公式のファン創作です

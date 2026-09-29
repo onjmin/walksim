@@ -1,6 +1,6 @@
 // 蔵のなか。docs/content-briefs.md「world: village + kura」・DESIGN §4。
 // 10×8・dark 0.7・BGM null（そとの音もしない）。箱の中の箱（style-spaces §2）。
-// 蔵を整理した「誰か」の覚え書き（帳面×3。1つに 2021/03/15 の日付、
+// 蔵を整理した「誰か」（結婚して 地元へ もどった 人。STORY.md §5.97）の覚え書き（帳面×3。1つに 3/15 と 子の 話、
 // 1つに削除スレの断片の漂着＝考察バイト技法3・10）と、最奥の台のレコードB。
 // 入口(4,6)⇔村の蔵の戸。出口は南 (4,7) → village (20,5)。
 
@@ -53,7 +53,7 @@ export const kura: MapDef = {
 			},
 		},
 
-		// ── レコードB「祭りのあと」（最奥の台の上） ──
+		// ── レコードB「夜泣き」（最奥の台の上） ──
 		{
 			id: "rec_b_ev",
 			x: 7,
@@ -67,10 +67,10 @@ export const kura: MapDef = {
 				s.se("item");
 				s.give("rec_b");
 				s.set("got_rec_b");
-				await s.narrate("レコード『祭りのあと』を\n手にいれた。");
+				await s.narrate("レコード『夜泣き』を\n手にいれた。");
 				await s.record("rec_b");
-				// 途切れた日常のあとに、日常の一言（dialogue-guide §3）
-				await s.say("kiriko", "……やきう、見れたンゴかな");
+				// 去った 人の その後に、日常の 一言（dialogue-guide §3）
+				await s.say("kiriko", "……おやすみンゴ");
 			},
 		},
 		{
@@ -84,7 +84,7 @@ export const kura: MapDef = {
 			},
 		},
 
-		// ── 覚え書き①（机の帳面。日付 2021/03/15） ──
+		// ── 覚え書き①（机の帳面。結婚して 地元へ もどった 人の 家の 蔵。STORY.md §5.97） ──
 		{
 			id: "memo1",
 			x: 4,
@@ -93,7 +93,7 @@ export const kura: MapDef = {
 			run: async (s) => {
 				await s.narrate("帳面が　ひらいてある。\n……だれかの、覚え書きだ。");
 				await s.narrate(
-					"『2021/03/15　くらの整理、\nなかばまで。つづきは　あす』",
+					"『3/15　くらの整理、なかばまで。\n子が　起きたので　つづきは　あす』",
 				);
 				await s.narrate("つぎの　ページは、白い。");
 			},

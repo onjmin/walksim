@@ -5,7 +5,7 @@ import { PROPS } from "./tiles";
 
 export const SPR = {
 	// ── 置物 ──
-	/** 蓄音機（メニューの案内・終点の台）。public/sprites/phono.png は scripts/make-sprites.mjs で作る。 */
+	/** 蓄音機（メニューの案内・キリコの 部屋）。public/sprites/phono.png は scripts/make-sprites.mjs で作る。 */
 	phono: "pub:sprites/phono.png#0,0,16,16",
 	/** レコード盤（拾う前の見た目） */
 	record: "sp:3dANW5P",

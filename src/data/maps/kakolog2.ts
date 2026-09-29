@@ -5,16 +5,16 @@
 // 地層（上から下へ）:
 //   入口＝回線の間（駅の地下）の廊下の西はしから、さらに下りた階段（地続き。2026-09-28 作者指示）。
 //   斜めの階段（黒の海を渡る一本道。docs/kousatsu-bait.md 技法1:
-//   下りは13マス・上りは12段に聞こえる。テキストでは一切触れない。リノだけが「12段」と言う）
+//   下りは13マス・上りは12段に聞こえる。テキストでは一切触れない。女将だけが「12段」と言う）
 //   浅層（y8〜12） … dat落ちの棚とくぼみ。懐中電灯の机。総選挙の貼り紙
-//   中層（y13〜17）… おんちゃんの部屋（唯一の明るい床）・リノの食堂・にぃちぇ徘徊・
+//   中層（y13〜17）… おんちゃんの部屋（唯一の明るい床）・女将の食堂・にぃちぇ徘徊・
 //                    ミャウミャウ目撃②・Web廃墟の一角
 //   深層（y18〜21）… 柵の向こうのムッジェ・深淵の看板・石破ブウ・牛の首の空きスロット・
 //                    名前のない作り手の遺構・奥の間（レコードC）・隠しくぼみ（無ラベルの盤）
 //
 // 座標フリーズ: 入口の着地 (3,2)。出口 touch (3,1) → hub の下り階段のそば (3,11)。
 
-import type { EventDef, MapDef } from "../../engine/defs";
+import type { EventDef, MapDef, Story } from "../../engine/defs";
 import { npc, savePoint, sign, warp } from "../helpers";
 import { SPR } from "../sprites";
 import { HOME_DIARY } from "../tiles";
@@ -83,6 +83,10 @@ const stairSteps: EventDef[] = STAIR_PATH.map(([x, y], i) => ({
 		s.se("tick", { volume: 0.6 });
 	},
 }));
+
+/** 食堂の 女将（名無し。名前欄は「女将」）。 */
+const say = (s: Story, text: string) =>
+	s.say(null, text, { name: "女将", noPortrait: true });
 
 export const kakolog2: MapDef = {
 	id: "kakolog2",
@@ -169,7 +173,7 @@ export const kakolog2: MapDef = {
 			fixedDir: true,
 			run: async (s) => {
 				await s.narrate("『今日買ったCD晒すスレ』\n――dat落ちだ。");
-				await s.narrate("最後のレスの日付は、\n2021/03/16(火)。");
+				await s.narrate("最後のレスの日付は、\n2031/12/16(火)。");
 			},
 		},
 		{
@@ -293,55 +297,43 @@ export const kakolog2: MapDef = {
 			},
 		},
 
-		// ── リノの食堂（カウンターごし） ──
+		// ── 女将の食堂（カウンターごし。名無しの 女将。2作目の 春音リノは 3作目には 出ない） ──
 		npc(
 			"rino",
 			11,
 			17,
-			"char:rino",
+			SPR.woman,
 			async (s) => {
 				// 初回: 注文（＞＞1 おでん / ＞＞2 みそしる）
 				if (!s.flag("seen_kk_rino_met")) {
 					s.set("seen_kk_rino_met");
-					await s.say(
-						"rino",
+					await say(
+						s,
 						"あら、見ない顔やねぇ。\nおすわり。夜は　冷えるでね",
 					);
 					await s.narrate(
 						"カウンターの　むこうで、\n鍋が　ことこと　いっている。",
 					);
-					await s.say("rino", "なにに　しよか");
+					await say(s, "なにに　しよか");
 					const i = await s.choose(["＞＞1 おでん", "＞＞2 みそしる"]);
 					if (i === 0) {
 						await s.narrate("大根と　たまごが、\nゆっくり　出てきた。");
 						await s.say("kiriko", "……しみるンゴ");
-						await s.say("rino", "出汁が　いいでねぇ。\n三日は　継ぎ足しとるよ");
+						await say(s, "出汁が　いいでねぇ。\n三日は　継ぎ足しとるよ");
 					} else {
 						await s.narrate("湯気の向こうから、\n赤だしの　においがした。");
 						await s.say("kiriko", "……実家の　味ンゴ");
-						await s.say("rino", "あんた、ええ舌しとるわ。\n八丁味噌や");
+						await say(s, "あんた、ええ舌しとるわ。\n八丁味噌や");
 					}
 					return;
 				}
-				// レコードCを拾ったあと: 頼みごと（縦糸。受けると seen_rino_request → terminus が読む）
+				// レコードCを拾ったあと（1回だけ）：常連さんの その後
 				if (s.has("rec_c") > 0 && !s.flag("seen_kk_rino_asked")) {
 					s.set("seen_kk_rino_asked");
-					await s.say("rino", "……その盤、うちの\n常連さんのやわ");
-					await s.say("kiriko", "……『おやすみ』って\n書いてあったンゴ");
-					await s.say(
-						"rino",
-						"もし　終点まで行くなら、\nかけてやってくれんかね",
-					);
-					const i = await s.choose([
-						"＞＞1 まかせるンゴ",
-						"＞＞2 ……考えとくンゴ",
-					]);
-					if (i === 0) {
-						s.set("seen_rino_request");
-						await s.say("rino", "おおきに。\n……たまご、二つ入れる人やった");
-					} else {
-						await s.say("rino", "ふふ、ええよ。\n……盤は、あんたが拾たんやし");
-					}
+					await say(s, "……その盤、うちの\n常連さんのやわ");
+					await s.say("kiriko", "……釣り、してるって\n言ってたンゴ");
+					await say(s, "そう。……来んようになって、\nそれっきりやったけど");
+					await say(s, "元気なら　ええわ。\n……たまご、二つ入れる人やった");
 					return;
 				}
 				// 考察: 牛の首（客の噂話。オチは出汁。「12段」はここだけ）
@@ -351,14 +343,14 @@ export const kakolog2: MapDef = {
 				) {
 					s.set("seen_kk_rino_gyu");
 					await s.say("kiriko", "……『牛の首』って、\nなんのスレンゴ？");
-					await s.say("rino", "牛の首？　ああ……\nたのんだ人は　おらんねぇ");
-					await s.say(
-						"rino",
+					await say(s, "牛の首？　ああ……\nたのんだ人は　おらんねぇ");
+					await say(
+						s,
 						"聞いた客は　みぃんな、\n階段を　駆けあがってくと",
 					);
 					await s.say("kiriko", "……逃げきれるンゴ？");
-					await s.say(
-						"rino",
+					await say(
+						s,
 						"12段やろ。若い足なら　すぐよ。\n……ま、出汁が冷めるでね。はい",
 					);
 					return;
@@ -366,17 +358,17 @@ export const kakolog2: MapDef = {
 				// 考察: 黄色い部屋の先客（技法6。テトの「31年」と食い違う）
 				if (s.has("rec_a") > 0 && !s.flag("seen_kk_rino_teto")) {
 					s.set("seen_kk_rino_teto");
-					await s.say("rino", "あんた、黄色いほうにも\n行ったんやろ");
+					await say(s, "あんた、黄色いほうにも\n行ったんやろ");
 					await s.say("kiriko", "……椅子の先輩が　いたンゴ");
-					await s.say("rino", "あの黄色い部屋の子？\n去年、ふらっと来たきりよ");
-					await s.say("kiriko", "……去年？");
-					await s.say(
-						"rino",
+					await say(s, "あの黄色い部屋の子？\n仕事の　合間に、ふらっと　来るよ");
+					await s.say("kiriko", "……休憩中って　言ってたンゴ");
+					await say(
+						s,
 						"おでん、食べてったわ。\nはんぺんだけ　残してねぇ",
 					);
 					return;
 				}
-				await s.say("rino", "まいど。\nあったまって　いきない");
+				await say(s, "まいど。\nあったまって　いきない");
 			},
 			{ dir: "down" },
 		),
@@ -727,8 +719,8 @@ export const kakolog2: MapDef = {
 				s.set("got_rec_c");
 				await s.narrate("台の上に、黒いレコード。\nほこりを、はらった。");
 				await s.record("rec_c");
-				// 途切れた日常のあとに、日常の一言（dialogue-guide §3）
-				await s.say("kiriko", "……おやすみンゴ");
+				// 去った 人の その後に、日常の 一言（dialogue-guide §3）
+				await s.say("kiriko", "……釣れると　いいンゴ");
 			},
 		},
 		{

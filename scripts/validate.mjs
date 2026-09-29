@@ -34,13 +34,9 @@ const MENU_REPEAT = 12; // 同じ選択肢がこれ以上出たら、やめる�
 // 春音リノの現行版キーワードは rino121。カメオ5音源は終盤専用＝records の trueVoice 等）
 const VOICE_MODELS = [
 	"uc",
-	"roze",
 	"rei",
 	"tsukuyomi",
-	"rino121",
 	"teto",
-	"shiyo",
-	"hibika_aru",
 	"ruko_male",
 	"ruko_female",
 	"mgroid",
@@ -51,7 +47,7 @@ const VOICE_MODELS = [
 // done:/hide: はエンジン、seen_ は目撃、got_ は入手、rule_/note_/found_ はワールドの発見。
 // tod は時間帯（DESIGN §4: "yu"|"yoru"|"shinya"|"asa"）。
 const FLAG_OK =
-	/^(done:|hide:|seen_|got_|rule_|note_|found_|gate_open$|clear$|ending_ready$|ending_seen$|keep_clear$|flashlight$|debug$|tod$)/;
+	/^(done:|hide:|seen_|got_|rule_|note_|found_|clear$|ending_ready$|ending_seen$|keep_clear$|flashlight$|debug$|tod$)/;
 // 到達性の検査から外す talk イベント（"マップ イベントid" → 理由）。
 // わざと歩いて行けない場所に置いたものだけを、理由を書いて足す。
 // 無いイベント・歩いて調べられるようになったものは警告する（消し忘れ防止）。

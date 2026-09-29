@@ -3,9 +3,9 @@
 // ゲームは street（夕方・tod="yu"）から始まり、帰宅で evening（tod を "yoru" に）→
 // ベッドで就寝 → tod="shinya" になり、既存の 2:00 の目ざめ（opening）→「散歩してくるンゴ」。
 // ドアは apart へ（座標凍結v2: room (5,9) → apart (2,3)）。
-// 朝（tod="asa"）は terminus のスクリプトがここへ返す（秒針が戻る・スレが動き出す）。
+// 朝（tod="asa"）は まちのどおりの 窓の 場面（転）の あと。寄れば 秒針が 戻り、スレが 動き出す（結は umi.ts）。
 // BGM は無音。秒針の音（tick）は時間帯ごとに SE で鳴らし分ける。
-// 考察バイト（docs/kousatsu-bait.md 技法3）: カレンダーは 2021年3月・15日にまる。
+// カレンダーは 3月・15日に まる（外の 町に 越してきて ひと月。STORY.md §5.5）。
 // 小ネタ: テレビの砂あらし →（レコードを持って・3回目）NNN風の名前の放送（note nnn）。
 //
 // ノスタルジー層（docs/nostalgia.md。共通部品は data/nostalgia.ts）。自室は錨（罠12）：異常も気配も足さない。
@@ -38,6 +38,7 @@ import {
 	shinyaWalked,
 	yoruStep,
 } from "../nostalgia";
+import { ALL_RECORDS } from "../records";
 import { SPR } from "../sprites";
 import { HOME_DIARY, ROOM } from "../tiles";
 
@@ -60,9 +61,7 @@ const rows = [
 
 /** レコードを1枚でも持っているか。 */
 const anyRecord = (st: { items: Record<string, number> }): boolean =>
-	(st.items.rec_a ?? 0) > 0 ||
-	(st.items.rec_b ?? 0) > 0 ||
-	(st.items.rec_c ?? 0) > 0;
+	ALL_RECORDS.some((id) => (st.items[id] ?? 0) > 0);
 
 /** 朝のスレの書き込み（名前欄「名無しさん」。声はカメオ音源。DESIGN §5）。 */
 const post = (s: Story, who: string, text: string) =>
@@ -348,7 +347,7 @@ export const room: MapDef = {
 					s.se("tick", { volume: 0.7 });
 					await s.wait(500);
 					s.se("tick", { volume: 0.7 });
-					await s.narrate("かべの時計。7:04。\n……ちゃんと、うごいている。");
+					await s.narrate("かべの時計。5:12。\n……ちゃんと、うごいている。");
 					return;
 				}
 				await s.narrate("かべの時計。\n――2:00で　とまっている。");
@@ -401,9 +400,8 @@ export const room: MapDef = {
 			y: 2,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("カレンダー。\n2021年3月の　ままだ。");
-				await s.narrate("15日に、まるが　ついている。");
-				await s.narrate("なんの日かは、思い出せない。");
+				await s.narrate("カレンダー。3月。\n15日に、まるが　ついている。");
+				await s.narrate("外の　町に　越してきて、\nちょうど　ひと月の　日。");
 			},
 		},
 		{
@@ -431,7 +429,7 @@ export const room: MapDef = {
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("ふとんを、なおした。\n……よく　ねた気がする。");
+					await s.narrate("ふとんを、なおした。\n……けっきょく、ねなかった。");
 					// かゆみ・福引券は一度だけ（レシート・日記の読み返しとそろえる。2回目からは上の1行だけ）
 					if (
 						s.flag("seen_makura_asa") ||
@@ -529,7 +527,11 @@ export const room: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "yu" || t === "yoru") {
-					await s.narrate("スレは、こんやも\nにぎやかだ。");
+					if (!s.flag("seen_hoshumura")) {
+						s.set("seen_hoshumura");
+						await s.narrate("保守村。人の　散った　おんJに\n残った　みんなの　スレ。");
+					}
+					await s.narrate("保守村の　スレは、\nこんやも　にぎやかだ。");
 					// テレビの中継が打ち切られたあとは、スレもその話（nostalgia.md P0-2。
 					// 顔文字の住民だけ。チーム名・選手名は書かない）
 					if (t === "yoru" && s.flag("seen_chukei_end")) {
@@ -537,14 +539,14 @@ export const room: MapDef = {
 						await s.narrate("『(＾ω＾)ラジオ民は\nおらんかお？』");
 						return;
 					}
-					await s.narrate("『(´・ω・｀)ふろ、\nどうしよう。めんどい』");
-					await s.narrate("『(＾ω＾)はいって\nきなさいお』");
+					await s.narrate("『ロゼ：麻婆豆腐、\nつくりすぎたアル』");
+					await s.narrate("『シヨ：……だれか、\nたべに　きなさいよ』");
 					return;
 				}
 				if (t === "shinya") {
 					await s.narrate("モニターの　あかりだけが、\nついている。");
 					await s.narrate(
-						"スレは、とまっていた。\nさいごのレスは、ゆうべのまま。",
+						"保守村の　スレは、しずかだ。\nさいごの　レスは『保守』。",
 					);
 					await s.say("kiriko", "……みんな、ねてるンゴ");
 					return;
@@ -553,8 +555,8 @@ export const room: MapDef = {
 					if (!s.flag("seen_asa_thread")) {
 						s.set("seen_asa_thread");
 						await s.narrate("モニターに、あかり。\n（スレが　うごいている。）");
-						await post(s, "mgroid", "おはようさん。ひさびさに\n来てもうたわ");
-						await post(s, "motroid", "スレ、まだあって草。\nただいまやで");
+						await post(s, "mgroid", "おはようさん。\n……保守");
+						await post(s, "motroid", "朝から　スレ　伸びとって\n草");
 						await post(
 							s,
 							"nynroid",
@@ -630,13 +632,12 @@ export const room: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("テレビを　つけた。\nあさの番組が、ながれている。");
-					await s.narrate("……ひさしぶりに、\nひとの声で　にぎやかだ。");
+					await s.narrate("……いつもの、\n火曜の　朝の　声だ。");
 					return;
 				}
 				// 「まれ」は乱数でなく回数で作る：3回目以降＋レコードを持って外から戻ったあと
 				// （s.has で見る。items を直に読むと validate がこの分岐をたどれない）
-				const rec =
-					s.has("rec_a") > 0 || s.has("rec_b") > 0 || s.has("rec_c") > 0;
+				const rec = ALL_RECORDS.some((id) => s.has(id) > 0);
 				if (!s.flag("note_nnn") && n >= 2 && rec) {
 					await s.narrate("テレビを　つけた。\n――砂あらしが、ふっと　やんだ。");
 					await s.narrate("くらい画面を、白い文字が\nながれていく。");

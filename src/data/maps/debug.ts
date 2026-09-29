@@ -22,16 +22,15 @@ const AWAKE: Flags = {
 	seen_door: true,
 	tod: "shinya",
 };
+// 名残を 3つ（黄色い部屋・蔵・地層）回った ところ。まちのどおりの 窓（転）は rec_q を 足すと 開く
 const REC3: Flags = {
 	...AWAKE,
-	...done("hub", "gate_open_ev"),
 	seen_nemurin: true,
 	got_rec_a: true,
 	got_rec_b: true,
 	got_rec_c: true,
 	flashlight: true,
 	got_omamori: true,
-	gate_open: true,
 };
 
 const KEYS3: Items = {
@@ -41,6 +40,9 @@ const KEYS3: Items = {
 	omamori: 1,
 	flashlight: 1,
 };
+
+/** 窓の 場面（転）の 直前：名残 3枚と バス停の「早番」。 */
+const KEYS_MADO: Items = { ...KEYS3, rec_q: 1 };
 
 type Checkpoint = {
 	id: string;
@@ -177,7 +179,7 @@ const CHECKPOINTS: Checkpoint[] = [
 	},
 	{
 		id: "cp_train",
-		label: "終電（レコード3まい）",
+		label: "終電",
 		sprite: "char:rei",
 		flags: REC3,
 		items: KEYS3,
@@ -200,12 +202,12 @@ const CHECKPOINTS: Checkpoint[] = [
 		to: { map: "tunnel", x: 8, y: 3, dir: "left" },
 	},
 	{
-		id: "cp_terminus",
-		label: "供養スレ駅（レコード3まい）",
-		sprite: "char:roze",
-		flags: REC3,
-		items: KEYS3,
-		to: { map: "terminus", x: 13, y: 5, dir: "left" },
+		id: "cp_mado",
+		label: "まちのどおり（深夜・窓の場面の直前）",
+		sprite: "pub:sprites/mob_worker.png",
+		flags: { ...REC3, got_rec_q: true },
+		items: KEYS_MADO,
+		to: { map: "street", x: 20, y: 10, dir: "right" },
 	},
 	// 地続きの拡張（2026-09-28）の新しい地区
 	{
@@ -232,36 +234,20 @@ const CHECKPOINTS: Checkpoint[] = [
 		items: {},
 		to: { map: "yamamichi", x: 4, y: 1, dir: "down" },
 	},
-	// 夜明けの うみべ（終点から線路を歩いて出てきたところ。ending_ready は terminus が立てる）
+	// 夜明けの 団地（窓の 場面の あと。うみべへ 坂を くだる。ending_ready は street の 窓の 場面が 立てる）
 	{
-		id: "cp_umi_asa",
-		label: "うみべ（朝・終点から歩いて出てきた）",
+		id: "cp_danchi_asa",
+		label: "団地（朝・うみべへ）",
 		sprite: "pub:sprites/mob_ojiichan.png",
 		flags: {
 			...REC3,
+			got_rec_q: true,
+			seen_mado: true,
 			tod: "asa",
 			ending_ready: true,
-			clear: true,
-			ending_seen: true,
-			seen_kaeri: "walk",
 		},
-		items: KEYS3,
-		to: { map: "umi", x: 42, y: 17, dir: "left" },
-	},
-	// 朝のまちのどおり（エンディングは東端の囲いの手前。ending_ready は terminus が立てる）
-	{
-		id: "cp_street_asa",
-		label: "まちのどおり（朝・エンディング）",
-		sprite: "pub:sprites/mob_worker.png",
-		flags: {
-			...REC3,
-			tod: "asa",
-			ending_ready: true,
-			seen_kaeri: "walk",
-			got_dinner_onigiri: true,
-		},
-		items: KEYS3,
-		to: { map: "street", x: 2, y: 10, dir: "right" },
+		items: KEYS_MADO,
+		to: { map: "danchi", x: 15, y: 21, dir: "down" },
 	},
 ];
 

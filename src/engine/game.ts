@@ -1071,7 +1071,7 @@ export class Game {
 	 * 本文を1枚ずつメッセージ窓で読む（レコードの声で。ボイス OFF なら文字だけ）。
 	 * 名前欄には日付を出す。読み終えたらノイズを止めて針の上がる音
 	 * （data/sfx.ts に "record"＝回転ノイズ・"needle"＝針の音 を用意しておく）。
-	 * opt.trueVoice は終点の一斉再生専用：レコードに trueVoice があれば
+	 * opt.trueVoice は「本人の声」で 鳴らすとき：レコードに trueVoice があれば
 	 * 「本人の声」で読む（無いレコードはふつうの voice のまま。DESIGN §6）。
 	 */
 	async playRecord(id: string, opt?: { trueVoice?: boolean }): Promise<void> {

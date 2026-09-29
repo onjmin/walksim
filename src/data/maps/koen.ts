@@ -375,7 +375,7 @@ export const koen: MapDef = {
 				await s.narrate(
 					"『タイムカプセル　うめた日』\n『みどりがおか小　卒業生』",
 				);
-				await s.narrate("『ほりだす日　2030年の春』");
+				await s.narrate("『ほりだす日　2040年の春』");
 				if (t === "asa") {
 					await s.narrate("石の上に、どんぐりが\nひとつ　のっている。");
 					return;
