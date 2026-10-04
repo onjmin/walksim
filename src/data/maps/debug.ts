@@ -153,6 +153,22 @@ const CHECKPOINTS: Checkpoint[] = [
 		items: {},
 		to: { map: "yamamichi", x: 4, y: 1, dir: "down" },
 	},
+	{
+		id: "cp_laundry_shinya",
+		label: "コインランドリー（深夜）",
+		sprite: "pub:sprites/mob_obachan.png",
+		flags: { ...AWAKE, got_dinner_onigiri: true },
+		items: {},
+		to: { map: "laundry", x: 5, y: 8, dir: "up" },
+	},
+	{
+		id: "cp_okujo_shinya",
+		label: "雑居ビルの屋上（深夜）",
+		sprite: "pub:sprites/mob_worker.png",
+		flags: { ...AWAKE, got_dinner_onigiri: true },
+		items: {},
+		to: { map: "okujo", x: 6, y: 4, dir: "down" },
+	},
 	// 夜明けの 団地（窓の 場面の あと。うみべへ 坂を くだる。ending_ready は street の 窓の 場面が 立てる）
 	{
 		id: "cp_danchi_asa",

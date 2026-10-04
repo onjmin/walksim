@@ -10,6 +10,8 @@ import { ekimae } from "./maps/ekimae";
 import { kawara } from "./maps/kawara";
 import { koen } from "./maps/koen";
 import { kokudo } from "./maps/kokudo";
+import { laundry } from "./maps/laundry";
+import { okujo } from "./maps/okujo";
 import { room } from "./maps/room";
 import { senro } from "./maps/senro";
 import { street } from "./maps/street";
@@ -18,6 +20,7 @@ import { suupaa } from "./maps/suupaa";
 import { tonarimachi } from "./maps/tonarimachi";
 import { umi } from "./maps/umi";
 import { yamamichi } from "./maps/yamamichi";
+import { zakkyo } from "./maps/zakkyo";
 import { items, records } from "./records";
 import { sfx } from "./sfx";
 
@@ -35,6 +38,9 @@ export const data: GameData = {
 		kokudo,
 		ekimae,
 		suupaa,
+		zakkyo,
+		okujo,
+		laundry,
 		tonarimachi,
 		senro,
 		yamamichi,

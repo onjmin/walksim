@@ -37,6 +37,7 @@
 //   改札 talk (5,8)（夕のみ乗車演出 → tonarimachi (3,10)。宵「最終まで、まだ　ある。」
 //   深夜「最終電車は　出たあとだ。」朝「ホームで　ベルが　鳴っている。」＝始発のあと・朝は乗らない）
 //   ／tonarimachi からの着地 (5,9)
+//   雑居ビルの戸 (15,4) → zakkyo (8,5) 上向き（いつも あいている）／zakkyo からの着地 (15,5) 下向き
 
 import type {
 	EventDef,
@@ -101,8 +102,8 @@ const rows = [
 	"                                ", // y0
 	"        nnnnnnnnn               ", // y1  スーパーの屋根
 	"        ^^^^^^^^^.xx            ", // y2  店うら。ビールケース (18,2)(19,2)
-	"        (w$w(w(w(...            ", // y3  スーパーの看板 (10,3)・古い駅名標 (18,3)
-	"        )cdc)c)c)...            ", // y4  スーパー入口 (10,4)・ちらし (9,4)・窓 (11,4)・営業時間 (13,4)
+	"        (w$w(wW%W...            ", // y3  スーパーの看板 (10,3)・古い駅名標 (18,3)・雑居ビル (14-16,3)
+	"        )cdc)c#D#...            ", // y4  スーパー入口 (10,4)・ちらし (9,4)・窓 (11,4)・営業時間 (13,4)・雑居ビルの戸 (15,4)・袖看板 (16,4)
 	"faaaaaaaa........... aaa        ", // y5  スーパーからの戻り (10,5)・搬入の運転手 (12,5)朝
 	"fAAAAAAAA........... AAA ,T,,T, ", // y6  駅舎の屋根・交番の屋根
 	"f(w(((wi(........... (w( ,,,,,, ", // y7  キオスクのおばちゃん (7,7)夕
@@ -353,6 +354,47 @@ export const ekimae: MapDef = {
 						await s.say("kiriko", "（ゆうべの　『みなみ』の\nはこンゴね）");
 				}
 				await s.move("player", "d");
+			},
+		},
+		// 雑居ビルの戸（いつも あいている。上の階に夜の店がある）。上へ踏む → zakkyo (8,5) 上向き。
+		// zakkyo の出口からは (15,5) 下向きに着く
+		warp(
+			"zakkyo_in",
+			15,
+			4,
+			{ map: "zakkyo", x: 8, y: 5, dir: "up" },
+			{ se: "door" },
+		),
+		// 雑居ビルの袖看板。宵 あかり（seen_zakkyo_kanban）→ 深夜 きえている
+		{
+			id: "zakkyo_kanban",
+			x: 16,
+			y: 4,
+			trigger: "talk",
+			run: async (s) => {
+				const t = s.flag("tod");
+				if (t === "yoru") {
+					s.set("seen_zakkyo_kanban");
+					await s.narrate(
+						"たての　看板に、あかり。\n『みゆき』と『東南荘』が　ひかる。",
+					);
+					return;
+				}
+				if (t === "shinya") {
+					await s.narrate("たての　看板は、\nぜんぶ　きえている。");
+					if (s.flag("seen_zakkyo_kanban"))
+						await s.say("kiriko", "（『みゆき』も、\nおしまいンゴ）");
+					await s.narrate("ビルの　入口の　蛍光灯だけ、\nついている。");
+					return;
+				}
+				if (t === "asa") {
+					await s.narrate(
+						"たての　看板に、朝日。\n『テナント募集』の　札が　白い。",
+					);
+					return;
+				}
+				await s.narrate("たての　看板。『東南荘』\n『みゆき』『さくら歯科』……");
+				await s.narrate("あかりは、まだ　どれも\nついていない。");
 			},
 		},
 		// 改札（夕のみ乗車。tonarimachi からの帰りは (5,9) に着く）。

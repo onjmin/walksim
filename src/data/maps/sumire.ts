@@ -47,6 +47,8 @@
 //
 // 座標凍結v3: 東 touch (38,3)→street(3,19)（street からの着地は (37,3)）／
 //   南 touch (5,23)→kawara(5,2)（着地 (5,22)）／西 touch (0,12)→danchi(30,12)（着地 (1,12)）
+// コインランドリー（2026-10-04）: 裏の路地のつきあたりの戸 (27,2) を上へ → laundry(5,8) 上向き／
+//   laundry の出口 → (27,3) 下向き
 //
 // 地区: 北＝小学校（校門は閉まっている・フェンス越しの校庭）と裏の路地（→street）。
 //   中央＝公園（ブランコ2・すべり台・砂場・水のみ場・外灯）・歯科・月ぎめパーキング・緑地。
@@ -151,10 +153,10 @@ const tiles: Record<string, TileDef> = {
 // パーキング／歯科／緑地／公園（y7-11）・大どおり（y12-13）。
 // 南＝ごみ集積所・家二軒・空き地（柵の h だけ通れる）・杉やぶ・坂道（x5 で kawara へ）。
 const rows = [
-	"  nnnnnnnnnnnnn              zzzzz aaaa ", // y0  小学校の棟・たかはし家・みうら家
-	"  ^^^^^^^^^^^^^              ZZZZZ AAAA ", // y1
-	"  %W%W%W%W%W%W%              ]m]j] )co) ", // y2  たかはし家の戸 (32,2)・みうら家の窓 (36,2)
-	"  #t#t#t#t#t#t#             ........... ", // y3  裏の路地。street へ (38,3)・着地 (37,3)
+	"  nnnnnnnnnnnnn          AAAAzzzzz aaaa ", // y0  小学校の棟・コインランドリー・たかはし家・みうら家
+	"  ^^^^^^^^^^^^^          W$%WZZZZZ AAAA ", // y1  コインランドリーの看板 (26,1)
+	"  %W%W%W%W%W%W%          ttDt]m]j] )co) ", // y2  ランドリーの窓 (26,2)・戸 (27,2)→laundry・たかはし家の戸 (32,2)・みうら家の窓 (36,2)
+	"  #t#t#t#t#t#t#          .............. ", // y3  裏の路地。street へ (38,3)・着地 (37,3)・laundry からの着地 (27,3)
 	"  ggggggggggggg                  :      ", // y4  校庭（入れない）
 	"  fffffqGGqffff                  :      ", // y5  校門 (8,5)-(9,5)・フェンス
 	" :::::::::::::::::::::::::::::::::::::: ", // y6  上のどおり。とびだし看板 (1,6)
@@ -239,8 +241,8 @@ export const sumire: MapDef = {
 	// ジオラマ表示の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
 	boxes: [
 		{ x: 1, y: 0, w: 14, h: 7 }, // 小学校
-		{ x: 15, y: 3, w: 11, h: 4 }, // 坂の上の道
-		{ x: 26, y: 0, w: 14, h: 7 }, // いしはら家・みずの家
+		{ x: 15, y: 3, w: 10, h: 4 }, // 坂の上の道
+		{ x: 25, y: 0, w: 15, h: 7 }, // コインランドリー・いしはら家・みずの家
 		{ x: 0, y: 7, w: 10, h: 6 }, // 歯科と緑地
 		{ x: 10, y: 7, w: 9, h: 6 }, // 掲示板と自販機
 		{ x: 19, y: 7, w: 13, h: 6 }, // 公園
@@ -272,6 +274,7 @@ export const sumire: MapDef = {
 		{ x: 14, y: 13, r: 3, color: "#ffdf9e", only: "yoru,shinya" }, // 大どおりの街灯（西）
 		{ x: 32, y: 13, r: 3, color: "#ffdf9e", only: "yoru,shinya" }, // 大どおりの街灯（東）
 		{ x: 18, y: 11, r: 1.5, color: "#eef4ff", only: "yoru,shinya" }, // じはんき
+		{ x: 26, y: 2, r: 2.5, color: "#eef4ff" }, // コインランドリー（24時間。どの時間帯も）
 	],
 	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。宵・深夜は無音のまま）。
 	// 深夜は、手の中の缶が一段さめる（kanTick・文は出さない。nostalgia.md P0-6）
@@ -356,6 +359,15 @@ export const sumire: MapDef = {
 		warp("to_street", 38, 3, { map: "street", x: 3, y: 19, dir: "right" }),
 		warp("to_kawara", 5, 23, { map: "kawara", x: 5, y: 2, dir: "down" }),
 		warp("to_danchi", 0, 12, { map: "danchi", x: 30, y: 12, dir: "left" }),
+		// コインランドリー（路地のつきあたり）。戸 (27,2) は左右が窓・上が壁で、下 (27,3) からしか
+		// ふめない＝上へ歩いて入り、laundry (5,8) に上向きで着く（出口は下へふむ → (27,3) に下向き）
+		warp(
+			"to_laundry",
+			27,
+			2,
+			{ map: "laundry", x: 5, y: 8, dir: "up" },
+			{ se: "door" },
+		),
 
 		// ── 環境音の帯（大どおり2列 ＋ 上のどおり） ──
 		...waveBelt("wave_w", 8, [12, 13], -0.4),
@@ -480,6 +492,25 @@ export const sumire: MapDef = {
 		},
 
 		// ── 裏の路地（東で street へ。生活のうらがわ） ──
+		{
+			// コインランドリーの窓（看板を読むだけの小物。時間帯で店の中の見え方だけ変わる。
+			// 深夜は　路地で　ここだけ　あかるい＝lights の (26,2)。中の筋は laundry.ts）
+			id: "laundry_mado",
+			x: 26,
+			y: 2,
+			trigger: "talk",
+			run: async (s) => {
+				await s.narrate("『コインランドリー　しゃぼん』\n24時間");
+				const t = s.flag("tod");
+				if (t === "shinya")
+					await s.narrate("路地で、ここだけ\nあかりが　ついている。");
+				else if (t === "yoru")
+					await s.narrate("あかるい　店の中に、\nだれも　いない。");
+				else if (t === "asa")
+					await s.narrate("ガラスに、朝日が\nはんしゃしている。");
+				else await s.narrate("ガラスの　むこうで、\n乾燥機が　まわっている。");
+			},
+		},
 		{
 			// ⑤ ねこ: 夕方か宵に見た人（seen_neko_sumire）だけ、深夜にタオルが　ねこの形によれ、朝『もどっている』。
 			// （深夜の『毛だけ』は　ekimae crates_b の役なので、ここは　タオルのよれ）
