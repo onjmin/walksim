@@ -30,7 +30,14 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
-import { kanHeld, kanLine, kanTick, yoruAkubi } from "../nostalgia";
+import {
+	kanHeld,
+	kanLine,
+	kanTick,
+	natsuOwari,
+	numFlag,
+	yoruAkubi,
+} from "../nostalgia";
 import { DOOR, FIELD, JP, TOWN, WALL } from "../tiles";
 
 // ── タイル ──
@@ -191,6 +198,7 @@ const komainu = async (s: Story, which: "a" | "b"): Promise<void> => {
 const jouyatou = async (s: Story): Promise<void> => {
 	const t = s.flag("tod");
 	if (t === "shinya") {
+		s.set("seen_jouyatou_shinya");
 		await s.narrate("石どうろうに、ひが\n入っている。");
 		await s.narrate("ちいさな　ほのおが、\nしずかに　ゆれている。");
 		return;
@@ -458,7 +466,21 @@ export const kawara: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("……ちゃぷ、と　どこかで\n魚がはねた。たぶん、魚だ。");
+					// ① ぬし：深夜の 川は、来るたびに 音が 大きくなる（seen_kawa_shinya 数）
+					const n = numFlag(s, "seen_kawa_shinya");
+					s.set("seen_kawa_shinya", n + 1);
+					if (n === 0) {
+						await s.narrate("……ちゃぷ、と　どこかで\n魚が　はねた。");
+						return;
+					}
+					if (n === 1) {
+						await s.narrate("――ばしゃん。");
+						await s.narrate("さっきより、ずっと\n大きな　音だ。");
+						if (s.flag("seen_tsuri2"))
+							await s.say("kiriko", "……二十年もの、ンゴ？");
+						return;
+					}
+					await s.narrate("くらい　水に、大きな\n波の　輪が　ひろがっていく。");
 					return;
 				}
 				if (t === "asa") {
@@ -647,6 +669,14 @@ export const kawara: MapDef = {
 					await s.narrate("『でっかいコイが　つれます\nように』");
 					return;
 				}
+				// ① ぬしの 話を 聞いた 人だけ、コイの 絵馬に もどる
+				if (s.flag("seen_tsuri2")) {
+					await s.narrate("『でっかいコイが　つれます\nように』の　絵馬。");
+					await s.narrate(
+						"ふちが　まるく　すりきれて、\nいちばん　ふるい　ひもだ。",
+					);
+					return;
+				}
 				await s.narrate("いちばん古い絵馬は、\n字が　きえて　よめない。");
 			},
 		},
@@ -705,6 +735,7 @@ export const kawara: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				s.set("seen_kyori_12");
 				await s.narrate("くいの　きょり標。\n『河口から 12.5km』");
 				await s.narrate("川は、まだ　ずっと\nつづいているらしい。");
 			},
@@ -807,8 +838,10 @@ export const kawara: MapDef = {
 			through: true,
 			fixedDir: true,
 			run: async (s) => {
+				s.set("seen_natsu_kawa");
 				await s.narrate("花火の　もえかす。");
 				await s.narrate("夏の　わすれものだ。");
+				await natsuOwari(s);
 			},
 		},
 		{
@@ -865,6 +898,13 @@ export const kawara: MapDef = {
 					return;
 				}
 				if (s.flag("seen_mizukiri_nage")) {
+					if (s.flag("tod") === "asa") {
+						await s.narrate("石の山が、もとの　高さに\nもどっている。");
+						await s.narrate(
+							"いちばん上に、あたらしい\nひらたい　石が　一まい。",
+						);
+						return;
+					}
 					await s.narrate("石の山が、ひとつぶん\nひくくなっている。");
 					return;
 				}
@@ -977,6 +1017,14 @@ export const kawara: MapDef = {
 					await s.say("kiriko", "（きろくは、ゼロンゴ）");
 					return;
 				}
+				// ⑥ かくし場所の 石を かりた 人だけ
+				if (s.flag("seen_mizukiri_nage")) {
+					await s.say(null, "とっておきの　石、\nへってた。……だれだよ", {
+						name: "水きりの子",
+					});
+					await s.say("kiriko", "（……ごめんンゴ）");
+					return;
+				}
 				await s.say(null, "五回はねる人も、いるんだ。\nどこで練習してんだか", {
 					name: "水きりの子",
 				});
@@ -1006,9 +1054,48 @@ export const kawara: MapDef = {
 						});
 						await s.say("kiriko", "（……ちいさいンゴ）");
 					}
+					// ① 深夜の 川で 大きな 音を 聞いた 人だけ
+					if (numFlag(s, "seen_kawa_shinya") >= 2) {
+						s.set("seen_nushi");
+						await s.say(null, "夜中に、でっかいのが\nはねたろ", {
+							name: "つりの人",
+						});
+						await s.say("kiriko", "……聞いたンゴ");
+						await s.say(null, "ぬしだよ。……まだ、いる", {
+							name: "つりの人",
+						});
+					}
 					return;
 				}
 				await s.narrate("うきを、じっと\n見ている。");
+			},
+			{ dir: "down", when: (st) => st.flags.tod === "asa" },
+		),
+		npc(
+			"houki_baachan",
+			32,
+			5,
+			"pub:sprites/mob_obaachan.png",
+			async (s) => {
+				if (!s.flag("seen_houki")) {
+					s.set("seen_houki");
+					await s.narrate("竹ぼうきで、やしろの\n前を　はいている。");
+					if (s.flag("seen_baachan")) {
+						await s.say(null, "おや、足音の　子だね", { name: "ばあちゃん" });
+						await s.say("kiriko", "……まちのどおりの、\n花の　ひとンゴ？");
+						await s.say(null, "朝は　ここ。ろうそくを\nかえにくるのさ", {
+							name: "ばあちゃん",
+						});
+					} else {
+						await s.say(null, "はやいね。ろうそく、\nかえにきたんだよ", {
+							name: "ばあちゃん",
+						});
+					}
+					if (s.flag("seen_jouyatou_shinya"))
+						await s.say("kiriko", "（……ゆうべの　ほのお、\nこのひとのンゴ）");
+					return;
+				}
+				await s.narrate("しゃっ、しゃっ、と\nほうきの　音。");
 			},
 			{ dir: "down", when: (st) => st.flags.tod === "asa" },
 		),

@@ -216,10 +216,23 @@ const bench = async (s: Story): Promise<void> => {
 	}
 	if (t === "asa") {
 		await s.narrate("ベンチが、朝つゆで\nしっとり　ぬれている。");
+		// ⑨ ゆうべ かきかけだった あいあいがさが、朝には そろっている（書いた人は 出さない）
+		if (s.flag("seen_aiai_yama")) {
+			await s.narrate(
+				"かきかけの　あいあいがさに、\nかさの　右がわが　足されていた。",
+			);
+			if (s.flag("seen_aiai_hodo") && !s.flag("seen_aiai_kansei")) {
+				s.set("seen_aiai_kansei");
+				await s.say("kiriko", "（……歩道橋のと、\nやっと　おそろいンゴ）");
+			}
+		}
 		return;
 	}
+	s.set("seen_aiai_yama");
 	await s.narrate("峠の　ベンチ。板に、\nだれかの　イニシャル。");
 	await s.narrate("『K・M』。そのとなりに、\nあいあいがさの　かきかけ。");
+	if (s.flag("seen_aiai_hodo"))
+		await s.say("kiriko", "（……歩道橋の　らくがきと、\nおなじ　字ンゴ）");
 };
 
 export const yamamichi: MapDef = {
@@ -644,6 +657,7 @@ export const yamamichi: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				s.set("seen_kyori_14");
 				await s.narrate("くいの　きょり標。\n『河口から 14.0km』");
 				await s.narrate("川は、まだ　上へ\nつづいている。");
 			},

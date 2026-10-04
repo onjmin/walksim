@@ -281,13 +281,62 @@ export const NIKKI: Record<NikkiKey, string> = {
 };
 
 /** 深夜のポエムのキー（`seen_nikki_shinya` に文字で入れる）。 */
-export type PoemKey = "kan" | "ue" | "machi";
+export type PoemKey = "kan" | "nushi" | "ue" | "machi";
 
 /** 深夜のポエム（朝に消す前提の、少しダサい文）。 */
 export const POEM: Record<PoemKey, string> = {
 	kan: "『2時の　じはんきは、\n町の　心臓だった』",
+	nushi: "『川の　ぬしは、吾輩に\nだけ　はねてみせた』",
 	ue: "『町の灯りを　かぞえた。\n吾輩も、そのひとつ』",
 	machi: "『夜の町は、吾輩だけの\nものだった』",
+};
+
+// ───────────────── 町をまたぐ筋（2026-10-04） ─────────────────
+// 散らばった前振りを、別の地区・朝・布団・日記で回収する。どれも「見た人にだけ」出す。
+// ① ぬし: kawara tsuri_jichan（seen_tsuri2）・emakake・kawa_b 深夜（seen_kawa_shinya 数）→ tsuri_asa（seen_nushi）・poemKey
+// ② きょり標: yamamichi 14.0km（seen_kyori_14）・kawara 12.5km（seen_kyori_12）→ umi 0.0km（seen_kyori_0）
+// ③ まつり: 夏＝street board_ev（seen_board_st）・ekimae poster（seen_natsu_eki）・kawara hanabi_ato（seen_natsu_kawa）
+//    秋＝tonarimachi matsuri_poster（seen_aki_tonari）・sumire keijiban（seen_aki_sumire）→ room calendar（asa。seen_cal_aki）
+// ④ 電車の音: 夕方に聞いた電車（street・kawara・senro・umi）→ room の布団の遠い音（TOOI_OTO）／深夜は終電のあと
+// ⑤ ねこ: street neko（seen_neko）・sumire alley_box（seen_neko_sumire）・kokudo neko_tamari（seen_neko_kokudo）
+//    → danchi neko_ura 深夜（seen_neko_shukai）→ 朝、それぞれの場所へ もどる
+// ⑥ 水きり: kawara mizukiri_ishi（seen_mizukiri_nage）→ kawara mizukiri_kid・umi mizukiri_umi（seen_mizukiri_kurabe）・朝の石の山
+// ⑦ ろうそくの 人: street baachan（seen_baachan・seen_baachan2）・kawara jouyatou 深夜（seen_jouyatou_shinya）→ kawara houki_baachan（asa。seen_houki）
+// ⑧ ガチャ: suupaa gacha_kid（seen_gacha_kid）→ street kodomo_asa_b（seen_gacha_asa）
+// ⑨ あいあいがさ: kokudo hodokyo_rakugaki（seen_aiai_hodo）・yamamichi bench（seen_aiai_yama）→ 朝のベンチ
+// ⑩ なくなる町（控えめ）: danchi annaizu（seen_annaizu2）→ taiso_jichan／ekimae urichi（seen_urichi2）→ old_sign／kokudo の灯らない自販機と缶
+
+/** 夏まつりの 名残を いくつ 見たか（0〜3）。3つめで キリコが 一言（seen_natsu_owari）。 */
+export const natsuCount = (s: Story): number =>
+	["seen_board_st", "seen_natsu_eki", "seen_natsu_kawa"].filter(
+		(k) => !!s.flag(k),
+	).length;
+
+/** 夏まつりの 名残を 見たとき（3つめで 一度だけ）。 */
+export const natsuOwari = async (s: Story): Promise<void> => {
+	if (s.flag("seen_natsu_owari") || natsuCount(s) < 3) return;
+	s.set("seen_natsu_owari");
+	await s.say("kiriko", "……夏は、ちゃんと\nおわったンゴね");
+};
+
+/** 夕方に ねこを 見た 場所の 数（深夜の あつまりの 条件）。 */
+export const nekoSeen = (s: Story): number =>
+	["seen_neko", "seen_neko_sumire", "seen_neko_kokudo"].filter(
+		(k) => !!s.flag(k),
+	).length;
+
+/** まとめカードの「こんやの　きろく」に足す行（筋を 回収した ものだけ）。 */
+export const kirokuLines = (s: Story): string[] => {
+	const lines: string[] = [];
+	if (s.flag("seen_nushi")) lines.push("川の　ぬしの　音を　きいた");
+	if (s.flag("seen_kyori_0")) lines.push("川を　14キロ　くだった");
+	if (s.flag("seen_cal_aki")) lines.push("秋まつりに　まるを　つけた");
+	if (s.flag("seen_neko_shukai")) lines.push("ねこの　あつまりを　見た");
+	if (s.flag("seen_mizukiri_nage")) lines.push("水きり　三回");
+	if (s.flag("seen_houki")) lines.push("やしろの　ろうそくの　人");
+	if (s.flag("seen_gacha_asa")) lines.push("あしたの　ぼくは　回した");
+	if (s.flag("seen_aiai_kansei")) lines.push("あいあいがさが　そろった");
+	return lines;
 };
 
 /** まとめカードの見出し（street endingAtKakoi の sections の先頭に `{ title: NIKKI_TITLE, lines: nikkiSummary(s) }`）。 */
@@ -309,9 +358,15 @@ export const nikkiKey = (s: Story): NikkiKey => {
 	return "nashi";
 };
 
-/** 深夜のポエムを選ぶ（got_kan > seen_danchi_ue > machi）。room diary が `s.set("seen_nikki_shinya", poemKey(s))` する。 */
+/** 深夜のポエムを選ぶ（got_kan > ぬし（深夜の川で2回）> seen_danchi_ue > machi）。room diary が `s.set("seen_nikki_shinya", poemKey(s))` する。 */
 export const poemKey = (s: Story): PoemKey =>
-	kanLv(s) > 0 ? "kan" : s.flag("seen_danchi_ue") ? "ue" : "machi";
+	kanLv(s) > 0
+		? "kan"
+		: numFlag(s, "seen_kawa_shinya") >= 2
+			? "nushi"
+			: s.flag("seen_danchi_ue")
+				? "ue"
+				: "machi";
 
 /** 深夜の町を歩いたか（6地区のどれかの arrive_shinya が済んでいる）。ポエムを書く条件。 */
 export const shinyaWalked = (s: Story): boolean =>

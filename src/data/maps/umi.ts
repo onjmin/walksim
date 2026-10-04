@@ -30,6 +30,7 @@ import {
 	kanHeld,
 	kanLine,
 	kanTick,
+	kirokuLines,
 	NIKKI_TITLE,
 	nikkiSummary,
 	shinyaClock,
@@ -337,16 +338,7 @@ export const umi: MapDef = {
 				s.set("clear");
 				s.set("ending_seen");
 				const recs = ALL_RECORDS.filter((id) => s.has(id) > 0).length;
-				const myau = ["seen_myau1", "seen_myau2", "seen_myau3"].filter(
-					(f) => !!s.flag(f),
-				).length;
-				const lines = [
-					`レコード　${recs}まい`,
-					`ミャウミャウ目撃　${myau}かい`,
-				];
-				if (s.flag("found_miniwai")) lines.push("ミニワイに　会った（もきゅ）");
-				if (s.flag("seen_yobigoe_reply")) lines.push("呼び声に　へんじをした");
-				else if (s.flag("note_yobigoe")) lines.push("呼び声に　だまっていた");
+				const lines = [`レコード　${recs}まい`, ...kirokuLines(s)];
 				lines.push("やきうの　となりで　保守した");
 				await s.ending({
 					summary: {
@@ -418,6 +410,34 @@ export const umi: MapDef = {
 			run: async (s) => {
 				await s.wait(500);
 				await s.narrate("海が、あさの光で\nしろく　ひかっている。");
+			},
+		},
+
+		// ── ② 河口の きょり標（やまみち 14.0km・かわら 12.5km の つづき。護岸の 石段の よこ） ──
+		{
+			id: "kyori_0",
+			x: 19,
+			y: 7,
+			sprite: JP.signpost,
+			trigger: "talk",
+			fixedDir: true,
+			run: async (s) => {
+				await s.narrate("くいの　きょり標。\n『河口　0.0km』");
+				if (s.flag("seen_kyori_14") && s.flag("seen_kyori_12")) {
+					if (!s.flag("seen_kyori_0")) {
+						s.set("seen_kyori_0");
+						await s.narrate("14.0、12.5、……0.0。");
+						await s.say("kiriko", "……やまの　上から、\nここまで　来たンゴ");
+						return;
+					}
+					await s.narrate("川は、ここで　おしまいだ。");
+					return;
+				}
+				if (s.flag("seen_kyori_14") || s.flag("seen_kyori_12")) {
+					await s.say("kiriko", "（……あの　くいの、\nつづきンゴ）");
+					return;
+				}
+				await s.narrate("川は、浜の　はしで\n海に　とけている。");
 			},
 		},
 
@@ -1017,6 +1037,15 @@ export const umi: MapDef = {
 					await s.narrate("石は、三回　はねて\nしずんだ。");
 					await s.say(null, "……いまの、四回に\nしといて", { name: "浜の子" });
 					await s.say("kiriko", "（水ましンゴ）");
+					return;
+				}
+				// ⑥ かわらで 三回 はねさせた 人だけ、くらべる
+				if (s.flag("seen_mizukiri_nage") && !s.flag("seen_mizukiri_kurabe")) {
+					s.set("seen_mizukiri_kurabe");
+					await s.say("kiriko", "吾輩も、かわらで\n三回　はねたンゴ");
+					await s.say(null, "……じゃあ、ひきわけ。\nほんとは、ぼくも　三回", {
+						name: "浜の子",
+					});
 					return;
 				}
 				await s.say(null, "護岸の　歩数、あれ\nぼくが　かぞえたんだ", {

@@ -31,7 +31,7 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
-import { kanShinya, kanTick, yoruAkubi } from "../nostalgia";
+import { kanHeld, kanShinya, kanTick, yoruAkubi } from "../nostalgia";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
@@ -391,9 +391,12 @@ export const kokudo: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
+				s.set("seen_aiai_hodo");
 				await s.narrate(
-					"らんかんの　らくがき。\nしらない名前の　あいあいがさ。",
+					"らんかんの　らくがき。\n『K』と『M』の　あいあいがさ。",
 				);
+				if (s.flag("seen_aiai_yama"))
+					await s.say("kiriko", "（……峠の　ベンチの、\nつづきンゴ？）");
 				if (s.flag("tod") === "asa") {
 					await s.narrate("朝日で、白いペンの\nあとまで　よく見える。");
 				}
@@ -546,6 +549,9 @@ export const kokudo: MapDef = {
 			run: async (s) => {
 				await s.narrate("じはんき。あかりが、\nついていない。");
 				await s.narrate("見本のかんが、日やけで\nまっしろだ。");
+				// ⑩ 深夜に 缶を 手に 持っていれば、灯らない 自販機と くらべる
+				if (s.flag("tod") === "shinya" && kanHeld(s))
+					await s.narrate("手の　中の　缶だけが、\nあたたかい。");
 			},
 		},
 
@@ -889,8 +895,12 @@ export const kokudo: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("ねこが二ひき、ならんで\n毛づくろいしている。");
+					// ⑤ 夜の あつまりを 見た 人だけ
+					if (s.flag("seen_neko_shukai"))
+						await s.say("kiriko", "（もう一ぴきは、まだ\n団地の　うらンゴ？）");
 					return;
 				}
+				s.set("seen_neko_kokudo");
 				await s.narrate("ねこが三びき、\nおしくらまんじゅう中だ。");
 				await s.say("kiriko", "まざりたいンゴ……");
 			},

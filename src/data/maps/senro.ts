@@ -504,6 +504,17 @@ export const senro: MapDef = {
 			y: 6,
 			trigger: "talk",
 			run: async (s) => {
+				if (s.flag("tod") === "shinya") {
+					await s.narrate(
+						"しゃだんきは、あがったまま。\n終電は、もう　行った。",
+					);
+					if (s.flag("seen_fumikiri_yu"))
+						await s.say(
+							"kiriko",
+							"（夕方は、あんなに\nカンカン　いってたンゴ）",
+						);
+					return;
+				}
 				await s.narrate("しゃだんき。黄色と　黒の\nしましま。");
 				await s.narrate(
 					"ささくれた　ところに、\nビニールテープが　まいてある。",

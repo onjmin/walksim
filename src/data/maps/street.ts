@@ -37,6 +37,7 @@ import { npc, warp } from "../helpers";
 import {
 	kanShinya,
 	kanTick,
+	natsuOwari,
 	shinyaClock,
 	yoruAkubi,
 	yoruClock,
@@ -648,6 +649,18 @@ export const street: MapDef = {
 					await s.say("kiriko", "……いい意味ンゴ？");
 					return;
 				}
+				// ⑦ 二度目で、朝の 行き先を 言う（かわらの やしろで 会える）
+				if (!s.flag("seen_baachan2")) {
+					s.set("seen_baachan2");
+					await s.say(
+						null,
+						"あしたの　朝はね、かわらの\nやしろを　はきに　いくの",
+						{
+							name: "ばあちゃん",
+						},
+					);
+					return;
+				}
 				await s.say(null, "きをつけて　お帰り", { name: "ばあちゃん" });
 			},
 			{ dir: "down", when: (st) => st.flags.tod === "yu" },
@@ -715,6 +728,15 @@ export const street: MapDef = {
 				await s.say(null, "学校つくまでが\nしょうぶだから", {
 					name: "女の子",
 				});
+				// ⑧ スーパーの ガチャの 子（「あしたのぼくが　回す」）と 話した 人だけ
+				if (s.flag("seen_gacha_kid") && !s.flag("seen_gacha_asa")) {
+					s.set("seen_gacha_asa");
+					await s.say(null, "あ、ガチャの　とこに\nいた人", { name: "男の子" });
+					await s.say(null, "10円、もらった。\nかえりに　回すんだ", {
+						name: "男の子",
+					});
+					await s.say("kiriko", "（あしたのぼく、\nえらいンゴ）");
+				}
 			},
 			{ dir: "left", when: (st) => st.flags.tod === "asa" },
 		),
@@ -981,6 +1003,7 @@ export const street: MapDef = {
 					s.set("seen_board_st");
 					await s.narrate("『ゴミは　朝8時までに』");
 					await s.narrate("『なつまつりは　おわりました』\nの紙も、まだある。");
+					await natsuOwari(s);
 					return;
 				}
 				await s.narrate(
@@ -1153,10 +1176,15 @@ export const street: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("ねこは、いない。");
+					if (s.flag("seen_neko"))
+						await s.narrate("だんボールに、まるい\nくぼみだけ　のこっている。");
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("ねこが、あくびをした。");
+					// ⑤ 夜の あつまりを 見た 人だけ
+					if (s.flag("seen_neko_shukai"))
+						await s.narrate("しっぽに、団地の\n草の実が　ついている。");
 					return;
 				}
 				if (!s.flag("seen_neko")) {

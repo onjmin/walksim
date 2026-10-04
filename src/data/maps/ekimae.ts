@@ -29,6 +29,7 @@ import { npc, warp } from "../helpers";
 import {
 	kanShinya,
 	kanTick,
+	natsuOwari,
 	shinyaClock,
 	yoruAkubi,
 	yoruClock,
@@ -554,8 +555,10 @@ export const ekimae: MapDef = {
 			y: 8,
 			trigger: "talk",
 			run: async (s) => {
+				s.set("seen_natsu_eki");
 				await s.narrate("『なつまつり』のポスター。\n……もう、おわったやつだ。");
 				await s.narrate("はがすのを、わすれられて\nいる。");
+				await natsuOwari(s);
 			},
 		},
 		{
@@ -1002,6 +1005,13 @@ export const ekimae: MapDef = {
 			run: async (s) => {
 				await s.narrate("ふるい駅名標が、かべに\n立てかけてある。");
 				await s.narrate("『みなみ』。――いまのより、\nじが　まるい。");
+				// ⑩ 売地の『完成予想図』を 見た 人だけ
+				if (s.flag("seen_urichi2")) {
+					await s.narrate(
+						"完成予想図の　駅ビルにも、\nこの　まるい字が　あった。",
+					);
+					return;
+				}
 				await s.say("kiriko", "……先代ンゴか");
 			},
 		},

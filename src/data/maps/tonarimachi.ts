@@ -478,6 +478,7 @@ export const tonarimachi: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				s.set("seen_aki_tonari");
 				await s.narrate("『つきみ秋まつり』の\nポスター。");
 				await s.narrate("しらない　おまつりだ。\n日づけは、らいげつ。");
 				await s.say("kiriko", "……来られたら、\n来るンゴ");

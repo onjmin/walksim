@@ -73,10 +73,12 @@ const dinnerName = (s: Story): string =>
 
 /**
  * 布団で聞く町（nostalgia.md P0-3）。夕方に着いた地区（done:<map>:arrive_yu）の音だけを、遠く小さく。
- * 地区名は出さない。駅（ekimae）は鉄橋（kawara）に行っていないときだけ鳴らすので、多くて3音。
+ * 地区名は出さない。駅（ekimae）は鉄橋（kawara）に行っていないときだけ鳴らす。多くて3音（先頭から）。
  */
 const TOOI_OTO: {
 	map: string;
+	/** これが 立っていれば 鳴らす（夕方に その 音を 聞いた 人だけ。無ければ arrive_yu で）。 */
+	flag?: string;
 	se: string;
 	pan: number;
 	volume: number;
@@ -111,15 +113,32 @@ const TOOI_OTO: {
 		volume: 0.3,
 		text: "とおくで、電車が\n出ていく音。",
 	},
+	// ④ 夕方に 聞いた 電車（ふみきり・車庫）。聞いた 人だけ
+	{
+		map: "senro",
+		flag: "seen_fumikiri_yu",
+		se: "tick",
+		pan: 0.3,
+		volume: 0.15,
+		text: "ふみきりの　音が、\nかすかに　とどく。",
+	},
+	{
+		map: "umi",
+		flag: "seen_umi_densha",
+		se: "densha_far",
+		pan: 0.7,
+		volume: 0.2,
+		text: "さいごの　電車が、\n車庫へ　かえっていく音。",
+	},
 ];
 
 /** 布団の中で、遠い音を順に鳴らす（宵の就寝だけ）。1音でも鳴らしたら true。 */
 const tooiOto = async (s: Story): Promise<boolean> => {
 	const heard = TOOI_OTO.filter(
 		(o) =>
-			arrived(s, o.map, "yu") &&
+			(o.flag ? !!s.flag(o.flag) : arrived(s, o.map, "yu")) &&
 			!(o.map === "ekimae" && arrived(s, "kawara", "yu")),
-	);
+	).slice(0, 3);
 	for (const o of heard) {
 		s.se(o.se, { pan: o.pan, volume: o.volume });
 		await s.narrate(o.text);
@@ -375,6 +394,21 @@ export const room: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("カレンダー。3月。\n15日に、まるが　ついている。");
+				// ③ 朝、秋まつりの ポスターか 掲示を 見た 人は、書きこむ
+				if (
+					s.flag("tod") === "asa" &&
+					(s.flag("seen_aki_tonari") || s.flag("seen_aki_sumire"))
+				) {
+					if (!s.flag("seen_cal_aki")) {
+						s.set("seen_cal_aki");
+						await s.narrate("すみに、えんぴつで\n書きこんだ。");
+						await s.narrate("『つきみ　秋まつり』");
+						await s.say("kiriko", "……来られたら、\n来るンゴ");
+						return;
+					}
+					await s.narrate("すみに、えんぴつの\n『つきみ　秋まつり』。");
+					return;
+				}
 				await s.narrate("外の　町に　越してきて、\nちょうど　ひと月の　日。");
 			},
 		},

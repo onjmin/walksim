@@ -393,8 +393,12 @@ export const sumire: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("だんボールに、ねこが\nもどっている。");
+					// ⑤ 夜の あつまりを 見た 人だけ
+					if (s.flag("seen_neko_shukai"))
+						await s.narrate("せなかの　毛が、夜つゆで\nしっとり　している。");
 					return;
 				}
+				s.set("seen_neko_sumire");
 				await s.narrate("だんボールのなかで、\nねこが　まるくなっている。");
 			},
 		},
@@ -652,6 +656,7 @@ export const sumire: MapDef = {
 				y: 11,
 				trigger: "talk",
 				run: async (s) => {
+					s.set("seen_aki_sumire");
 					await s.narrate("町内の掲示板。\n『秋祭りは　11/3』");
 					await s.narrate("『犬のふんは\nもちかえりましょう』の紙。");
 					if (s.flag("tod") === "asa") {

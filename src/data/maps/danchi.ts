@@ -28,7 +28,14 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
-import { kanHeld, kanLine, kanShinya, kanTick, yoruAkubi } from "../nostalgia";
+import {
+	kanHeld,
+	kanLine,
+	kanShinya,
+	kanTick,
+	nekoSeen,
+	yoruAkubi,
+} from "../nostalgia";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
@@ -1056,6 +1063,24 @@ export const danchi: MapDef = {
 			y: 22,
 			trigger: "talk",
 			run: async (s) => {
+				// ⑤ 夕方に よその ねこを 見ていれば、深夜は ここに あつまっている
+				if (
+					s.flag("tod") === "shinya" &&
+					nekoSeen(s) > 0 &&
+					!s.flag("seen_neko_shukai")
+				) {
+					s.set("seen_neko_shukai");
+					s.set("seen_neko_danchi");
+					await s.narrate("……先客が、いっぱい\nいた。");
+					await s.narrate("ねこが　四ひき、\nまるく　すわっている。");
+					await s.narrate("夕方に　見た　かおが、\nまざっている。");
+					await s.say("kiriko", "（夜は、ここに\nあつまるンゴね）");
+					return;
+				}
+				if (s.flag("seen_neko_shukai") && s.flag("tod") === "shinya") {
+					await s.narrate("ねこたちは、まだ\nまるく　すわっている。");
+					return;
+				}
 				if (!s.flag("seen_neko_danchi")) {
 					s.set("seen_neko_danchi");
 					await s.narrate("……先客がいた。");
@@ -1208,6 +1233,11 @@ export const danchi: MapDef = {
 							name: "じいちゃん",
 						},
 					);
+					// ⑩ 案内図の『D棟（予定）』に 気づいた 人だけ
+					if (s.flag("seen_annaizu2"))
+						await s.say(null, "D棟が　たつまでは、\nここで　やるさ", {
+							name: "じいちゃん",
+						});
 					return;
 				}
 				await s.say(null, "六時半だよ、あした。\n……来る気が　あるなら", {
