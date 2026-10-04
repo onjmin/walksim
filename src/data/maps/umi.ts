@@ -9,7 +9,6 @@
 //           防波堤のつり人）。トンネルの奥へ電車の音が遠ざかる（定時音は正常の側）。怪異ゼロ
 //   宵   … NPC 0体（docs/nostalgia.md P0-1）。文は におい・音・点いた灯り だけ
 //   深夜 … NPC 0体必達。灯台のあかりだけの海。防波堤のふちに すわれる（seen_suwari_umi）。
-//           脇道の違和感は一つだけ: 沖のあかり（seen_umi_okibi。まばたきで消える・いさり火かも）
 //   朝   … 漁船がかえってくる。NPC 4体（あみ番・つり人・ジョギングの人・…船は音と文）。
 //           結（STORY.md §5.5・§5.9）：まちのどおりの 窓の 場面（転）の あと、団地の 坂を くだって 来る
 //           （tod="asa"・ending_ready）。坂で 辞めた 人（早番）と すれ違い（yoake_arrive）、
@@ -33,6 +32,7 @@ import {
 	kanTick,
 	NIKKI_TITLE,
 	nikkiSummary,
+	shinyaClock,
 	yoruAkubi,
 	yoruClock,
 } from "../nostalgia";
@@ -436,7 +436,7 @@ export const umi: MapDef = {
 				if (t === "asa" && s.flag("seen_yoake_umi")) {
 					await s.say("kiriko", "（……こっちじゃ\nないンゴ）");
 				} else if (t === "shinya") {
-					await s.narrate("おくから、つめたい風が\nふいてくる。");
+					await s.narrate("おくの　車庫に、\n電車が　ねむっている。");
 				} else {
 					await s.say("kiriko", "……入るのは、\nやめておくンゴ");
 				}
@@ -449,7 +449,7 @@ export const umi: MapDef = {
 		funeBelt(12, 7),
 		funeBelt(16, 13),
 
-		// ── 夕方、トンネルの奥へ電車の音（定時音を正常の側に置く。一度だけ） ──
+		// ── 夕方、トンネルの奥の車庫へ電車が入る音（一度だけ） ──
 		...([37, 38] as const).map((x) => ({
 			id: `densha_belt_${x}`,
 			x,
@@ -461,27 +461,11 @@ export const umi: MapDef = {
 			run: async (s: Story) => {
 				s.set("seen_umi_densha");
 				s.se("densha_far", { pan: 0.8, volume: 0.5 });
-				await s.narrate("トンネルの　おくで、\n電車の音が　とおくなっていく。");
+				await s.narrate(
+					"トンネルの　むこうの　車庫へ、\n電車が　入っていく音。",
+				);
 			},
 		})),
-
-		// ── 深夜、防波堤の先で一度だけ（沖のあかり。いさり火かもしれない） ──
-		{
-			id: "okibi",
-			x: 29,
-			y: 13,
-			trigger: "touch",
-			through: true,
-			when: (st) => st.flags.tod === "shinya" && !st.flags.seen_umi_okibi,
-			run: async (s) => {
-				s.set("seen_umi_okibi");
-				await s.wait(400);
-				await s.narrate("おきのほうに、あかりが\nひとつ　見える。");
-				await s.wait(900);
-				await s.narrate("……まばたきを　したら、\nなくなっていた。");
-				await s.say("kiriko", "……いさり火ンゴ。\nたぶん");
-			},
-		},
 
 		// ── 北の土手（海の家・じはんき・街灯・道のおわり） ──
 		{
@@ -927,7 +911,7 @@ export const umi: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("ホームの時計。――2:00。");
+					await s.narrate(`ホームの時計。――${shinyaClock(s, 2)}。`);
 					return;
 				}
 				if (t === "yoru") {
@@ -957,7 +941,7 @@ export const umi: MapDef = {
 					return;
 				}
 				await s.narrate("時刻表。のぼりが\n一日　四本。くだりは　ない。");
-				await s.narrate("……ここが、はしっこ\nだかららしい。");
+				await s.narrate("ここが　はしっこで、\nトンネルの　むこうは　車庫だ。");
 			},
 		},
 		{

@@ -26,7 +26,13 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
-import { kanShinya, kanTick, yoruAkubi, yoruClock } from "../nostalgia";
+import {
+	kanShinya,
+	kanTick,
+	shinyaClock,
+	yoruAkubi,
+	yoruClock,
+} from "../nostalgia";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
@@ -424,6 +430,11 @@ export const ekimae: MapDef = {
 				});
 				await s.say(null, "じが　へたで　よめない", { name: "男の子" });
 				await s.say(null, "へたって　言うな", { name: "タカ" });
+				// 夕方に「もうちょっとだけ いる」子と 話した 人だけ
+				if (s.flag("seen_ekimae_yuu") && !s.flag("seen_ekimae_taka")) {
+					s.set("seen_ekimae_taka");
+					await s.say("kiriko", "（……まってて、\nよかったンゴね）");
+				}
 			},
 			{ dir: "right", when: (st) => st.flags.tod === "asa" },
 		),
@@ -627,7 +638,7 @@ export const ekimae: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("駅前の時計。――2:00。");
+					await s.narrate(`駅前の時計。――${shinyaClock(s, 1)}。`);
 					return;
 				}
 				if (t === "asa") {

@@ -505,10 +505,6 @@ export const sumire: MapDef = {
 				run: async (s) => {
 					const t = s.flag("tod");
 					if (t === "shinya") {
-						if (s.flag("seen_blanko")) {
-							await s.narrate("ブランコは、もう\nうごかない。");
-							return;
-						}
 						await s.narrate("ブランコが、ふたつ\nならんで　とまっている。");
 						return;
 					}

@@ -152,8 +152,7 @@ const kankan = async (s: Story, n: number, volume: number): Promise<void> => {
 };
 
 /**
- * 踏切の前の帯（y7 の x29〜33）。夕方は一度だけ電車がとおる（定時音は正常の側）。
- * 深夜は一度だけ、電車の来ない踏切が「カン」と一つ鳴る（否認できる微差。ノートには書かない）。
+ * 踏切の前の帯（y7 の x29〜33）。夕方は一度だけ電車がとおる。
  */
 const fumikiriBelt = (x: number): EventDef => ({
 	id: `fumikiri_belt_${x}`,
@@ -161,21 +160,8 @@ const fumikiriBelt = (x: number): EventDef => ({
 	y: 7,
 	trigger: "touch",
 	through: true,
-	when: (st) =>
-		(st.flags.tod === "yu" && !st.flags.seen_fumikiri_yu) ||
-		(st.flags.tod === "shinya" && !st.flags.seen_fumikiri_shinya),
+	when: (st) => st.flags.tod === "yu" && !st.flags.seen_fumikiri_yu,
 	run: async (s) => {
-		if (s.flag("tod") === "shinya") {
-			s.set("seen_fumikiri_shinya");
-			await s.wait(700);
-			s.se("tick", { pan: 0.1, volume: 0.35 });
-			await s.wait(900);
-			await s.narrate("……カン、と　一度だけ、\nふみきりが　鳴った。");
-			await s.wait(500);
-			await s.narrate("しゃだんきは、あがったまま。\nランプも　ついていない。");
-			await s.say("kiriko", "……気のせいンゴ");
-			return;
-		}
 		s.set("seen_fumikiri_yu");
 		await kankan(s, 3, 0.6);
 		await s.narrate("カン、カン、と\nふみきりが　鳴りはじめた。");

@@ -10,9 +10,6 @@
 //   宵   … NPC 0体（docs/nostalgia.md P0-1）。外灯・図書館の入口のあかり・給水塔のランプ。
 //           文は「におい・音・点いた灯り」だけ
 //   深夜 … NPC 0体（必達）。展望台のベンチに すわれる（seen_suwari_koen・P0-7 の形）。
-//           脇道の違和感はひとつだけ: スワンが一羽、ロープをはなれて池のまんなかに
-//           うかんでいる（seen_koen_swan。風でほどけた、で通る。朝は全部つながれている）。
-//           ノートは呼ばない（notes.ts に該当 id が無い）
 //   朝   … もや・スズメ。NPC 4体（ラジオ体操のじいさん・ジョギングの人・返却ポストをあける
 //           図書館の人・ボールをさがす子）。夕方の setup の payoff（かぎ・ボール・ふうふ・石段）
 //
@@ -617,8 +614,6 @@ export const koen: MapDef = {
 				await s.narrate("くびの　ペンキが、\nすこし　はげている。");
 			},
 		},
-		// 深夜の脇道（一つだけ）。ロープが一本たれていて、池のまんなかに白いもの。
-		// 風でほどけた、で通る（説明しない・ノートは呼ばない）。朝は全部つながれている
 		{
 			id: "swan_e",
 			x: 21,
@@ -627,24 +622,13 @@ export const koen: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					if (s.flag("seen_koen_swan")) {
-						await s.narrate(
-							"池の　まんなかの　白いものは、\nさっきと　おなじ所にある。",
-						);
-						return;
-					}
-					s.set("seen_koen_swan");
-					await s.narrate("ロープが　一本だけ、\n水に　たれている。");
-					await s.wait(600);
-					await s.narrate("池の　まんなかに、\n白いものが　ひとつ。");
-					await s.say("kiriko", "……風で、ほどけた\nンゴ");
+					await s.narrate(
+						"『2号』の　スワン。\nくびが、外灯の　ほうを　むいている。",
+					);
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("スワンは、ぜんぶ\nならんで　つながれている。");
-					if (s.flag("seen_koen_swan")) {
-						await s.narrate("むすび目が　ひとつだけ、\nあたらしい。");
-					}
 					return;
 				}
 				if (t === "yoru") {

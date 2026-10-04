@@ -27,6 +27,7 @@ import type { MapDef, Story, TileDef } from "../../engine/defs";
 import {
 	arrived,
 	chukeiDan,
+	kanAsa,
 	kanDesk,
 	NIKKI,
 	nikkiKey,
@@ -38,7 +39,6 @@ import {
 	shinyaWalked,
 	yoruStep,
 } from "../nostalgia";
-import { ALL_RECORDS } from "../records";
 import { SPR } from "../sprites";
 import { HOME_DIARY, ROOM } from "../tiles";
 
@@ -58,10 +58,6 @@ const rows = [
 	"#.........f#", // y8  apart からの戻り位置 (5,8)
 	"#####D######", // y9  ドア (5,9) → apart (2,3)（座標凍結v2）
 ];
-
-/** レコードを1枚でも持っているか。 */
-const anyRecord = (st: { items: Record<string, number> }): boolean =>
-	ALL_RECORDS.some((id) => (st.items[id] ?? 0) > 0);
 
 /** 朝のスレの書き込み（名前欄「名無しさん」。声はカメオ音源。DESIGN §5）。 */
 const post = (s: Story, who: string, text: string) =>
@@ -261,33 +257,9 @@ export const room: MapDef = {
 				await s.wait(400);
 				await s.narrate("……目が　さめた。");
 				await s.narrate("時計の音が　しない。\n――2:00。とまっている。");
-				await s.say("kiriko", "……まだ　よなかンゴ");
-				await s.narrate(
-					"ドアの下から、しろい光が\nすじに　なって　もれている。",
-				);
-				await s.say("kiriko", "……ろうかの電気、\nこんな色だったンゴ？");
+				await s.say("kiriko", "……電池、きれたンゴ。\nまだ　よなかンゴ");
 				await s.wait(400);
 				await s.say("kiriko", "……ねむれそうにないし、\n散歩してくるンゴ");
-			},
-		},
-		// ── 蓄音機がひとりでに回っている（レコードを持って戻ったとき。朝には鳴らさない） ──
-		{
-			id: "phono_spin",
-			x: 6,
-			y: 5,
-			trigger: "auto",
-			once: true,
-			when: (st) =>
-				anyRecord(st) &&
-				!!st.flags["done:room:opening"] &&
-				st.flags.tod !== "asa",
-			run: async (s) => {
-				await s.wait(400);
-				s.se("record");
-				await s.narrate("――蓄音機が、ひとりでに\nまわっている。");
-				await s.narrate("レコードは、\nのせていないのに。");
-				s.se("needle");
-				await s.narrate("針をあげると、すなおに\nとまった。");
 			},
 		},
 		// ── ドア → アパートの廊下（座標凍結v2: room (5,9) → apart (2,3)） ──
@@ -344,21 +316,23 @@ export const room: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					// 深夜に とまっていた かべの時計（電池ぎれ）を、朝に なおす
+					if (!s.flag("seen_clock_denchi")) {
+						s.set("seen_clock_denchi");
+						await s.narrate("かべの時計。\n――2:00で　とまったまま。");
+						await s.narrate("たんすの　電池に\nとりかえて、はりを　あわせた。");
+						s.se("tick", { volume: 0.7 });
+						await s.wait(500);
+						s.se("tick", { volume: 0.7 });
+						await s.narrate("5:12。こつ、こつ、と\nまた　歩きだした。");
+						return;
+					}
 					s.se("tick", { volume: 0.7 });
-					await s.wait(500);
-					s.se("tick", { volume: 0.7 });
-					await s.narrate("かべの時計。5:12。\n……ちゃんと、うごいている。");
+					await s.narrate("かべの時計。秒針が、\nこつこつ　歩いている。");
 					return;
 				}
 				await s.narrate("かべの時計。\n――2:00で　とまっている。");
-				s.se("tick");
-				await s.wait(700);
-				if (!s.flag("seen_clock")) {
-					s.set("seen_clock");
-					await s.say("kiriko", "……いま、動いたンゴ？");
-					return;
-				}
-				await s.narrate("……秒針は、それきり\nうごかない。");
+				await s.say("kiriko", "（電池は、あしたの\n朝に　かえるンゴ）");
 			},
 		},
 		{
@@ -390,8 +364,8 @@ export const room: MapDef = {
 					await s.narrate("あさの光。\nスズメが、鳴いている。");
 					return;
 				}
-				await s.narrate("そとは　まっくら。\nまちの明かりが、ひとつもない。");
-				await s.narrate("街灯も、信号の色も、\nどこにも　ない。");
+				await s.narrate("そとは　しずか。\n窓の　あかりは、ぜんぶ　消えた。");
+				await s.narrate("街灯と、コンビニの\nあかりだけ　ついている。");
 			},
 		},
 		{
@@ -498,7 +472,8 @@ export const room: MapDef = {
 					);
 					await s.say("kiriko", "……かたづけるンゴ");
 					// ポケットの紙もの（P0-9）。コロッケを会計した人だけ、レシートが出てくる（一度だけ）。
-					// 朝のあき缶は置かない（深夜の町が夢かどうかの答え合わせになるため）
+					// ゆうべ深夜の自販機で買った缶（夜の散歩は本当にあった。夢オチにしない）
+					await kanAsa(s);
 					if (
 						s.flag("got_korokke") &&
 						s.flag("seen_kaikei") &&
@@ -651,6 +626,7 @@ export const room: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "yu" || t === "yoru") {
+					s.set("seen_kettle_yoru");
 					await s.narrate("やかんを　かけた。\nお茶の　じかんだ。");
 					return;
 				}
@@ -658,8 +634,12 @@ export const room: MapDef = {
 					await s.narrate("やかんは、つめたい。\nあとで　わかしなおすンゴ。");
 					return;
 				}
-				await s.narrate("やかん。さわると、\nほんのり　ぬるい。");
-				await s.narrate("……ゆうべの　おちゃの、\nのこりだ。");
+				if (s.flag("seen_kettle_yoru")) {
+					await s.narrate("やかん。さわると、\nほんのり　ぬるい。");
+					await s.narrate("……ねるまえの　おちゃの、\nのこりだ。");
+					return;
+				}
+				await s.narrate("やかん。つめたい。\n水は　入っていない。");
 			},
 		},
 	],

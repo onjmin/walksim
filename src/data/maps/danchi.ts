@@ -153,27 +153,6 @@ const gohanBelt = (x: number, y: number): EventDef => ({
 });
 
 /**
- * 深夜の場面: 給水塔の近くで、かすかな水音（kyusuito へ視線を運ぶだけ。
- * 書き留めるのは塔を調べたとき）。
- */
-const mizuOto = async (s: Story): Promise<void> => {
-	if (s.flag("seen_mizuoto_danchi")) return;
-	s.set("seen_mizuoto_danchi");
-	await s.wait(400);
-	s.se("train", { pan: -0.2, volume: 0.15 });
-	await s.narrate("……水の音がする。\n上のほうからだ。");
-};
-const mizuBelt = (x: number, y: number): EventDef => ({
-	id: `mizu_${x}_${y}`,
-	x,
-	y,
-	trigger: "touch",
-	through: true,
-	when: (st) => st.flags.tod === "shinya" && !st.flags.seen_mizuoto_danchi,
-	run: mizuOto,
-});
-
-/**
  * 朝の場面: 集会所の前で、ラジオをかたづける音（体そうは6時半＝もうおわっている）。
  */
 const taisoAto = async (s: Story): Promise<void> => {
@@ -343,12 +322,9 @@ export const danchi: MapDef = {
 		...waveBelt("wave_e", 24, [12], 0.4),
 		...waveBelt("wave_n", 16, [6], 0),
 
-		// ── 場面の帯（夕＝呼び声／深夜＝水音／朝＝ラジオのかたづけ） ──
+		// ── 場面の帯（夕＝呼び声／朝＝ラジオのかたづけ） ──
 		gohanBelt(16, 3),
 		gohanBelt(16, 4),
-		mizuBelt(2, 8),
-		mizuBelt(4, 8),
-		mizuBelt(3, 9),
 		taisoBelt(19, 18),
 		taisoBelt(20, 18),
 		taisoBelt(21, 18),

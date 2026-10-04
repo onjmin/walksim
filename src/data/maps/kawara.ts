@@ -935,6 +935,7 @@ export const kawara: MapDef = {
 			8,
 			RUNNER,
 			async (s) => {
+				s.set("seen_runner_yu");
 				await s.narrate("はしりながら、かるく\n会釈をされた。");
 			},
 			{ wander: true, when: (st) => st.flags.tod === "yu" },
@@ -1017,7 +1018,8 @@ export const kawara: MapDef = {
 			8,
 			RUNNER,
 			async (s) => {
-				if (!s.flag("seen_runner_asa")) {
+				// 夕方に 会釈を された 人だけ「ゆうべの人だ」
+				if (s.flag("seen_runner_yu") && !s.flag("seen_runner_asa")) {
 					s.set("seen_runner_asa");
 					await s.narrate("ゆうべの人だ、という顔を\nされた。");
 					await s.narrate("……会釈を、かえしておく。");

@@ -8,7 +8,7 @@
 //   宵    … 晩ごはんのあとの任意の散歩（docs/nostalgia.md P0-1）。NPC 0体・時計は 20:XX
 //           （地区を回るたびに進む＝yoruClock）・街灯がつく。文は におい・音・点いた灯り だけ
 //           （消えた窓・減った人は書かない）。自販機の赤い札・コンビニの牛乳・自分の窓のあかり
-//   深夜  … 無人（NPC 0体・必達）。時計は 2:00。
+//   深夜  … 無人（NPC 0体・必達）。時計は 2 時台（地区を回るたびに進む＝shinyaClock）
 //   朝    … 光と音が戻る。NPC 5体・セリフ全差し替え・setup/payoff の対（§4）。
 //
 // 物語（STORY.md §5.5）：夕方の 地の文で「キリコが 外の 町で 暮らしはじめた」ことを はっきり 言う。
@@ -34,7 +34,13 @@ import type {
 } from "../../engine/defs";
 import { settings } from "../../engine/settings";
 import { npc, warp } from "../helpers";
-import { kanShinya, kanTick, yoruAkubi, yoruClock } from "../nostalgia";
+import {
+	kanShinya,
+	kanTick,
+	shinyaClock,
+	yoruAkubi,
+	yoruClock,
+} from "../nostalgia";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
@@ -409,7 +415,7 @@ export const street: MapDef = {
 				await s.wait(700);
 				await s.narrate("しんと、している。");
 				await s.wait(400);
-				await s.narrate("じぶんの足音だけが、\nついてくる。");
+				await s.narrate("コンビニの　あかりと、\n自販機の　うなりだけ。");
 			},
 		},
 		{
@@ -683,7 +689,14 @@ export const street: MapDef = {
 			10,
 			CHILD,
 			async (s) => {
-				await s.say(null, "工事の　なんかのこと、\n先生に聞いてみるんだ", {
+				// 夕方の「道の下から なんか出た」を 聞いた 人だけ、その つづき
+				if (s.flag("seen_kids")) {
+					await s.say(null, "工事の　なんかのこと、\n先生に聞いてみるんだ", {
+						name: "男の子",
+					});
+					return;
+				}
+				await s.say(null, "工事の　あな、きょう\nうめちゃうんだって", {
 					name: "男の子",
 				});
 			},
@@ -714,8 +727,13 @@ export const street: MapDef = {
 				await s.say(null, "あら、\nおはようございます", {
 					name: "さんぽの人",
 				});
-				await s.narrate("犬が、しっぽを\nちぎれるほど　ふっている。");
-				await s.say("kiriko", "……おぼえてて\nくれたンゴ");
+				// 夕方に においを かがれた 人だけ「おぼえてて」（会っていない人には言わせない）
+				if (s.flag("seen_sanpo")) {
+					await s.narrate("犬が、しっぽを\nちぎれるほど　ふっている。");
+					await s.say("kiriko", "……おぼえてて\nくれたンゴ");
+					return;
+				}
+				await s.narrate("犬が、キリコの　くつを\nくんくん　かいでいる。");
 			},
 			{ wander: true, when: (st) => st.flags.tod === "asa" },
 		),
@@ -730,10 +748,13 @@ export const street: MapDef = {
 					await s.say(null, "おはよう。きょうで\n埋めもどしだよ", {
 						name: "作業員",
 					});
-					await s.say("kiriko", "……なにが　出たンゴ？");
-					await s.say(null, "ん？　ただの\nふるい土管だったよ", {
-						name: "作業員",
-					});
+					// 夕方に「図面とちがうのが出た」か、子どもの噂を 聞いた 人だけ たずねる
+					if (s.flag("seen_sagyo") || s.flag("seen_kids")) {
+						await s.say("kiriko", "……なにが　出たンゴ？");
+						await s.say(null, "ん？　ただの\nふるい土管だったよ", {
+							name: "作業員",
+						});
+					}
 					return;
 				}
 				await s.say(null, "あぶないから、\nはなれててな", { name: "作業員" });
@@ -774,7 +795,7 @@ export const street: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("まちの時計。――2:00。");
+					await s.narrate(`まちの時計。――${shinyaClock(s)}。`);
 					return;
 				}
 				if (t === "asa") {
@@ -801,7 +822,7 @@ export const street: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("とこやの　サインポールは、\nとまっている。");
-					await s.narrate("おくの時計――2:00。");
+					await s.narrate(`おくの時計――${shinyaClock(s, 1)}。`);
 					return;
 				}
 				if (t === "asa") {
@@ -829,7 +850,7 @@ export const street: MapDef = {
 				if (t === "shinya") {
 					await s.narrate("あかりが、ついている。");
 					await s.narrate("レジには、だれもいない。");
-					await s.narrate("……時計は――2:00。");
+					await s.narrate(`……時計は――${shinyaClock(s)}。`);
 					return;
 				}
 				if (t === "asa") {

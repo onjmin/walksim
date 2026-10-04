@@ -115,6 +115,19 @@ export const yoruClock = (s: Story, off = 0): string => {
 	return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
 };
 
+/** 深夜に着いた屋外の地区の数（0〜10）。arrive_shinya の once で数える。 */
+export const shinyaStep = (s: Story): number =>
+	OUTDOOR_DAILY.filter((m) => arrived(s, m, "shinya")).length;
+
+/**
+ * 深夜の町の時計（"2:05"〜"3:55"。shinyaStep ごとに11分進む）。off は時計ごとのずれ。
+ * 夜は止まらない（夢オチ・時間停止にしない。2026-10-04）。部屋のかべの時計だけは電池ぎれで 2:00 のまま。
+ */
+export const shinyaClock = (s: Story, off = 0): string => {
+	const m = 2 * 60 + 5 + 11 * shinyaStep(s) + off;
+	return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+};
+
 /**
  * あくび（宵の4地区目あたり。一度だけ `seen_akubi`）。7か所の arrive_yoru の末尾で `await yoruAkubi(s)`。
  * いま着いた地区は done: がまだ立っていないので、1つ足して数える（4地区目に着いたところで出る）。
@@ -223,6 +236,20 @@ export const kanDesk = async (s: Story): Promise<void> => {
 		lv === 3
 			? "ぬるくなった　缶を、\n机で　のみほした。"
 			: "缶を、机で\nゆっくり　のみほした。",
+	);
+};
+
+/**
+ * 朝の机（room desk の asa 分岐で `await kanAsa(s)`）。ゆうべ缶を買っていれば、その缶が机にある
+ * （深夜の散歩が本当にあったことの物証。夢かどうかを ぼかさない）。
+ */
+export const kanAsa = async (s: Story): Promise<void> => {
+	const lv = kanLv(s);
+	if (lv === 0) return;
+	await s.narrate(
+		lv === 4
+			? "机のすみに、ゆうべの\nあき缶が　立っている。"
+			: "コートの　ポケットに、\nのみかけの　缶。つめたい。",
 	);
 };
 

@@ -4,7 +4,7 @@
 //   夕方 … どこかの部屋のテレビの音・となりの不在票（ぜんぶ日常）
 //   宵   … せんたくきの音・502 からナイターの実況・階段の窓にまちの灯り
 //           （docs/nostalgia.md P0-1・P0-2。人は出さない。延長の段は数えない＝どの回でも「実況」だけ）
-//   深夜 … 違和感は「蛍光灯の明滅」ただ一つ（style-everyday §5: apart は微差1個まで）
+//   深夜 … しずかな廊下。蛍光灯に虫が一ぴき
 //   朝   … 不在票が取り込まれている・牛乳が届いている・朝刊のスポーツらん（生活が続いている payoff）
 //
 // 座標凍結v2: キリコの部屋のドア (2,2)→room(5,8)／room からの戻り (2,3)／
@@ -78,26 +78,6 @@ export const apart: MapDef = {
 				await yoruAkubi(s);
 			},
 		},
-		{
-			id: "keiko_shinya",
-			x: 1,
-			y: 0,
-			trigger: "auto",
-			once: true,
-			when: (st) => st.flags.tod === "shinya",
-			run: async (s) => {
-				await s.wait(500);
-				s.se("hum", { volume: 0.6 });
-				await s.fadeOut(90);
-				await s.fadeIn(90);
-				await s.wait(250);
-				await s.fadeOut(70);
-				await s.fadeIn(70);
-				await s.narrate("蛍光灯が、二回\nまばたきをした。");
-				await s.say("kiriko", "……きれかけンゴ");
-			},
-		},
-
 		// ── 出入り口（座標凍結v2） ──
 		{
 			id: "door_room",
@@ -129,7 +109,7 @@ export const apart: MapDef = {
 			{ se: "stairs" },
 		),
 
-		// ── しらべられるもの（ノルマ12個。違和感は蛍光灯だけに集める） ──
+		// ── しらべられるもの（ノルマ12個） ──
 		{
 			id: "fluor",
 			x: 5,
@@ -138,12 +118,13 @@ export const apart: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("見あげると、蛍光灯。");
-					await s.narrate("……ちら、ちら、と\nまたたいている。");
+					await s.narrate(
+						"見あげると、蛍光灯。\n小さな虫が、一ぴき　まわっている。",
+					);
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("蛍光灯は、もう\nまたたいていない。");
+					await s.narrate("朝の光で、蛍光灯は\nほとんど　目だたない。");
 					return;
 				}
 				await s.narrate("見あげると、蛍光灯。\nしろい、ふつうの光だ。");
