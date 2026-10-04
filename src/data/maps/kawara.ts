@@ -4,7 +4,8 @@
 //
 // 時間帯の顔（flags.tod）:
 //   夕方 … 川面のきらめき・ヒグラシ。NPC 4体（つりの人=3層会話・ランニングの人=周回・
-//           ハーモニカの子・水きりの子）。川しもの鉄橋を電車がわたる（定時音は正常の側に置く）。
+//           ハーモニカの子・水きりの子）。川しもの鉄橋を電車がわたる（定時音は正常の側に置く。
+//           宵＝川面の窓のあかり／深夜＝くろい線の鉄橋／朝＝川をわたる音 と、時間帯ごとに一度ずつ。tekkyoBelt）。
 //           水ぎわで一度だけ蚊にさされる（ka_a/b/c・seen_ka。寝る前と朝の一行は room bed）
 //   宵   … NPC 0体（docs/nostalgia.md P0-1）。土手の街灯と常夜灯がつき、川の音がちかい。
 //           文は「におい・音・点いた灯り」だけ（減った人・消えた窓は書かない）。つりのバケツだけ残っている
@@ -20,7 +21,12 @@
 // 経路: 一本道にしない（土手道⇄石段の神社⇄水ぎわ⇄戻り橋の対岸）。
 // 対岸は行き止まりだが「見るもの」を置く（花火のもえかす・川ごしの町）。
 // 隠し: 対岸の西はし、ススキ（h・無印）が見た目のまま通れる → 水きり石の穴場。
-// 二度目で変わる: 絵馬かけ・ご神木・水きり石（かりたあと）。
+// 二度目で変わる: 絵馬かけ・ご神木・水きり石（かりたあと）・ハーモニカの子・犬のさんぽの人・ほうきの人。
+// 夕方の前振り → 朝の回収（このマップの中）: 中州のしらさぎ（seen_sagi_yu）→ 朝とびたつ → 犬が首をかしげる／
+//   やしろの竹ぼうき（seen_yashiro_houki）・石段の四つめ（seen_ishidan）→ ほうきの人／
+//   かかしのぼうし（seen_kakashi_boushi・宵の風 seen_kakashi_kaze）→ 朝、あぜのきわにとばされている（くいにかける）／
+//   こまいぬ（seen_komainu_a/b）・ご神木のどんぐり（seen_donguri）・ススキ（深夜 got_susuki）・ふみあと（深夜にすわった）。
+// 石碑『もどりばし』と銘板『もどりはし』は、どちらからでも見くらべられる（seen_hashi_sekihi・seen_hashi_meiban）。
 
 import type {
 	EventDef,
@@ -31,6 +37,7 @@ import type {
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import {
+	arrived,
 	kanHeld,
 	kanLine,
 	kanTick,
@@ -139,7 +146,11 @@ const waveBelt = (id: string, x: number, pan: number): EventDef => ({
 	run: wave(id, pan),
 });
 
-/** 朝、水ぎわに下りたとき一度だけ（しらさぎの飛び立ち。kawa_b の朝の payoff）。 */
+/**
+ * 朝、水ぎわに下りたとき一度だけ（しらさぎの飛び立ち。kawa_b の朝の payoff）。
+ * ㉒ 夕方に中州のしらさぎを見た人（seen_sagi_yu）には「中州の　しらさぎが」。
+ * 立てた seen_sagi_asa は inu_sanpo（asa。犬が首をかしげる）と umi kyori_0（河口）が読む。
+ */
 const sagiBelt = (x: number, y: number): EventDef => ({
 	id: `sagi_${x}`,
 	x,
@@ -149,10 +160,35 @@ const sagiBelt = (x: number, y: number): EventDef => ({
 	when: (st) => st.flags.tod === "asa" && !st.flags.seen_sagi_asa,
 	run: async (s) => {
 		s.set("seen_sagi_asa");
-		await s.narrate("――しらさぎが、はねの音も\nたてずに　とびたった。");
+		await s.narrate(
+			s.flag("seen_sagi_yu")
+				? "中州の　しらさぎが、はねの音も\nたてずに　とびたった。"
+				: "――しらさぎが、はねの音も\nたてずに　とびたった。",
+		);
 		await s.narrate("川しもへ、白い点に\nなっていく。");
 	},
 });
+
+/**
+ * 川しもの鉄橋（土手の道 (34,8)(35,8) の帯。④ 電車の音）。時間帯ごとに一度だけ1行。
+ * 夕方の seen_tekkyo は room の布団の遠い音（TOOI_OTO）と koen tesuri が読む。
+ * 深夜は、夕方に聞いた人だけ「川の上のくろい線」（音は鳴らさない）。
+ * 宵・朝は、川べりでしか見えないもの（川面のあかり・水をわたる音）にする（koen tesuri・senro と重ねない）。
+ */
+const tekkyoBelt = (
+	id: string,
+	when: (st: GameState) => boolean,
+	run: (s: Story) => Promise<void>,
+): EventDef[] =>
+	([34, 35] as const).map((x, i) => ({
+		id: `${id}_${i}`,
+		x,
+		y: 8,
+		trigger: "touch" as const,
+		through: true,
+		when,
+		run,
+	}));
 
 /**
  * 夕方の水ぎわで、蚊（nostalgia.md P0-10。帯3つのどれかで一日一回だけ・seen_ka）。
@@ -173,20 +209,34 @@ const kaBelt = (id: string, x: number): EventDef => ({
 	},
 });
 
-/** 狛犬の一言。 */
+/**
+ * 狛犬の一言。夕方に見たほう（seen_komainu_a/b）は、朝に見なおすと変わる
+ * （a＝わらって見えた顔が、朝の光ではふつう／b＝あごの下のくもの巣に朝つゆ）。
+ */
 const komainu = async (s: Story, which: "a" | "b"): Promise<void> => {
 	const t = s.flag("tod");
 	if (t === "yu") {
 		if (which === "a") {
+			s.set("seen_komainu_a");
 			await s.narrate("こまいぬ。口を　あけている\nほうだ。");
 			await s.narrate("……ちょっと、わらっている\nようにも　見える。");
 			return;
 		}
+		s.set("seen_komainu_b");
 		await s.narrate("こまいぬ。口を　とじている\nほうだ。");
 		await s.narrate("あごの下に、くもの巣。");
 		return;
 	}
 	if (t === "asa") {
+		// 夕方の顔・くもの巣を見た人だけ
+		if (which === "a" && s.flag("seen_komainu_a")) {
+			await s.narrate("あさの光だと、\nふつうの　かおだ。");
+			return;
+		}
+		if (which === "b" && s.flag("seen_komainu_b")) {
+			await s.narrate("あごの下の　くもの巣に、\n朝つゆが　ならんでいる。");
+			return;
+		}
 		await s.narrate("こまいぬ。あさの光で、\n石のはだが　しろい。");
 		return;
 	}
@@ -324,7 +374,12 @@ export const kawara: MapDef = {
 			when: (st) => st.flags.tod === "yoru",
 			run: async (s) => {
 				await s.wait(500);
-				await s.narrate("川の音が、夕方より\nちかく　きこえる。");
+				// 「夕方より」は、夕方にここへ来た人だけ
+				await s.narrate(
+					arrived(s, "kawara", "yu")
+						? "川の音が、夕方より\nちかく　きこえる。"
+						: "川の音が、くらがりで\nちかく　きこえる。",
+				);
 				await yoruAkubi(s);
 			},
 		},
@@ -352,7 +407,12 @@ export const kawara: MapDef = {
 				await s.wait(500);
 				s.se("suzume", { pan: 0.3, volume: 0.8 });
 				await s.wait(600);
-				await s.narrate("川が、あさの光を\nはねかえしている。");
+				// 深夜に「音だけ」の川を歩いた人だけ（arrive_shinya の回収）
+				await s.narrate(
+					arrived(s, "kawara", "shinya")
+						? "夜は　音だけだった　川が、\nぜんぶ　見える。"
+						: "川が、あさの光を\nはねかえしている。",
+				);
 			},
 		},
 
@@ -372,21 +432,55 @@ export const kawara: MapDef = {
 		kaBelt("ka_b", 16),
 		kaBelt("ka_c", 24),
 
-		// ── 川しもの鉄橋（夕方に一度・定時音を正常の側に置く） ──
-		...([34, 35] as const).map((x, i) => ({
-			id: `tekkyo_belt_${i}`,
-			x,
-			y: 8,
-			trigger: "touch" as const,
-			through: true,
-			when: (st: GameState) => st.flags.tod === "yu" && !st.flags.seen_tekkyo,
-			run: async (s: Story) => {
+		// ── 川しもの鉄橋（時間帯ごとに一度・定時音を正常の側に置く） ──
+		// 夕方（seen_tekkyo は room の布団の遠い音が読む）
+		...tekkyoBelt(
+			"tekkyo_belt",
+			(st) => st.flags.tod === "yu" && !st.flags.seen_tekkyo,
+			async (s) => {
 				s.set("seen_tekkyo");
 				s.se("densha_far", { pan: 0.6, volume: 0.6 });
 				await s.narrate("川しもの鉄橋を、電車が\nわたっていく音。");
 			},
-		})),
+		),
+		// 宵（人の姿は書かない。電車の窓のあかりだけ）
+		...tekkyoBelt(
+			"tekkyo_yoru",
+			(st) => st.flags.tod === "yoru" && !st.flags.seen_tekkyo_yoru,
+			async (s) => {
+				s.set("seen_tekkyo_yoru");
+				s.se("densha_far", { pan: 0.6, volume: 0.35 });
+				await s.narrate(
+					"電車の　窓の　あかりが、\n川面に　ならんで　うつった。",
+				);
+			},
+		),
+		// 深夜（夕方に電車を聞いた人だけ。音は鳴らさない）
+		...tekkyoBelt(
+			"tekkyo_shinya",
+			(st) =>
+				st.flags.tod === "shinya" &&
+				!!st.flags.seen_tekkyo &&
+				!st.flags.seen_tekkyo_shinya,
+			async (s) => {
+				s.set("seen_tekkyo_shinya");
+				await s.narrate("鉄橋は、川の上の\nくろい　線に　なっている。");
+			},
+		),
+		// 朝
+		...tekkyoBelt(
+			"tekkyo_asa",
+			(st) => st.flags.tod === "asa" && !st.flags.seen_tekkyo_asa,
+			async (s) => {
+				s.set("seen_tekkyo_asa");
+				s.se("densha_far", { pan: 0.6, volume: 0.6 });
+				await s.narrate(
+					"ごとん、ごとん、と　鉄橋の\n音が、川を　わたってくる。",
+				);
+			},
+		),
 
+		// 石碑『もどりばし』⇄ 銘板『もどりはし』（どちらを先に見ても、あとのほうで見くらべる）
 		{
 			id: "hashi_sekihi",
 			x: 19,
@@ -395,10 +489,13 @@ export const kawara: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				s.set("seen_hashi_sekihi");
 				await s.narrate("橋のたもとの、ふるい石碑。");
 				await s.narrate(
 					"『もどりばし』と　よめる。\n由来は、けずれて　よめない。",
 				);
+				if (s.flag("seen_hashi_meiban"))
+					await s.narrate("……橋の　銘板は、\nにごらずに　ほってある。");
 			},
 		},
 		{
@@ -407,8 +504,10 @@ export const kawara: MapDef = {
 			y: 12,
 			trigger: "talk",
 			run: async (s) => {
+				s.set("seen_hashi_meiban");
 				await s.narrate("橋のたもとの、銘板。\nひらがなで『もどりはし』。");
-				await s.narrate("……にごらずに、\nほってある。");
+				if (s.flag("seen_hashi_sekihi"))
+					await s.narrate("……にごらずに、\nほってある。");
 			},
 		},
 		{
@@ -424,6 +523,11 @@ export const kawara: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("あさもやの　きれはしが、\n橋の下から　ながれ出た。");
+					// ㉓ すみれの みぞを ながれていった ささぶね（sumire mizo）
+					if (s.flag("seen_sasabune"))
+						await s.narrate(
+							"岸の　草に、ささぶねが\nひとつ　ひっかかっている。",
+						);
 					return;
 				}
 				await s.narrate("橋の上は、川かぜの\nとおり道だ。");
@@ -435,29 +539,8 @@ export const kawara: MapDef = {
 			},
 		},
 
-		// ── 川面（夕=きらめき／宵・深夜=音だけ／朝=きらめき） ──
-		{
-			id: "kawa_a",
-			x: 10,
-			y: 12,
-			trigger: "talk",
-			run: async (s) => {
-				const t = s.flag("tod");
-				if (t === "shinya") {
-					await s.narrate("水の音だけが、する。\nながれは、見えない。");
-					return;
-				}
-				if (t === "yoru") {
-					await s.narrate("水面は　くろい。\nさざなみが、岸を　たたく音。");
-					return;
-				}
-				if (t === "asa") {
-					await s.narrate("あさの光が、水面で\nこまかく　われている。");
-					return;
-				}
-				await s.narrate("夕日の帯が、水面を\nゆらゆら　ながれていく。");
-			},
-		},
+		// ── 川面（中州。夕=しらさぎ／宵=はねの音／深夜=ぬしの音／朝=とびたったあと） ──
+		// 川面は、ここと hashi_ue（橋の上）の2か所だけ
 		{
 			id: "kawa_b",
 			x: 30,
@@ -491,29 +574,21 @@ export const kawara: MapDef = {
 					await s.narrate("あさもやが、水面に\nうすく　のこっている。");
 					return;
 				}
-				await s.narrate("川のまんなかに、\n中州の草が　ゆれている。");
+				if (t === "yoru") {
+					// 宵は音だけ（夕方のしらさぎは書かない）
+					await s.narrate("中州の　あたりで、\nばさ、と　はねの音。");
+					return;
+				}
+				// ㉒ 夕方の しらさぎ（朝の sagiBelt・inu_sanpo・umi kyori_0 が回収）
+				s.set("seen_sagi_yu");
+				await s.narrate(
+					"川のまんなかの　中州に、\nしらさぎが　一羽　立っている。",
+				);
 			},
 		},
 
-		// ── 田んぼの端（あぜ越しに調べられる） ──
-		{
-			id: "tanbo",
-			x: 3,
-			y: 6,
-			trigger: "talk",
-			run: async (s) => {
-				const t = s.flag("tod");
-				if (t === "shinya") {
-					await s.narrate("田んぼから、カエルの声。\n……夜も、はたらきものだ。");
-					return;
-				}
-				if (t === "asa") {
-					await s.narrate("いねの先に、朝つゆが\nならんで　ひかっている。");
-					return;
-				}
-				await s.narrate("いねが、おもたそうに\n頭を下げはじめている。");
-			},
-		},
+		// ── 田んぼの端（田はあぜ越しに見るだけ。調べられるのは かかしと看板） ──
+		// かかし: 夕方のぼうし（seen_kakashi_boushi）・宵の風（seen_kakashi_kaze）→ 朝、ぼうしがあぜのきわにとばされている
 		{
 			id: "kakashi",
 			x: 1,
@@ -526,11 +601,40 @@ export const kawara: MapDef = {
 					await s.say("kiriko", "（……ごくろうさま\nンゴ）");
 					return;
 				}
+				if (t === "yoru") {
+					s.set("seen_kakashi_kaze");
+					await s.narrate(
+						"かぜが　出てきた。ぼうしの\nつばが、ぱたぱた　鳴っている。",
+					);
+					return;
+				}
 				if (t === "asa") {
+					// 夕方のぼうしか、宵の風を見た人だけ
+					if (s.flag("seen_kakashi_boushi") || s.flag("seen_kakashi_kaze")) {
+						// 田には入らない（tanbo_sign『はいらないでね』）。手のとどく あぜの くいに かける
+						if (s.flag("seen_kakashi_naoshi")) {
+							await s.narrate(
+								"くいの　ぼうしに、すずめが\n一羽　とまっている。",
+							);
+							return;
+						}
+						await s.narrate(
+							"むぎわらぼうしが、あぜの\nきわまで　とばされている。",
+						);
+						const i = await s.choose(
+							["＞＞1 あぜの　くいに　かける", "＞＞2 そのままにする"],
+							{ cancel: 1 },
+						);
+						if (i !== 0) return;
+						s.set("seen_kakashi_naoshi");
+						await s.narrate("あぜの　くいに、ぼうしを\nかけておいた。");
+						return;
+					}
 					await s.narrate("かかしの　かたに、すずめ。");
 					await s.narrate("いばしょを、\nまちがえている。");
 					return;
 				}
+				s.set("seen_kakashi_boushi");
 				await s.narrate(
 					"田んぼのおくに、かかし。\nむぎわらぼうしが　あたらしい。",
 				);
@@ -557,9 +661,10 @@ export const kawara: MapDef = {
 			trigger: "touch",
 			through: true,
 			when: (st) => !st.flags.seen_ishidan,
+			// 四つめの段がゆれる（kazoe の『4』のぬけ・朝の houki_baachan「らいげつには　なおるよ」が回収）
 			run: async (s) => {
 				s.set("seen_ishidan");
-				await s.narrate("石段。まんなかだけ、\nすりへって　白い。");
+				await s.narrate("石段の　四つめが、\nことん、と　ゆれた。");
 			},
 		},
 		{
@@ -574,14 +679,17 @@ export const kawara: MapDef = {
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("石段のチョークが、\nあさつゆで　にじんでいる。");
-					await s.narrate("『5』だけ、くっきり\nのこっている。");
+					await s.narrate("チョークの　数字が、\nあさつゆで　にじんでいる。");
 					return;
 				}
 				await s.narrate("石段のはしに、チョークの\n数字。『1 2 3 5 6……』");
 				await s.narrate("4だけ、とばしてある。");
+				// 四つめの段を ふんだ 人だけ（ishidan）
+				if (s.flag("seen_ishidan"))
+					await s.say("kiriko", "（……ゆれる　段ンゴ）");
 			},
 		},
+		// やしろ: 夕方・宵の竹ぼうき（seen_yashiro_houki）→ 深夜も まだある → 朝、ほうきの人（houki_baachan）
 		{
 			id: "yashiro",
 			x: 31,
@@ -593,8 +701,17 @@ export const kawara: MapDef = {
 					await s.narrate("ちいさな　やしろ。戸の前が\nきれいに　はいてある。");
 					return;
 				}
+				if (t === "shinya") {
+					await s.narrate(
+						s.flag("seen_yashiro_houki")
+							? "竹ぼうきは、まだ\nたてかけてある。"
+							: "くらくて、やしろの　形だけ\n見える。",
+					);
+					return;
+				}
+				s.set("seen_yashiro_houki");
 				await s.narrate("ちいさな　やしろ。\nしめなわは、あたらしい。");
-				await s.narrate("名前は、どこにも\n書かれていない。");
+				await s.narrate("戸の　よこに、竹ぼうきが\n一本　たてかけてある。");
 			},
 		},
 		{
@@ -669,6 +786,12 @@ export const kawara: MapDef = {
 					await s.narrate("『でっかいコイが　つれます\nように』");
 					return;
 				}
+				// ハーモニカの子に会った人だけ、はっぴょう会の絵馬のすみに目がいく（harmonica_kid の2回目と対）
+				const kid = !!s.flag("seen_harmonica");
+				if (kid)
+					await s.narrate(
+						"はっぴょう会の　絵馬。すみに、\nハーモニカの　らくがき。",
+					);
 				// ① ぬしの 話を 聞いた 人だけ、コイの 絵馬に もどる
 				if (s.flag("seen_tsuri2")) {
 					await s.narrate("『でっかいコイが　つれます\nように』の　絵馬。");
@@ -677,15 +800,34 @@ export const kawara: MapDef = {
 					);
 					return;
 				}
-				await s.narrate("いちばん古い絵馬は、\n字が　きえて　よめない。");
+				if (!kid)
+					await s.narrate("いちばん古い絵馬は、\n字が　きえて　よめない。");
 			},
 		},
+		// ご神木: 夕方の2回目で うろの どんぐり（seen_donguri）→ 朝、ヤマガラが くわえていく
 		{
 			id: "goshinboku",
 			x: 28,
 			y: 5,
 			trigger: "talk",
 			run: async (s) => {
+				const t = s.flag("tod");
+				if (t === "yoru" || t === "shinya") {
+					await s.narrate("クスノキの　葉が、夜風で\nかさかさ　こすれている。");
+					return;
+				}
+				if (t === "asa") {
+					if (s.flag("seen_donguri")) {
+						await s.narrate(
+							"うろの　ふちに、ヤマガラ。\nどんぐりを　くわえて　いった。",
+						);
+						return;
+					}
+					await s.narrate(
+						"ふるい　クスノキ。みきに、\nしめなわが　まいてある。",
+					);
+					return;
+				}
 				if (!s.flag("seen_goshinboku")) {
 					s.set("seen_goshinboku");
 					await s.narrate(
@@ -693,6 +835,7 @@ export const kawara: MapDef = {
 					);
 					return;
 				}
+				s.set("seen_donguri");
 				await s.narrate("みきのうろに、どんぐりが\nためこんである。");
 				await s.narrate("……だれのだろう。");
 			},
@@ -740,6 +883,7 @@ export const kawara: MapDef = {
 				await s.narrate("川は、まだ　ずっと\nつづいているらしい。");
 			},
 		},
+		// ⑮ ススキ: 深夜に一本もらう（got_susuki）→ 朝、ぬいたあと・room desk のコップ（seen_susuki_kabin）
 		{
 			id: "susuki_a",
 			x: 15,
@@ -748,7 +892,15 @@ export const kawara: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("ススキの穂が、しろい。\n夜のほうが、よく見える。");
+					await s.narrate("ススキの穂が、しろく\nうかんでいる。");
+					if (s.flag("got_susuki")) return;
+					const i = await s.choose(["＞＞1 一本　もらう", "＞＞2 やめておく"], {
+						cancel: 1,
+					});
+					if (i !== 0) return;
+					s.se("item", { volume: 0.4 });
+					s.set("got_susuki");
+					await s.narrate("一本　ぬいて、ポケットに\nさした。");
 					return;
 				}
 				if (t === "yoru") {
@@ -756,7 +908,11 @@ export const kawara: MapDef = {
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("ススキに、朝つゆ。\nさわると　つめたい。");
+					await s.narrate(
+						s.flag("got_susuki")
+							? "一本　ぬいた　あとが、\nすきまに　なっている。"
+							: "土手の　ススキが、\n朝の風で　ななめに　なる。",
+					);
 					return;
 				}
 				await s.narrate("ススキが、夕日で\n金色になっている。");
@@ -770,7 +926,16 @@ export const kawara: MapDef = {
 			run: async (s) => {
 				await s.narrate("土手のくさに、ふみあと。\n近道の　あとらしい。");
 				const t = s.flag("tod");
+				if (t === "yoru") {
+					await s.narrate("ふみあとの　草が、街灯の\nはしで　ひかる。");
+					return;
+				}
 				if (t === "asa") {
+					// 深夜に ここへ すわった 人だけ（suwaru）
+					if (s.flag("seen_suwari_kawara"))
+						await s.narrate(
+							"ゆうべ　すわった　ところ、\n草が　まるく　ねている。",
+						);
 					await s.narrate("……けさの分が、もう\nついている。");
 					return;
 				}
@@ -851,6 +1016,11 @@ export const kawara: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
+				// 石碑『もどりばし』を読んだ人だけ、一度（名の由来は言わない。行きどまりの川岸と橋だけ）
+				if (s.flag("seen_hashi_sekihi") && !s.flag("seen_modori")) {
+					s.set("seen_modori");
+					await s.narrate("ここで、行きどまり。\nもどる　橋は、あれだけだ。");
+				}
 				if (t === "shinya") {
 					await s.narrate("川ごしの町。街灯が、\nぽつ、ぽつ、と　あるだけだ。");
 					// 帰る場所のあたり（nostalgia.md P0-5）。一度だけ。窓が見えたとは言わない
@@ -878,13 +1048,23 @@ export const kawara: MapDef = {
 			x: 18,
 			y: 15,
 			trigger: "talk",
+			// 夕方の ちいさな くつあと（水きりの子の かくし場所へ）→ 朝、ぬれた くつあと（石を かりた 人だけ）
 			run: async (s) => {
-				// 宵は音だけ（宵の文に「だれも」を出さない。nostalgia.md P0-1 の受け入れ条件）
-				if (s.flag("tod") === "yoru") {
+				const t = s.flag("tod");
+				// 宵・深夜は音だけ（宵の文に「だれも」を出さない。nostalgia.md P0-1 の受け入れ条件）
+				if (t === "yoru" || t === "shinya") {
 					await s.narrate("こっち岸のススキが、\n川かぜで　さわさわ　鳴る。");
 					return;
 				}
+				if (t === "asa" && s.flag("seen_mizukiri_nage")) {
+					await s.narrate(
+						"ぬれた　ちいさな　くつあとが、\nススキの　むこうへ　つづく。",
+					);
+					return;
+				}
 				await s.narrate("こっち岸のススキは、\nだれにも　刈られていない。");
+				if (t === "yu")
+					await s.narrate("ねもとに、ちいさな　くつの\nあとが　つづいている。");
 			},
 		},
 		{
@@ -903,6 +1083,9 @@ export const kawara: MapDef = {
 						await s.narrate(
 							"いちばん上に、あたらしい\nひらたい　石が　一まい。",
 						);
+						// ⑥ すみれの ひみつきちで ひらたい石を 見た 人だけ
+						if (s.flag("seen_kichi_ishi"))
+							await s.say("kiriko", "（……たからものの\n石ンゴ）");
 						return;
 					}
 					await s.narrate("石の山が、ひとつぶん\nひくくなっている。");
@@ -995,6 +1178,15 @@ export const kawara: MapDef = {
 					await s.say("kiriko", "（きこえてたンゴ）");
 					return;
 				}
+				// 2回目: 絵馬かけを見た人にだけ、一度（はっぴょう会の絵馬は この子の。emakake のらくがきと対）
+				if (s.flag("seen_ema") && !s.flag("seen_harmonica_ema")) {
+					s.set("seen_harmonica_ema");
+					await s.say(null, "……絵馬、見た？　あれ、\nだれにも　言わないで", {
+						name: "土手の子",
+					});
+					await s.say("kiriko", "（言わないンゴ）");
+					return;
+				}
 				await s.say(null, "……はっぴょう会、\nらいしゅうなんだ", {
 					name: "土手の子",
 				});
@@ -1082,7 +1274,13 @@ export const kawara: MapDef = {
 					await s.narrate("竹ぼうきで、やしろの\n前を　はいている。");
 					if (s.flag("seen_baachan")) {
 						await s.say(null, "おや、足音の　子だね", { name: "ばあちゃん" });
-						await s.say("kiriko", "……まちのどおりの、\n花の　ひとンゴ？");
+						// ⑦ 夕方に「あしたの朝は、かわらの やしろを はきに いくの」を聞いた人（street baachan 2回目）
+						await s.say(
+							"kiriko",
+							s.flag("seen_baachan2")
+								? "……ほんとに、\nはきに　来てるンゴ"
+								: "……まちのどおりの、\n花の　ひとンゴ？",
+						);
 						await s.say(null, "朝は　ここ。ろうそくを\nかえにくるのさ", {
 							name: "ばあちゃん",
 						});
@@ -1091,8 +1289,22 @@ export const kawara: MapDef = {
 							name: "ばあちゃん",
 						});
 					}
+					// 心の声は一つだけ（深夜の常夜灯 ＞ 夕方・宵の やしろの 竹ぼうき）
 					if (s.flag("seen_jouyatou_shinya"))
 						await s.say("kiriko", "（……ゆうべの　ほのお、\nこのひとのンゴ）");
+					else if (s.flag("seen_yashiro_houki"))
+						await s.say(
+							"kiriko",
+							"（たてかけてあった　ほうき、\nこのひとのンゴ）",
+						);
+					return;
+				}
+				// 2回目: 石段の 四つめを ふんだ 人に、一度だけ（kazoe の『4』の ぬけ を 閉じる）
+				if (s.flag("seen_ishidan") && !s.flag("seen_ishidan_naoru")) {
+					s.set("seen_ishidan_naoru");
+					await s.say(null, "四つめの　段、\nらいげつには　なおるよ", {
+						name: "ばあちゃん",
+					});
 					return;
 				}
 				await s.narrate("しゃっ、しゃっ、と\nほうきの　音。");
@@ -1110,9 +1322,14 @@ export const kawara: MapDef = {
 					s.set("seen_runner_asa");
 					await s.narrate("ゆうべの人だ、という顔を\nされた。");
 					await s.narrate("……会釈を、かえしておく。");
-					return;
+				} else {
+					await s.narrate("きょうも、おなじペースで\nはしっていく。");
 				}
-				await s.narrate("きょうも、おなじペースで\nはしっていく。");
+				// ㉑ やまみちで すれちがった 鈴の ランナー（yamamichi runner_yu）
+				if (s.flag("seen_runner_yama")) {
+					s.se("suzu", { pan: 0.2, volume: 0.4 });
+					await s.narrate("こしの　鈴が、\nちりんと　鳴った。");
+				}
 			},
 			{ wander: true, when: (st) => st.flags.tod === "asa" },
 		),
@@ -1124,11 +1341,44 @@ export const kawara: MapDef = {
 			async (s) => {
 				if (!s.flag("seen_inu_kawara")) {
 					s.set("seen_inu_kawara");
+					// ㉒ 水ぎわに下りて しらさぎを とばした 人（sagiBelt）には、ほえる 相手が いない
+					if (s.flag("seen_sagi_asa")) {
+						await s.narrate("犬が、川のほうを　見て、\n首を　かしげた。");
+						await s.say(null, "いつもは、白い鳥に\nだけ　ほえるんですけど", {
+							name: "犬のさんぽの人",
+						});
+						await s.say("kiriko", "（……吾輩が、\nとばしたンゴ）");
+						return;
+					}
 					await s.narrate("犬が、川に向かって\n一声だけ　ほえた。");
 					await s.say(null, "すみません。あの白い鳥に\nだけ、ほえるんです", {
 						name: "犬のさんぽの人",
 					});
 					await s.say("kiriko", "（こだわりが　あるンゴ）");
+					return;
+				}
+				// ⑳ 夕方の 浜で 会った 人（umi inu_umi）。一度だけ
+				if (s.flag("seen_inu_umi") && !s.flag("seen_inu_kawara2")) {
+					s.set("seen_inu_kawara2");
+					await s.say(
+						null,
+						"……あら、浜で　あった　子ね。\nこの子の　順路、川ぞいなの",
+						{
+							name: "犬のさんぽの人",
+						},
+					);
+					// 浜で「かえったら　シャンプー」を聞いた人だけ
+					if (s.flag("seen_inu_umi2"))
+						await s.say(null, "……シャンプー、\nむだに　なったわ", {
+							name: "犬のさんぽの人",
+						});
+					return;
+				}
+				// 浜から顔を知っている人には、くだけた口調のまま
+				if (s.flag("seen_inu_kawara2")) {
+					await s.say(null, "この子、順路に\nうるさいのよ", {
+						name: "犬のさんぽの人",
+					});
 					return;
 				}
 				await s.say(null, "この子、さんぽの順路に\nうるさいんですよ", {

@@ -13,18 +13,30 @@
 //   朝   … もや・スズメ。NPC 4体（ラジオ体操のじいさん・ジョギングの人・返却ポストをあける
 //           図書館の人・ボールをさがす子）。夕方の setup の payoff（かぎ・ボール・ふうふ・石段）
 //
+// 段と回収（2026-10-04。「セリフ1回で終わらせない」）:
+//   石段 … seen_koen_kaidan（数）。のぼるたびに 夕『38』→ 宵・深夜 61まで かぞえる → 朝『62』
+//   わすれがさ … seen_koen_kasa（夕・宵・深夜）→ 朝のいけがき・street kodomo_asa_a（⑬）
+//   麩 … koi_man の2回目で got_koen_fu → ike（夕・宵・朝のどこか一度）で なげる seen_koen_fu_nage → ike（朝）
+//   掲示板 … seen_koen_board（はじめて読んだ tod）→ ちがう時間帯に来ると『みつかりました』の赤ペン
+//   スワン2号 … ryoukin（seen_koen_ryoukin）→ swan_e 夕。宵 ロープがゆるい seen_koen_swan2 → 深夜・朝
+//   ふうふ … fuufu_jii/baa の2回目（seen_koen_jii2・seen_koen_baa2）→ taiso_jii（朝）
+//   野球の子 … catch_kid 2回目 seen_koen_kid2・給水塔のらくがき seen_koen_rakugaki → ball_kid（朝）
+//   双眼鏡 … 深夜に 駅の灯り seen_miharashi_eki（㉔ → ekimae）／朝は umi・きょり標を読む
+//
 // 出入口（地続き）: 南 (20,23)→street(4,4)・street からの着地 (20,22) 上向き／
 //   西 (0,8)→yamamichi(38,1)・yamamichi からの着地 (1,8) 右向き。
 
-import type {
-	EventDef,
-	GameState,
-	MapDef,
-	Story,
-	TileDef,
-} from "../../engine/defs";
+import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
 import { npc, warp } from "../helpers";
-import { kanHeld, kanLine, kanTick, yoruAkubi } from "../nostalgia";
+import {
+	arrived,
+	kanHeld,
+	kanLine,
+	kanTick,
+	numFlag,
+	strFlag,
+	yoruAkubi,
+} from "../nostalgia";
 import { DOOR, JP, TOWN, WALL } from "../tiles";
 
 // ── タイル ──
@@ -74,7 +86,7 @@ const rows = [
 	":::::::::::::~~~~~~~~~~~~~~~:FFFFF          ", // y8  林の道。yamamichi への出口 (0,8)・着地 (1,8)。藤棚 (29-33,8)
 	",,,T,,,,T,,,:~~~~~~~~~~~~~~~:,,Bb,L         ", // y9  道しるべ (10,9)・ふうふのベンチ (31,9)(32,9)・外灯 (34,9)
 	" T    T   T :~~~~~~~#~~~~~~~:,,,,,,         ", // y10 桟橋 (20,10)(20,11)
-	"            :~~~~~~~#~~~~~~~:,,,,,          ", // y11 スワン (19,11)(21,11)
+	"            :~~~~~~~#~~~~~~~:,,,,,          ", // y11 スワン2号 (21,11)
 	"            ::::::::::::::::: ffffffffffffff", // y12 料金板 (21,12)・コイの人 (16,12)
 	" aaaaaaaaa  ::::::::::::::::: fssssssssssss|", // y13 図書館の屋根
 	" AAAAAAAAA          :         fssssssssssss|", // y14
@@ -83,8 +95,8 @@ const rows = [
 	"............................:::ssssssssssss|", // y17 図書館の前と広場。返却ポスト (7,17)。野球場の入口 (30,17)
 	",,,,,,,,,,,,       |=|        fssssssssssss|", // y18
 	"  T    T           |=|        fssssssssssss|", // y19
-	"                  L.=..       fssssssssssss|", // y20 おどり場。外灯 (18,20)・タイムカプセル (22,20)・ホームベース (32,20)
-	"                   |=|        ffffffBb||||||", // y21 わすれがさ (21,21)・バックネット (32,21)・日程表 (33,21)・ベンチ (36,21)
+	"                  L.=..       fssssssssssss|", // y20 おどり場。外灯 (18,20)・タイムカプセル (22,20)
+	"                   |=|        ffffffBb||||||", // y21 わすれがさ (21,21)・日程表 (33,21)・ベンチ (36,21)
 	"                   |=|                      ", // y22 street からの着地 (20,22)
 	"                    :                       ", // y23 street への出口 (20,23)
 ];
@@ -98,44 +110,20 @@ const SALARYMAN = "pub:sprites/mob_salaryman.png";
 const JOGGER = "pub:sprites/mob_man.png";
 
 /**
- * 環境音のワンショット（夕＝ヒグラシ／朝＝スズメ）。kawara と同じ方式：
- * 直前に鳴らした帯をモジュール変数で覚え、往復の連打を防ぐ（セーブしない）。
+ * ながい石段の段（seen_koen_kaidan・数）。時間帯ごとの段: 夕＝1・宵と深夜＝2・朝＝3。
+ * 前の段を飛ばして来た人は、その時間帯の段から始まる。
  */
-let lastWave = "";
-const wave = (id: string, pan: number) => async (s: Story) => {
-	if (lastWave === id) return;
-	lastWave = id;
-	const t = s.flag("tod");
-	if (t === "yu") s.se("higurashi", { pan, volume: 0.7 });
-	else if (t === "asa") s.se("suzume", { pan, volume: 0.8 });
+const kaidanDan = (st: GameState): number => {
+	const t = st.flags.tod;
+	if (t === "yu") return 1;
+	if (t === "yoru" || t === "shinya") return 2;
+	if (t === "asa") return 3;
+	return 0;
 };
-/** 見えない環境音の帯。 */
-const waveBelt = (id: string, x: number, y: number, pan: number): EventDef => ({
-	id,
-	x,
-	y,
-	trigger: "touch",
-	through: true,
-	when: (st: GameState) => st.flags.tod === "yu" || st.flags.tod === "asa",
-	run: wave(id, pan),
-});
-
-/** 公園の外灯（5本で共用。lights は yoru,shinya で点く）。 */
-const gaitou = async (s: Story): Promise<void> => {
-	const t = s.flag("tod");
-	if (t === "shinya") {
-		await s.narrate("外灯の　あかりに、\n羽虫が　まわっている。");
-		return;
-	}
-	if (t === "yoru") {
-		await s.narrate("公園の外灯。じじ、と\n鳴りながら　ついている。");
-		return;
-	}
-	if (t === "asa") {
-		await s.narrate("外灯。かさの上に、\nスズメが　とまっている。");
-		return;
-	}
-	await s.narrate("公園の外灯。かさに、\nかれ葉が　ひっかかっている。");
+/** seen_koen_kaidan の GameState 版（when 用。true は 1 とみなす＝numFlag と同じ）。 */
+const kaidanNow = (st: GameState): number => {
+	const v = st.flags.seen_koen_kaidan;
+	return typeof v === "number" ? v : v ? 1 : 0;
 };
 
 /**
@@ -178,19 +166,32 @@ const sougankyou = async (s: Story): Promise<void> => {
 	s.se("tick", { volume: 0.5 });
 	await s.narrate("ちゃりん。……かちり、と\nシャッターが　ひらいた。");
 	if (t === "shinya") {
-		await s.narrate("まっくらな　町。");
-		await s.narrate("コンビニの　あかりと、\n駅の　入口の　あかりだけ。");
-		await s.say("kiriko", "……ほかは、\nねてるンゴ");
+		// ㉔ 駅の灯り（ekimae arrive_shinya が読む。yamamichi の見晴らしも同じ名前で立てる）
+		s.set("seen_miharashi_eki");
+		await s.narrate("レンズの　まんなかに、\n駅の　入口の　あかり。");
+		await s.narrate("ずらしても、ずらしても、\nほかは　くろい。");
+		await s.say("kiriko", "……みんな、\nねてるンゴ");
 	} else if (t === "yoru") {
 		await s.narrate("窓の灯りが、町じゅうに\nちらばっている。");
 		await s.narrate("国道を、ライトが\nつながって　ながれていく。");
 	} else if (t === "asa") {
 		await s.narrate("もやの上に、町の　やねが\nうかんでいる。");
 		await s.narrate("そのむこうで、海が\n白く　ひかっている。");
-		await s.say("kiriko", "海、あったンゴ……");
+		// ② きょり標（yamamichi 14.0km・kawara 12.5km）を見た人だけ、川を目でたどる
+		if (s.flag("seen_kyori_14") || s.flag("seen_kyori_12")) {
+			await s.narrate("川を、海まで\n目で　たどった。");
+		}
+		// ゆうべ 海まで行った人（umi に着いた・浜にすわった）
+		const umi =
+			arrived(s, "umi", "yu") ||
+			arrived(s, "umi", "yoru") ||
+			arrived(s, "umi", "shinya") ||
+			!!s.flag("seen_suwari_umi");
+		if (umi) await s.say("kiriko", "（ゆうべの　海ンゴ）");
+		else await s.say("kiriko", "海、あったンゴ……");
 	} else {
 		await s.narrate("えきまえの　ロータリーに、\nバスが　入っていく。");
-		await s.narrate("川の　鉄橋を、電車が\nわたっていく。");
+		await s.narrate("鉄橋の　電車が、レンズの\nはしから　はしへ　ぬけた。");
 		await s.say("kiriko", "うちの　アパートは……\nビルの　かげンゴ");
 	}
 	await s.wait(400);
@@ -232,7 +233,6 @@ export const koen: MapDef = {
 	],
 	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ）。深夜は缶が地区ひとつぶん冷める（P0-6）
 	onEnter: async (s) => {
-		lastWave = "";
 		kanTick(s);
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.7 });
@@ -263,7 +263,11 @@ export const koen: MapDef = {
 			when: (st) => st.flags.tod === "yoru",
 			run: async (s) => {
 				await s.wait(500);
-				await s.narrate("草の　においが、\n夕方より　こい。");
+				// 夕方の「グローブに　おさまる音」を聞いた人だけ
+				if (arrived(s, "koen", "yu")) {
+					await s.narrate("グローブの　音は、\nもう　しない。");
+				}
+				await s.narrate("草の　においが、こい。");
 				await yoruAkubi(s);
 			},
 		},
@@ -292,6 +296,10 @@ export const koen: MapDef = {
 				s.se("suzume", { pan: -0.3, volume: 0.8 });
 				await s.wait(600);
 				await s.narrate("池から、うすく\nもやが　たっている。");
+				// 夕方のグローブの音 → 宵の無音 → 朝の子（ball_kid の前ぶれ）
+				if (arrived(s, "koen", "yu")) {
+					await s.narrate("外野で、ボールを　さがす\n子の　声。");
+				}
 			},
 		},
 
@@ -304,26 +312,38 @@ export const koen: MapDef = {
 			dir: "down",
 		}),
 
-		// ── 環境音の帯（池の北の道・広場） ──
-		waveBelt("wave_n", 16, 7, -0.3),
-		waveBelt("wave_ne", 26, 7, 0.4),
-		waveBelt("wave_plaza", 20, 17, 0),
-		waveBelt("wave_lib", 6, 17, -0.6),
-
-		// ── ながい石段（のぼり口。一度だけ） ──
+		// ── ながい石段（のぼるときだけ。段は seen_koen_kaidan） ──
+		// 夕＝『38』（おどり場）／宵・深夜＝61まで かぞえる／朝＝てっぺんの こけの下に『62』。
+		// when は actor の出し入れのとき（スクリプトのあと・マップに入ったとき）しか見られないので、
+		// 向きは run の中で見る（when に向きを入れると、ふりかえって のぼったときに出ない）。
 		{
 			id: "kaidan",
 			x: 20,
 			y: 19,
 			trigger: "touch",
 			through: true,
-			when: (st) => !st.flags.seen_koen_kaidan,
+			when: (st) => kaidanNow(st) < kaidanDan(st),
 			run: async (s) => {
-				s.set("seen_koen_kaidan");
-				await s.narrate("ながい　石段。だんの\nはしに、白い　数字。");
-				await s.narrate("『38』。……まだ、\nおどり場だ。");
+				if (s.state.dir !== "up") return;
+				const before = numFlag(s, "seen_koen_kaidan");
+				const dan = kaidanDan(s.state);
+				s.set("seen_koen_kaidan", dan);
+				if (dan === 1) {
+					await s.narrate("ながい　石段。だんの\nはしに、白い　数字。");
+					await s.narrate("『38』。……まだ、\nおどり場だ。");
+					return;
+				}
+				if (dan === 2) {
+					await s.narrate("かぞえながら　のぼった。\n……61。");
+					await s.narrate("てっぺんの　だんには、\n数字が　ない。");
+					return;
+				}
+				await s.narrate("てっぺんの　だんの　こけを\nゆびで　こすった。『62』");
+				// ゆうべ 61まで かぞえた人だけ
+				if (before >= 2) await s.say("kiriko", "（ひとつ、\nぬかしてたンゴ）");
 			},
 		},
+		// ⑬ わすれがさ（夕・宵・深夜に『3の2　さとう』を見る → 朝のいけがき・street kodomo_asa_a）
 		{
 			id: "wasuregasa",
 			x: 21,
@@ -332,14 +352,29 @@ export const koen: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "asa") {
-					await s.narrate("いけがきの　かさは、\nもう　なかった。");
-					await s.narrate("登校の　とちゅうで、\nもっていったらしい。");
+					if (s.flag("seen_koen_kasa")) {
+						await s.narrate("いけがきの　かさは、\nもう　なかった。");
+						await s.narrate("登校の　とちゅうで、\nもっていったらしい。");
+						return;
+					}
+					await s.narrate(
+						"いけがきの　葉を　ゆびで\nはじくと、つゆが　はねた。",
+					);
+					return;
+				}
+				s.set("seen_koen_kasa");
+				if (t === "shinya") {
+					await s.narrate(
+						"ビニールがさの　中に、\n外灯の　あかりが　たまっている。",
+					);
+					await s.narrate("えの　マジックは、\n『さとう』だけ　よめた。");
 					return;
 				}
 				if (t === "yoru") {
 					await s.narrate(
 						"いけがきの　ビニールがさが、\n夜風で　かさかさ　鳴る。",
 					);
+					await s.narrate("えに　マジックで\n『3の2　さとう』。");
 					return;
 				}
 				await s.narrate("いけがきに、ビニールがさが\nひっかけてある。");
@@ -349,13 +384,7 @@ export const koen: MapDef = {
 				}
 			},
 		},
-		{
-			id: "lamp_odoriba",
-			x: 18,
-			y: 20,
-			trigger: "talk",
-			run: gaitou,
-		},
+		// タイムカプセル（夕に読んだ人は、朝 どんぐりが ふえているのに 気づく）
 		{
 			id: "timecapsule",
 			x: 22,
@@ -365,8 +394,19 @@ export const koen: MapDef = {
 			fixedDir: true,
 			run: async (s) => {
 				const t = s.flag("tod");
+				// おどり場の外灯 (18,20) は 宵・深夜とも 点いている
 				if (t === "shinya") {
-					await s.narrate("おどり場の　石。\nくらくて、字は　よめない。");
+					await s.narrate(
+						"おどり場の　石。\n『2040』に、夜つゆが　ひかっている。",
+					);
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("外灯の　あかりで、\n『2040』だけ　白く　見える。");
+					return;
+				}
+				if (t === "asa" && s.flag("seen_koen_capsule")) {
+					await s.narrate("石の上に、どんぐり。\nきのうは　なかった。");
 					return;
 				}
 				await s.narrate(
@@ -377,18 +417,12 @@ export const koen: MapDef = {
 					await s.narrate("石の上に、どんぐりが\nひとつ　のっている。");
 					return;
 				}
+				s.set("seen_koen_capsule");
 				await s.say("kiriko", "……あと、ちょっとンゴ");
 			},
 		},
 
 		// ── 広場（石段の上） ──
-		{
-			id: "lamp_plaza",
-			x: 16,
-			y: 16,
-			trigger: "talk",
-			run: gaitou,
-		},
 		{
 			id: "jihanki",
 			x: 13,
@@ -418,10 +452,25 @@ export const koen: MapDef = {
 			x: 26,
 			y: 16,
 			trigger: "talk",
+			// 段（seen_koen_mizu・数。ひねるたびに +1）: とびすぎる → そっと → ながめるだけ
 			run: async (s) => {
+				const n = numFlag(s, "seen_koen_mizu") + 1;
+				s.set("seen_koen_mizu", n);
+				if (n >= 3) {
+					await s.narrate("じゃぐちを、しばらく\n見ていた。");
+					return;
+				}
+				if (n === 2) {
+					await s.narrate("こんどは、そっと\nひねった。");
+					await s.narrate("……ちょろ。くちに\nとどかない。");
+					return;
+				}
 				await s.narrate("水のみ場。じゃぐちを\nひねると……");
 				await s.narrate("水が、おもったより\nたかく　とんだ。");
-				if (s.flag("tod") === "shinya") return;
+				if (s.flag("tod") === "shinya") {
+					await s.narrate("手の　ひらに、\nひやっと　かかった。");
+					return;
+				}
 				await s.say("kiriko", "……まえがみが\nぬれたンゴ");
 			},
 		},
@@ -434,10 +483,11 @@ export const koen: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				if (s.flag("tod") === "shinya") {
-					await s.narrate("かべの　札は、\nくらくて　よめない。");
+					await s.narrate("入口の　あかりで、\n『休館』の字だけ　よめる。");
 					return;
 				}
-				await s.narrate("『開館　9:00～17:00』\n『月曜・第3木曜　休館』");
+				// 9/13 は月曜（夕方に図書館が あいている）
+				await s.narrate("『開館　9:00～17:00』\n『水曜・第3木曜　休館』");
 				await s.narrate("下に　手書きで\n『10月から　木曜は19時まで』");
 			},
 		},
@@ -505,11 +555,17 @@ export const koen: MapDef = {
 					await s.narrate("図書館の　掲示板。\nくらくて、よめない。");
 					return;
 				}
+				// seen_koen_board＝はじめて読んだ tod（字）。時間帯が かわってから 来た人だけ、赤ペンが ふえている
+				const t = strFlag(s, "tod") ?? "yu";
 				if (!s.flag("seen_koen_board")) {
-					s.set("seen_koen_board");
+					s.set("seen_koen_board", t);
 					await s.narrate(
 						"『おはなし会　土曜10時』\n『こんげつの本：くつした』",
 					);
+					await s.narrate("『さがしています　白い\nねこの　ぬいぐるみ』");
+					return;
+				}
+				if (strFlag(s, "seen_koen_board") === t) {
 					await s.narrate("『さがしています　白い\nねこの　ぬいぐるみ』");
 					return;
 				}
@@ -553,12 +609,38 @@ export const koen: MapDef = {
 					await s.narrate("くろい　水面。\n風が　やむと、鏡みたいだ。");
 					return;
 				}
+				// koi_man に もらった麩（got_koen_fu）は、夕・宵・朝の どこかで 一度だけ なげる
+				const fu = s.flag("got_koen_fu") && !s.flag("seen_koen_fu_nage");
 				if (t === "yoru") {
+					if (fu) {
+						s.set("seen_koen_fu_nage");
+						await s.narrate("麩を、くらい　水に\nなげた。");
+						await s.narrate("……ぱしゃっ、と\n音だけ　した。");
+						return;
+					}
 					await s.narrate("水面に、外灯の　あかりが\nほそく　ゆれている。");
 					return;
 				}
 				if (t === "asa") {
+					if (fu) {
+						s.set("seen_koen_fu_nage");
+						await s.narrate("ゆうべの　麩を、\nもやの中へ　なげた。");
+						await s.narrate("ぽちゃ、ぽちゃ、と\n口の　音。");
+						return;
+					}
+					// ゆうべ 麩を なげた人には、コイが おぼえていて よってくる
+					if (s.flag("seen_koen_fu_nage")) {
+						await s.narrate("もやの下から、コイが\nこっちへ　よってくる。");
+						await s.say("kiriko", "（きょうは、なにも\nないンゴ）");
+						return;
+					}
 					await s.narrate("もやの下を、コイが\nゆっくり　横ぎった。");
+					return;
+				}
+				if (fu) {
+					s.set("seen_koen_fu_nage");
+					await s.narrate("麩を、ちぎって　なげた。");
+					await s.narrate("コイが、いっせいに\nよってきた。");
 					return;
 				}
 				await s.narrate("コイが、口を　あけて\nよってくる。");
@@ -578,6 +660,7 @@ export const koen: MapDef = {
 					await s.narrate("ボートの　料金板。\n字は、くらくて　よめない。");
 					return;
 				}
+				s.set("seen_koen_ryoukin");
 				await s.narrate(
 					"『スワンボート　30分500円』\n『コイのえさ（麩）　50円』",
 				);
@@ -591,29 +674,7 @@ export const koen: MapDef = {
 				}
 			},
 		},
-		{
-			id: "swan_w",
-			x: 19,
-			y: 11,
-			trigger: "talk",
-			run: async (s) => {
-				const t = s.flag("tod");
-				if (t === "shinya") {
-					await s.narrate("スワンの　白いくびが、\nくらい水に　うかんでいる。");
-					return;
-				}
-				if (t === "yoru") {
-					await s.narrate("スワンどうしが、ときどき\nこつん、と　ぶつかる音。");
-					return;
-				}
-				if (t === "asa") {
-					await s.narrate("スワンの　せなかに、\n朝つゆが　たまっている。");
-					return;
-				}
-				await s.narrate("スワンボートが、ロープで\nならんで　つながれている。");
-				await s.narrate("くびの　ペンキが、\nすこし　はげている。");
-			},
-		},
+		// スワン2号（料金板の『ハンドルが重い』→ 夕。宵 ロープが ゆるい seen_koen_swan2 → 深夜の こつん → 朝の むすびめ）
 		{
 			id: "swan_e",
 			x: 21,
@@ -622,21 +683,33 @@ export const koen: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate(
-						"『2号』の　スワン。\nくびが、外灯の　ほうを　むいている。",
-					);
+					if (s.flag("seen_koen_swan2")) {
+						await s.narrate("2号が、桟橋に\nこつん……こつん。");
+						return;
+					}
+					await s.narrate("白い　くびが、くらい水に\nうかんでいる。");
 					return;
 				}
 				if (t === "asa") {
+					if (s.flag("seen_koen_swan2")) {
+						await s.narrate("2号の　ロープに、\nあたらしい　むすびめ。");
+						return;
+					}
 					await s.narrate("スワンは、ぜんぶ\nならんで　つながれている。");
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("桟橋の下で、水が\nちゃぷ、と鳴った。");
+					s.set("seen_koen_swan2");
+					await s.narrate("2号だけ、ロープが\nゆるんでいる。");
+					await s.narrate("となりに　こつん、と\nあたる。");
 					return;
 				}
 				await s.narrate("『2号』と　かいてある\nスワン。");
-				await s.say("kiriko", "（ハンドルが\n重いほうンゴ）");
+				if (s.flag("seen_koen_ryoukin")) {
+					await s.say("kiriko", "（ハンドルが　重いほうンゴ）");
+					return;
+				}
+				await s.narrate("くびの　ペンキが、\nすこし　はげている。");
 			},
 		},
 
@@ -647,17 +720,12 @@ export const koen: MapDef = {
 			y: 8,
 			trigger: "talk",
 			run: async (s) => {
-				const t = s.flag("tod");
-				if (t === "shinya") {
-					await s.narrate("藤の　さやが、風で\nからから　鳴る。");
-					return;
-				}
-				if (t === "yoru") {
-					await s.narrate("藤棚の下で、\nこおろぎが　鳴いている。");
-					return;
-				}
-				if (t === "asa") {
-					await s.narrate("藤の葉から、つゆが\nぽたっと　おちた。");
+				if (s.flag("tod") === "shinya") {
+					await s.narrate("藤の　さやが、風で\nゆらゆら　ゆれている。");
+					// 夕方の ばあさんの「藤の　まめ、あれ　たべられないのよ」
+					if (s.flag("seen_koen_baa")) {
+						await s.say("kiriko", "（……たべないンゴ）");
+					}
 					return;
 				}
 				await s.narrate(
@@ -675,35 +743,26 @@ export const koen: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "asa") {
+					await s.narrate("藤の葉から、つゆが\nぽたっと　おちた。");
 					await s.narrate("藤棚の　ベンチ。\nすわると、つゆで　ぬれそうだ。");
 					return;
 				}
-				await s.narrate("藤棚の　ベンチ。\n板に、藤の　さやが　ひとつ。");
+				// 深夜: 宵の「さやが　ひとつ」から、ひとつ ふえている
+				if (t === "shinya") {
+					await s.narrate("藤棚の　ベンチ。板の上に、\nさやが　ふたつ。");
+					return;
+				}
+				// 宵: 夕方の ふうふを 見た人だけ、すわっていた あたりを 見る
+				if (s.flag("seen_koen_fuufu")) {
+					await s.narrate("ふうふの　すわっていた\nあたりに、さやが　ひとつ。");
+				} else {
+					await s.narrate("藤棚の　ベンチ。\n板に、藤の　さやが　ひとつ。");
+				}
+				await s.narrate("藤棚の下で、\nこおろぎが　鳴いている。");
 			},
-		},
-		{
-			id: "lamp_fuji",
-			x: 34,
-			y: 9,
-			trigger: "talk",
-			run: gaitou,
-		},
-		{
-			id: "lamp_ike",
-			x: 12,
-			y: 6,
-			trigger: "talk",
-			run: gaitou,
 		},
 
 		// ── 展望台（手すり・方位盤・双眼鏡・ベンチ）と給水塔 ──
-		{
-			id: "lamp_tenbou",
-			x: 16,
-			y: 3,
-			trigger: "talk",
-			run: gaitou,
-		},
 		{
 			id: "hoiban",
 			x: 18,
@@ -735,18 +794,32 @@ export const koen: MapDef = {
 			y: 1,
 			trigger: "talk",
 			run: async (s) => {
+				// ④ 電車: 夕の鉄橋 → 宵の あかりの列 → 深夜 まっくら（電車の音を どこかで 聞いた人だけ 終電）→ 朝
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("町の　街灯が、\nてんてんと　つづいている。");
-					await s.narrate("そのむこうは、山か　空か\nわからない。");
+					await s.narrate("鉄橋の　上は、まっくら。");
+					if (
+						s.flag("seen_fumikiri_yu") ||
+						s.flag("seen_fumikiri_yoru") ||
+						s.flag("seen_densha_yu") ||
+						s.flag("seen_umi_densha") ||
+						s.flag("seen_tekkyo") ||
+						s.flag("seen_tekkyo_yoru")
+					) {
+						await s.say("kiriko", "（終電、いったンゴ）");
+					}
 					return;
 				}
+				// 丘の上からは、電車は とおく 小さい（kawara の鉄橋の文と かさねない）
 				if (t === "yoru") {
-					await s.narrate("町の　灯りが、\n丘の下に　しずかに　ならぶ。");
+					await s.narrate("とおくで、あかりの　列が\n川を　よこぎっていく。");
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("もやの上に、山の\nかたちだけ　うかんでいる。");
+					s.se("densha_far", { pan: 0.5, volume: 0.2 });
+					await s.narrate("丘の下の　鉄橋に、\n朝の　電車が　小さく　見える。");
 					return;
 				}
 				await s.narrate("手すりの　むこうに、町。\n川と、鉄橋と、海のはし。");
@@ -789,6 +862,7 @@ export const koen: MapDef = {
 					await s.narrate(
 						"給水塔の　てっぺんで、\n赤い　ランプが　点滅している。",
 					);
+					await s.narrate("とおくの　団地の　ランプと、\nすこし　ずれている。");
 					return;
 				}
 				if (t === "yoru") {
@@ -799,28 +873,14 @@ export const koen: MapDef = {
 					await s.narrate("給水塔の　あたまが、\nもやから　出ている。");
 					return;
 				}
+				// らくがきの主は、朝の ball_kid が言う（seen_koen_rakugaki）
+				s.set("seen_koen_rakugaki");
 				await s.narrate("給水塔。フェンスに\n『関係者以外　立入禁止』。");
 				await s.narrate("根もとに、チョークで\nねこの　らくがき。");
 			},
 		},
 
-		// ── 野球場（バックネット・日程表・ホームベース・いけがきのボール） ──
-		{
-			id: "backnet",
-			x: 32,
-			y: 21,
-			trigger: "talk",
-			run: async (s) => {
-				const t = s.flag("tod");
-				if (t === "shinya") {
-					await s.narrate("バックネットの　あみが、\n風で　ひゅう、と鳴る。");
-					return;
-				}
-				await s.narrate(
-					"バックネット。あみに、\nボールの　あとが　ならんでいる。",
-				);
-			},
-		},
+		// ── 野球場（日程表・いけがきのボール・ベンチ） ──
 		{
 			id: "nittei",
 			x: 33,
@@ -832,30 +892,8 @@ export const koen: MapDef = {
 					return;
 				}
 				await s.narrate("『みどりがおかジュニア\n　れんしゅう　土日9時～』");
-				await s.narrate("『10月5日　練習試合\n　vs かわしもクラブ』");
+				await s.narrate("『9月19日（日）　練習試合\n　vs かわしもクラブ』");
 				await s.narrate("お茶当番の　らんに、\n『ゆうた母』。");
-			},
-		},
-		{
-			id: "home_base",
-			x: 32,
-			y: 20,
-			trigger: "talk",
-			run: async (s) => {
-				const t = s.flag("tod");
-				if (t === "shinya") {
-					await s.narrate("ホームベース。白線だけが、\nぼんやり　見える。");
-					return;
-				}
-				if (t === "yoru") {
-					await s.narrate("ホームベースの　まわりで、\n虫が　鳴いている。");
-					return;
-				}
-				if (t === "asa") {
-					await s.narrate("土に、トンボの　あとが\nきれいに　ついている。");
-					return;
-				}
-				await s.narrate("ホームベース。\nふちが、土に　うまっている。");
 			},
 		},
 		{
@@ -893,7 +931,14 @@ export const koen: MapDef = {
 			y: 21,
 			trigger: "talk",
 			run: async (s) => {
-				if (s.flag("seen_koen_ball_bench") && s.flag("tod") !== "asa") {
+				const t = s.flag("tod");
+				if (t === "asa") {
+					await s.narrate(
+						"野球場の　ベンチ。前の　土に、\nトンボの　あとが　ついている。",
+					);
+					return;
+				}
+				if (s.flag("seen_koen_ball_bench")) {
 					await s.narrate("ベンチの上に、\nボールが　ひとつ。");
 					return;
 				}
@@ -962,13 +1007,19 @@ export const koen: MapDef = {
 					await s.say("kiriko", "（その一球が、\nながいンゴ）");
 					return;
 				}
-				await s.say(
-					null,
-					"ボール、いっこ　いけがきに\n入っちゃった。……あした",
-					{
-						name: "野球の子",
-					},
-				);
+				// 2回目: 「さいごの　一球」が いけがきへ（朝の ball_kid が「きのうの」と言う）
+				if (!s.flag("seen_koen_kid2")) {
+					s.set("seen_koen_kid2");
+					await s.say(
+						null,
+						"ボール、いっこ　いけがきに\n入っちゃった。……あした",
+						{
+							name: "野球の子",
+						},
+					);
+					return;
+				}
+				await s.narrate("グローブを、もう\nしまっている。");
 			},
 			{ dir: "down", when: (st) => st.flags.tod === "yu" },
 		),
@@ -987,6 +1038,14 @@ export const koen: MapDef = {
 					});
 					await s.say(null, "あんた、それ　毎年\nいうわね", {
 						name: "ベンチのばあさん",
+					});
+					return;
+				}
+				// 2回目: 朝の taiso_jii が「ちゃんと　おきたぞ」と言う（seen_koen_jii2）
+				if (!s.flag("seen_koen_jii2")) {
+					s.set("seen_koen_jii2");
+					await s.say(null, "あしたは、ラジオ体操に\nいくぞ", {
+						name: "ベンチのじいさん",
 					});
 					return;
 				}
@@ -1014,6 +1073,8 @@ export const koen: MapDef = {
 					});
 					return;
 				}
+				// 2回目から（seen_koen_baa2。朝の taiso_jii でキリコが思い出す）
+				s.set("seen_koen_baa2");
 				await s.say(null, "あしたの　ラジオ体操、\nこの人　おきられるかしら", {
 					name: "ベンチのばあさん",
 				});
@@ -1034,6 +1095,15 @@ export const koen: MapDef = {
 						name: "会社帰りの人",
 					});
 					await s.say("kiriko", "（口が、ぱくぱく\nしてるンゴ）");
+					return;
+				}
+				// 2回目: 麩を もらう（got_koen_fu → ike で なげる）
+				if (!s.flag("got_koen_fu")) {
+					s.set("got_koen_fu");
+					await s.say(null, "……あまったから、\nどうぞ", {
+						name: "会社帰りの人",
+					});
+					await s.narrate("麩を、ひとつかみ\nもらった。");
 					return;
 				}
 				await s.say(null, "かいしゃ　かえりに、\nここで　ひと休み", {
@@ -1092,17 +1162,31 @@ export const koen: MapDef = {
 			15,
 			GRANDPA,
 			async (s) => {
+				// 夕方の ふうふの回収: じいさんの「いくぞ」（jii2）＞ 会っただけ（fuufu）。
+				// キリコの一言は、ばあさんの「おきられるかしら」（baa2）を聞いた人だけ
 				if (!s.flag("seen_koen_taiso")) {
 					s.set("seen_koen_taiso");
 					await s.narrate("外野で、何人かが\nラジオ体操を　している。");
-					if (s.flag("seen_koen_fuufu")) {
-						await s.say(null, "おや、ゆうべの。\nばあさんは　ねぼうだ", {
-							name: "体操のじいさん",
-						});
-						await s.say("kiriko", "（おきられたの、\nこっちンゴ）");
+					if (s.flag("seen_koen_jii2") || s.flag("seen_koen_fuufu")) {
+						await s.say(
+							null,
+							s.flag("seen_koen_jii2")
+								? "ちゃんと　おきたぞ。\nばあさんは　ねぼうだ"
+								: "おや、ゆうべの。\nばあさんは　ねぼうだ",
+							{ name: "体操のじいさん" },
+						);
+						if (s.flag("seen_koen_baa2")) {
+							await s.say("kiriko", "（おきられたの、\nこっちンゴ）");
+						}
 						return;
 					}
 					await s.say(null, "いっしょに　どうだい。\nうでを　まえから……", {
+						name: "体操のじいさん",
+					});
+					return;
+				}
+				if (s.flag("seen_koen_baa")) {
+					await s.say(null, "ばあさん、また　藤の\nまめの　話を　したろう", {
 						name: "体操のじいさん",
 					});
 					return;
@@ -1138,6 +1222,7 @@ export const koen: MapDef = {
 			16,
 			KID,
 			async (s) => {
+				// 初回: ベンチに のせた（ball_bench）＞ 夕方「……あした」を聞いた（kid2）＞ どちらもない
 				if (!s.flag("seen_koen_kid_asa")) {
 					s.set("seen_koen_kid_asa");
 					if (s.flag("seen_koen_ball_bench")) {
@@ -1147,7 +1232,20 @@ export const koen: MapDef = {
 						await s.say("kiriko", "（しらないンゴ）");
 						return;
 					}
+					if (s.flag("seen_koen_kid2")) {
+						await s.say(null, "あった！　……きのうの\nさいごの　一球", {
+							name: "野球の子",
+						});
+						return;
+					}
 					await s.say(null, "あった！　……朝つゆで\nびしょびしょ", {
+						name: "野球の子",
+					});
+					return;
+				}
+				// 2回目から: 夕方 給水塔の らくがきを 見た人には、かいた子が わかる
+				if (s.flag("seen_koen_rakugaki")) {
+					await s.say(null, "給水塔の　ねこ、\nおれが　かいた", {
 						name: "野球の子",
 					});
 					return;

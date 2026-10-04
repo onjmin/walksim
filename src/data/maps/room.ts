@@ -6,29 +6,43 @@
 // 朝（tod="asa"）は まちのどおりの 窓の 場面（転）の あと。寄れば 秒針が 戻り、スレが 動き出す（結は umi.ts）。
 // BGM は無音。秒針の音（tick）は時間帯ごとに SE で鳴らし分ける。
 // カレンダーは 9月・13日に まる（外の 町に 越してきて ひと月。STORY.md §5.5）。
-// 小ネタ: テレビの砂あらし →（レコードを持って・3回目）NNN風の名前の放送（note nnn）。
+// テレビは、深夜は 月曜の 放送休止（seen_tv_shinya）。朝に つけると、テレビも おきている。
 //
 // ノスタルジー層（docs/nostalgia.md。共通部品は data/nostalgia.ts）。自室は錨（罠12）：異常も気配も足さない。
+// 足すのは日常の物と、外で見たものの1行だけ。
 //   宵   … テレビのナイターが、宵に回った地区の数か見た回数で延長の段を進む → 中継の打ち切り（P0-2）。
-//           打ち切りのあとは、スレもその話。窓から一度だけ外への誘い（P0-1）。日記に きょうの一行（P0-4）。
-//           布団にもぐると、夕方に歩いた地区の音が遠く鳴る（P0-3）。蚊にさされていれば、まだかゆい（P0-10）
-//   深夜 … 日記のつぎのページ。町を歩いてきたあとはポエムを書いてしまう（P0-4）。机で缶を飲み干す（P0-6）
-//   朝   … ポエムを消しゴムで消す（P0-4）。机にレシート（P0-9）。枕元に福引券・かゆみは消えている（P0-9・P0-10）
+//           打ち切りのあとは、スレもその話。窓から一度だけ外への誘い（P0-1）→ 歩いてもどると一言。
+//           窓の音は yoruStep で 台所の水 → ふろの戸。スレは見るたびに ごちそうさま → おちる。
+//           日記に きょうの一行（P0-4）。布団にもぐると、夕方に聞いた音が遠く鳴る（P0-3・④）。
+//           蚊にさされていれば、まだかゆい（P0-10）
+//   深夜 … 日記のつぎのページ。町を歩いてきたあとはポエムを書いてしまう（P0-4）。机で缶を飲み干す（P0-6）。
+//           歩いてもどると、ふとんは冷えている。ススキをコップに（⑮）
+//   朝   … ポエムを消しゴムで消す（P0-4）。机にレシート（P0-9）。枕元に福引券・かゆみは消えている（P0-9・P0-10）。
+//           かべの時計は町の朝の時計（asaClock）にあわせる。ゆうべのレコードを本棚の空き箱へ
 //
 // 読むだけのフラグ: got_dinner_onigiri / got_dinner_pan（street。夕方の買い物）・
 //   done:<map>:arrive_yu（布団の遠い音）・done:<map>:arrive_yoru / arrive_shinya（nostalgia.ts 経由）・
-//   seen_ka（kawara）・got_korokke / seen_kaikei（suupaa）・got_fukubikiken（tonarimachi）・got_kan（深夜の自販機）。
-// set するフラグ: tod（"yoru"→"shinya"）・seen_asa_thread・seen_clock・seen_tv・
-//   seen_tv_yoru（数）・seen_chukei_end・seen_tenki・seen_yoru_sasoi・
+//   seen_ka（kawara）・got_korokke / seen_kaikei（suupaa）・got_fukubikiken（tonarimachi）・got_kan（深夜の自販機）・
+//   布団の遠い音（④）: seen_fumikiri_yu / seen_fumikiri_yoru（senro）・seen_tekkyo（kawara）・seen_densha_yu（street）・
+//   seen_tonarimachi（ekimae）・seen_umi_densha（umi）・seen_piano_yu（sumire）・seen_gohan_danchi（danchi）・
+//   seen_futon_tori（danchi。㉚）・got_hari / seen_hari_mise / seen_kotto_phono / seen_record_poster（tonarimachi。⑭㉙）・
+//   got_susuki（kawara。⑮）・seen_aki_*（akiMatsuri 経由）・rec_q（アイテム。朝の本棚）。
+// set するフラグ: tod（"yoru"→"shinya"）・seen_asa_thread・seen_clock_denchi・seen_hoshumura・
+//   seen_tv_yoru（数）・seen_chukei_end・seen_tenki・seen_tv_shinya・seen_yoru_sasoi・seen_sasoi_kaeri・
+//   seen_pc_yoru（数）・seen_pc_chukei・seen_kettle_yoru（数）・seen_phono・seen_hari_kaeta（kirokuLines が読む）・
+//   seen_hari_maru・seen_phono_kurabe・seen_susuki_kabin・seen_tana_rec・seen_cal_aki・
 //   seen_nikki_yoru / seen_nikki_shinya（字）・seen_nikki_kesu・got_kan（kanDesk 経由）・
 //   seen_nikki_asa・seen_receipt・seen_makura_asa（この3つは room の中だけ。朝の日記・机・枕元を一度にする）。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
 import {
+	akiMatsuri,
 	arrived,
+	asaClock,
 	chukeiDan,
 	kanAsa,
 	kanDesk,
+	kanLv,
 	NIKKI,
 	nikkiKey,
 	nikkiPoem,
@@ -36,6 +50,7 @@ import {
 	numFlag,
 	POEM,
 	poemKey,
+	shinyaStep,
 	shinyaWalked,
 	yoruStep,
 } from "../nostalgia";
@@ -63,33 +78,114 @@ const rows = [
 const post = (s: Story, who: string, text: string) =>
 	s.say(who, text, { name: "名無しさん", noPortrait: true });
 
-/** 晩ごはんの呼び名（street の買い物フラグで決まる。どちらも無ければ戸だなのカップめん）。 */
+/**
+ * 晩ごはんの呼び名（street の買い物フラグで決まる。どちらも無ければ、スーパーのコロッケ（㉘）か、
+ * 戸だなのカップめん）。
+ */
 const dinnerName = (s: Story): string =>
 	s.flag("got_dinner_onigiri")
 		? "おにぎりの　ふくろ"
 		: s.flag("got_dinner_pan")
 			? "パンの　ふくろ"
-			: "カップめんの　空き";
+			: s.flag("got_korokke")
+				? "コロッケの　つつみ"
+				: "カップめんの　空き";
 
 /**
- * 布団で聞く町（nostalgia.md P0-3）。夕方に着いた地区（done:<map>:arrive_yu）の音だけを、遠く小さく。
- * 地区名は出さない。駅（ekimae）は鉄橋（kawara）に行っていないときだけ鳴らす。多くて3音（先頭から）。
+ * 布団で聞く町（nostalgia.md P0-3・④）。夕方〜宵に その音を 聞いた 人だけに、遠く小さく。
+ * flags があれば そのどれかが立っているとき、無ければ その地区の arrive_yu が済んでいるとき。
+ * 上から見て、電車（densha）は最初の1つだけ・合わせて3音まで。並びが そのまま 優先。地区名は出さない。
  */
 const TOOI_OTO: {
 	map: string;
-	/** これが 立っていれば 鳴らす（夕方に その 音を 聞いた 人だけ。無ければ arrive_yu で）。 */
-	flag?: string;
+	/** どれかが 立っていれば 鳴らす（その音を 聞いた 人だけ。無ければ arrive_yu で）。 */
+	flags?: string[];
+	/** 電車の音（一晩に1つだけ鳴らす）。 */
+	densha?: true;
+	/** 2打（秒針の1打と 鳴らし分ける。ふみきりの かんかん）。 */
+	twice?: true;
 	se: string;
 	pan: number;
 	volume: number;
 	text: string;
 }[] = [
+	// senro のふみきり（夕方 seen_fumikiri_yu・宵 seen_fumikiri_yoru）
+	{
+		map: "senro",
+		flags: ["seen_fumikiri_yu", "seen_fumikiri_yoru"],
+		densha: true,
+		twice: true,
+		se: "tick",
+		pan: 0.3,
+		volume: 0.15,
+		text: "ふみきりの　音が、\nかすかに　とどく。",
+	},
+	// kawara tekkyo_belt（夕方の鉄橋）
 	{
 		map: "kawara",
+		flags: ["seen_tekkyo"],
+		densha: true,
 		se: "densha_far",
 		pan: 0.6,
 		volume: 0.3,
 		text: "とおくで、鉄橋を\nわたる音。",
+	},
+	// street densha_yu（夕方の通りで聞いた電車）
+	{
+		map: "street",
+		flags: ["seen_densha_yu"],
+		densha: true,
+		se: "densha_far",
+		pan: 0.4,
+		volume: 0.2,
+		text: "夕方と　おなじ　方から、\n電車の　音。",
+	},
+	// ekimae norikomi（となりまちへ乗った）
+	{
+		map: "ekimae",
+		flags: ["seen_tonarimachi"],
+		densha: true,
+		se: "densha_far",
+		pan: -0.3,
+		volume: 0.3,
+		text: "とおくで、電車が\nとなりまちへ　出ていく音。",
+	},
+	{
+		map: "ekimae",
+		densha: true,
+		se: "densha_far",
+		pan: -0.3,
+		volume: 0.3,
+		text: "とおくで、電車が\n出ていく音。",
+	},
+	// umi densha_belt（浜で見た電車）
+	{
+		map: "umi",
+		flags: ["seen_umi_densha"],
+		densha: true,
+		se: "densha_far",
+		pan: 0.7,
+		volume: 0.2,
+		text: "とおくで、電車が　一本、\nかえっていく音。",
+	},
+	// sumire yamada_door（同じところで つっかえる ピアノ。朝は「こえた」）
+	{
+		map: "sumire",
+		flags: ["seen_piano_yu"],
+		se: "needle",
+		pan: -0.2,
+		volume: 0.1,
+		text: "ピアノが、また\nおなじところで　つっかえた。",
+	},
+	// danchi gohanYobu（夕方の「ごはんよー」のあとの、戸のしまる音）
+	{
+		map: "danchi",
+		flags: ["seen_gohan_danchi"],
+		se: "door",
+		pan: -0.4,
+		volume: 0.2,
+		// 距離を文で決めておく（部屋のすぐ外の気配に読ませない。自室は錨＝罠12）
+		text: "ずっと　むこうで、戸の\nしまる音。",
 	},
 	{
 		map: "kokudo",
@@ -98,52 +194,43 @@ const TOOI_OTO: {
 		volume: 0.2,
 		text: "国道のほうから、\nながい　音。",
 	},
-	{
-		map: "danchi",
-		se: "door",
-		pan: -0.4,
-		volume: 0.2,
-		// 距離を文で決めておく（部屋のすぐ外の気配に読ませない。自室は錨＝罠12）
-		text: "ずっと　むこうで、戸の\nしまる音。",
-	},
-	{
-		map: "ekimae",
-		se: "densha_far",
-		pan: -0.3,
-		volume: 0.3,
-		text: "とおくで、電車が\n出ていく音。",
-	},
-	// ④ 夕方に 聞いた 電車（ふみきり・車庫）。聞いた 人だけ
-	{
-		map: "senro",
-		flag: "seen_fumikiri_yu",
-		se: "tick",
-		pan: 0.3,
-		volume: 0.15,
-		text: "ふみきりの　音が、\nかすかに　とどく。",
-	},
-	{
-		map: "umi",
-		flag: "seen_umi_densha",
-		se: "densha_far",
-		pan: 0.7,
-		volume: 0.2,
-		text: "さいごの　電車が、\n車庫へ　かえっていく音。",
-	},
 ];
 
 /** 布団の中で、遠い音を順に鳴らす（宵の就寝だけ）。1音でも鳴らしたら true。 */
 const tooiOto = async (s: Story): Promise<boolean> => {
-	const heard = TOOI_OTO.filter(
-		(o) =>
-			(o.flag ? !!s.flag(o.flag) : arrived(s, o.map, "yu")) &&
-			!(o.map === "ekimae" && arrived(s, "kawara", "yu")),
-	).slice(0, 3);
+	const heard: (typeof TOOI_OTO)[number][] = [];
+	let densha = false;
+	for (const o of TOOI_OTO) {
+		if (heard.length >= 3) break;
+		const kiita = o.flags
+			? o.flags.some((f) => !!s.flag(f))
+			: arrived(s, o.map, "yu");
+		if (!kiita) continue;
+		if (o.densha) {
+			if (densha) continue;
+			densha = true;
+		}
+		heard.push(o);
+	}
 	for (const o of heard) {
 		s.se(o.se, { pan: o.pan, volume: o.volume });
+		if (o.twice) {
+			await s.wait(420);
+			s.se(o.se, { pan: o.pan, volume: o.volume });
+		}
 		await s.narrate(o.text);
 	}
 	return heard.length > 0;
+};
+
+/**
+ * ⑮ 深夜のかわらで一本もらったススキ（kawara susuki_a の got_susuki）を、机のコップに さす。
+ * room desk の shinya（kanDesk の前）か asa（kanAsa のあと）の最初の一回だけ（seen_susuki_kabin）。
+ */
+const susukiKabin = async (s: Story): Promise<void> => {
+	if (!s.flag("got_susuki") || s.flag("seen_susuki_kabin")) return;
+	s.set("seen_susuki_kabin");
+	await s.narrate("ポケットの　ススキを、\nコップに　さした。");
 };
 
 /** 日記帳の、いつもの一行（書くことも読み返すことも無いとき）。 */
@@ -239,10 +326,20 @@ export const room: MapDef = {
 			run: async (s) => {
 				await s.wait(400);
 				await s.say("kiriko", "ただいまンゴ");
-				if (s.flag("got_dinner_onigiri")) {
-					await s.narrate("おにぎりの　ふくろを、\n机に　おいた。");
-				} else if (s.flag("got_dinner_pan")) {
-					await s.narrate("パンの　ふくろを、\n机に　おいた。");
+				const korokke = !!s.flag("got_korokke");
+				if (s.flag("got_dinner_onigiri") || s.flag("got_dinner_pan")) {
+					await s.narrate(
+						s.flag("got_dinner_onigiri")
+							? "おにぎりの　ふくろを、\n机に　おいた。"
+							: "パンの　ふくろを、\n机に　おいた。",
+					);
+					// ㉘ スーパーのコロッケ（got_korokke）も、晩ごはんの机に
+					if (korokke)
+						await s.narrate("コロッケの　つつみも、\nとなりに　ひろげた。");
+				} else if (korokke) {
+					// ㉘ 晩ごはんは買いそびれても、コロッケはある（カップめんは出さない）
+					await s.say("kiriko", "……コロッケだけは、\nあるンゴ");
+					await s.narrate("コロッケの　つつみを、\n机に　ひろげた。");
 				} else {
 					await s.say("kiriko", "……晩ごはん、\n買いそびれたンゴ");
 					await s.narrate("戸だなの　カップめんを、\n机に　おいた。");
@@ -253,8 +350,9 @@ export const room: MapDef = {
 				await s.narrate("モニターを　つけた。\nスレに、あかりが　ともる。");
 				await s.narrate("『(´・ω・｀)しごと　おわた』");
 				await s.narrate("『(＾ω＾)おかえりお。\nきょうも　おつかれやで』");
-				await s.narrate("『(´・ω・｀)なんか外で\n音しない？』");
-				await s.say("kiriko", "気のせいやろ、って\n書いておくンゴ");
+				// ㉛ やきうの前振り（全員が通る。umi yakiu_end「外で　見とる　言うたやろ」で回収）
+				await s.narrate("『(´・ω・｀)やきう、さいきん\n見ないな』");
+				await s.narrate("『(＾ω＾)外で　見とるって\n言うてたお』");
 				await s.narrate("スレを　ながめながら、\n晩ごはんを　たべた。");
 				await s.say(
 					"kiriko",
@@ -306,7 +404,8 @@ export const room: MapDef = {
 				await s.saveMenu();
 			},
 		},
-		// ── 蓄音機（メニューの案内） ──
+		// ── 蓄音機（メニューの案内は初回だけ）。
+		//    ⑭ となりまちの針・骨董の蓄音機を、ここで一つだけ回収する（上から一つ） ──
 		{
 			id: "phono",
 			x: 5,
@@ -316,9 +415,42 @@ export const room: MapDef = {
 			fixedDir: true,
 			run: async (s) => {
 				await s.narrate("キリコの　蓄音機だ。");
-				await s.narrate(
-					"ひろった　レコードは、メニューの\n「レコード」で　いつでも　聞ける。",
-				);
+				if (!s.flag("seen_phono")) {
+					s.set("seen_phono");
+					await s.narrate(
+						"ひろった　レコードは、メニューの\n「レコード」で　いつでも　聞ける。",
+					);
+				}
+				// ⑭ tonarimachi record_oyaji で買った針（got_hari）。日記・まとめの「針を　かえた」へ
+				if (s.flag("got_hari") && !s.flag("seen_hari_kaeta")) {
+					s.set("seen_hari_kaeta");
+					s.se("needle", { volume: 0.6 });
+					await s.narrate("となりまちの　針に、\nとりかえた。");
+					return;
+				}
+				// ⑭ 針を見せてもらって、買わなかった人（seen_hari_mise）
+				if (
+					s.flag("seen_hari_mise") &&
+					!s.flag("got_hari") &&
+					!s.flag("seen_hari_maru")
+				) {
+					s.set("seen_hari_maru");
+					await s.narrate("針が、だいぶ　まるく\nなっている。");
+					await s.say("kiriko", "（となりまちの　店に、\nあったンゴ）");
+					return;
+				}
+				// ⑭ 朝、とりかえた針（見くらべより先に。朝の1回目で出す）
+				if (s.flag("tod") === "asa" && s.flag("seen_hari_kaeta")) {
+					await s.narrate("針が、あたらしく\nひかっている。");
+					return;
+				}
+				// ⑭ tonarimachi kotto_phono（骨董屋の蓄音機）と見くらべる
+				if (s.flag("seen_kotto_phono") && !s.flag("seen_phono_kurabe")) {
+					s.set("seen_phono_kurabe");
+					await s.narrate("ラッパの　まがりを、\nゆびで　なぞった。");
+					await s.say("kiriko", "（うちのは、ゼロ　ひとつ\nすくないンゴ）");
+					return;
+				}
 			},
 		},
 		// ── しらべられる家具（見えない talk イベント）。時間帯で一言が変わる ──
@@ -335,7 +467,8 @@ export const room: MapDef = {
 					return;
 				}
 				if (t === "asa") {
-					// 深夜に とまっていた かべの時計（電池ぎれ）を、朝に なおす
+					// 深夜に とまっていた かべの時計（電池ぎれ）を、朝に なおす。
+					// 時刻は町の朝の時計（asaClock。street clock_tower と同じ）にあわせる
 					if (!s.flag("seen_clock_denchi")) {
 						s.set("seen_clock_denchi");
 						await s.narrate("かべの時計。\n――2:00で　とまったまま。");
@@ -343,7 +476,9 @@ export const room: MapDef = {
 						s.se("tick", { volume: 0.7 });
 						await s.wait(500);
 						s.se("tick", { volume: 0.7 });
-						await s.narrate("5:12。こつ、こつ、と\nまた　歩きだした。");
+						await s.narrate(
+							`${asaClock(s)}。こつ、こつ、と\nまた　歩きだした。`,
+						);
 						return;
 					}
 					s.se("tick", { volume: 0.7 });
@@ -367,14 +502,35 @@ export const room: MapDef = {
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("むかいの家に、あかり。\nどこかで、犬の声。");
+					// 宵の段（yoruStep）。窓の外の音が、夜の家の順に進む（人の姿は出さない）
+					const step = yoruStep(s);
+					await s.narrate(
+						step === 0
+							? "むかいの家に、あかり。\nどこかで、犬の声。"
+							: step <= 2
+								? "むかいの家の　台所で、\n水を　つかう音。"
+								: "どこかで、ふろの　戸を\nしめる音。",
+					);
+					// P0-2 中継の打ち切りのあと（room tv の seen_chukei_end）。よその家のテレビも、つぎの番組
+					if (s.flag("seen_chukei_end"))
+						await s.narrate("どこかの　窓から、\n天気よほうの　声。");
 					// 一度だけ、外への誘い（nostalgia.md P0-1。宵の町をまだ歩いていないときだけ）
-					if (!s.flag("seen_yoru_sasoi") && yoruStep(s) === 0) {
+					if (!s.flag("seen_yoru_sasoi") && step === 0) {
 						s.set("seen_yoru_sasoi");
 						await s.say(
 							"kiriko",
 							"……ねるまえに、ちょっと\nそとの風　すうンゴ？",
 						);
+						return;
+					}
+					// 誘いの回収（誘われて、宵の町を歩いてもどったあと。一度だけ）
+					if (
+						s.flag("seen_yoru_sasoi") &&
+						step >= 1 &&
+						!s.flag("seen_sasoi_kaeri")
+					) {
+						s.set("seen_sasoi_kaeri");
+						await s.say("kiriko", "（そとの風、ちょっと\nすずしかったンゴ）");
 					}
 					return;
 				}
@@ -393,12 +549,15 @@ export const room: MapDef = {
 			y: 2,
 			trigger: "talk",
 			run: async (s) => {
+				const t = s.flag("tod");
 				await s.narrate("カレンダー。9月。\n13日に、まるが　ついている。");
-				// ③ 朝、秋まつりの ポスターか 掲示を 見た 人は、書きこむ
-				if (
-					s.flag("tod") === "asa" &&
-					(s.flag("seen_aki_tonari") || s.flag("seen_aki_sumire"))
-				) {
+				// 深夜は、もう日づけをまたいでいる（14日の火曜）
+				if (t === "shinya") {
+					await s.say("kiriko", "（日づけは、もう\n14日ンゴ）");
+					return;
+				}
+				// ③ 朝、秋まつりの おしらせを どこかで 見た 人は、書きこむ（akiMatsuri）
+				if (t === "asa" && akiMatsuri(s)) {
 					if (!s.flag("seen_cal_aki")) {
 						s.set("seen_cal_aki");
 						await s.narrate("すみに、えんぴつで\n書きこんだ。");
@@ -407,6 +566,10 @@ export const room: MapDef = {
 						return;
 					}
 					await s.narrate("すみに、えんぴつの\n『つきみ　秋まつり』。");
+					return;
+				}
+				if (t === "asa") {
+					await s.narrate("13日の　まるの　となりが、\nきょうの　ます。");
 					return;
 				}
 				await s.narrate("外の　町に　越してきて、\nちょうど　ひと月の　日。");
@@ -419,6 +582,9 @@ export const room: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("レコードやの　ポスター。\n『中古盤、高価買取』");
+				// ㉙ tonarimachi record_win の窓に、同じポスター（seen_record_poster）
+				if (s.flag("seen_record_poster"))
+					await s.say("kiriko", "（となりまちの、あの\n店のンゴ）");
 				await s.say("kiriko", "……売らないンゴ");
 			},
 		},
@@ -431,6 +597,14 @@ export const room: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					// 深夜の町を歩いてもどると、ふとんは冷えている（shinyaStep）。
+					// 缶を のみほした（kanLv 4）あとは、よこに なるだけ
+					if (shinyaStep(s) >= 1) {
+						await s.narrate("ふとんは、もう\nつめたく　なっていた。");
+						if (kanLv(s) === 4)
+							await s.narrate("……すこし、よこに　なった。\n目は、さえている。");
+						return;
+					}
 					await s.narrate(
 						"ふとんは　まだ　あたたかい。\n……もう　ねむれる気が　しない。",
 					);
@@ -457,6 +631,13 @@ export const room: MapDef = {
 				}
 				// 夕方・夜（tod が無い旧データ・デバッグ起動も、寝れば 2:00 の開幕へ合流できる）
 				await s.narrate("ふとんは、ほしたてで\nふかふかだ。");
+				// ㉚ danchi futon_tori の1回目（るすの家の ふとんを たたいた。seen_futon_tori）。
+				// 宵・深夜の b_futon「出しっぱなし」と、朝の「ぱん、ぱん」へつなぐ
+				if (t === "yoru" && s.flag("seen_futon_tori"))
+					await s.say(
+						"kiriko",
+						"（るすの家の　ふとんは、\nまだ　そとンゴ……？）",
+					);
 				// 夕方の川で蚊にさされていれば（P0-10。郷愁の文とは吹き出しを分ける）
 				if (t === "yoru" && s.flag("seen_ka"))
 					await s.narrate("うでの　さされたとこが、\nまだ　かゆい。");
@@ -496,6 +677,7 @@ export const room: MapDef = {
 				}
 				if (t === "shinya") {
 					await s.narrate(`机のうえ、ゆうべの\n${dinnerName(s)}が　そのまま。`);
+					await susukiKabin(s); // ⑮ かわらのススキ（最初の一回）
 					// 深夜の自販機で買った缶は、ここで飲み干せる（nostalgia.md P0-6。持っていなければ何も出ない）
 					await kanDesk(s);
 					return;
@@ -508,6 +690,7 @@ export const room: MapDef = {
 					// ポケットの紙もの（P0-9）。コロッケを会計した人だけ、レシートが出てくる（一度だけ）。
 					// ゆうべ深夜の自販機で買った缶（夜の散歩は本当にあった。夢オチにしない）
 					await kanAsa(s);
+					await susukiKabin(s); // ⑮ かわらのススキ（最初の一回）
 					if (
 						s.flag("got_korokke") &&
 						s.flag("seen_kaikei") &&
@@ -542,23 +725,47 @@ export const room: MapDef = {
 							"保守村。人の　散った　おんJに\n残った　みんなの　スレ。",
 						);
 					}
-					await s.narrate("保守村の　スレは、\nこんやも　にぎやかだ。");
-					// テレビの中継が打ち切られたあとは、スレもその話（nostalgia.md P0-2。
-					// 顔文字の住民だけ。チーム名・選手名は書かない）
-					if (t === "yoru" && s.flag("seen_chukei_end")) {
+					const yoru = t === "yoru";
+					// テレビの中継が打ち切られたあと（seen_chukei_end）は、一度だけスレもその話
+					// （seen_pc_chukei。nostalgia.md P0-2。顔文字の住民だけ。チーム名・選手名は書かない）。
+					// 2回目からは、中継がおわって住民が おちていく段へ（深夜の『保守』→ umi yakiu_end）
+					const chukei = yoru && !!s.flag("seen_chukei_end");
+					const chukeiNow = chukei && !s.flag("seen_pc_chukei");
+					// 宵は、見るたびにスレが進む（seen_pc_yoru。読んでから +1）:
+					// 麻婆豆腐 → ごちそうさま → 住民が おちていく（深夜の『保守』へ）
+					const n = yoru ? numFlag(s, "seen_pc_yoru") : 0;
+					const dan = chukei ? Math.max(n, 2) : n;
+					await s.narrate(
+						yoru && dan >= 2 && !chukeiNow
+							? "保守村の　スレ。\nレスの　あいだが、あいてきた。"
+							: "保守村の　スレは、\nこんやも　にぎやかだ。",
+					);
+					if (chukeiNow) {
+						s.set("seen_pc_chukei");
 						await s.narrate("『(´・ω・｀)中継　おわって草』");
 						await s.narrate("『(＾ω＾)ラジオ民は\nおらんかお？』");
 						return;
 					}
-					await s.narrate("『ロゼ：麻婆豆腐、\nつくりすぎたアル』");
-					await s.narrate("『シヨ：……だれか、\nたべに　きなさいよ』");
-					await s.narrate("『フェリス：はーい、\nいく〜』");
+					if (yoru) s.set("seen_pc_yoru", Math.min(3, dan + 1));
+					if (dan === 0) {
+						await s.narrate("『ロゼ：麻婆豆腐、\nつくりすぎたアル』");
+						await s.narrate("『シヨ：……だれか、\nたべに　きなさいよ』");
+						await s.narrate("『フェリス：はーい、\nいく〜』");
+						return;
+					}
+					if (dan === 1) {
+						await s.narrate("『フェリス：ごちそうさま〜』");
+						await s.narrate("『シヨ：……お皿は　あらって\nかえりなさいよ』");
+						return;
+					}
+					await s.narrate("『(´・ω・｀)ほな、おちるわ』");
+					await s.narrate("『保守』");
 					return;
 				}
 				if (t === "shinya") {
 					await s.narrate("モニターの　あかりだけが、\nついている。");
 					await s.narrate(
-						"保守村の　スレは、しずかだ。\nさいごの　レスは『保守』。",
+						"保守村の　スレは、しずかだ。\nさいごの　レスは、名無しの『保守』。",
 					);
 					await s.say("kiriko", "……みんな、ねてるンゴ");
 					return;
@@ -572,7 +779,7 @@ export const room: MapDef = {
 						await post(
 							s,
 							"nynroid",
-							"朝メシ、おでんの残りに\nするわ。あったまるで",
+							"朝メシ、梨の　のこり。\nひえとって　うまいで",
 						);
 						await s.say("kiriko", "……吾輩も、あとで\n書くンゴ");
 						return;
@@ -591,21 +798,31 @@ export const room: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("本と、レコードの空き箱。\nどれも　見おぼえがある。");
+				// 朝、ゆうべ深夜のバス停で拾ったレコード（rec_q）を、空き箱に しまう（一度だけ）
+				if (s.flag("tod") === "asa") {
+					if (s.has("rec_q") > 0 && !s.flag("seen_tana_rec")) {
+						s.set("seen_tana_rec");
+						await s.narrate("空き箱に、ゆうべの\nレコードを　しまった。");
+						return;
+					}
+					if (s.flag("seen_tana_rec")) {
+						await s.narrate("空き箱に、レコードが\n一まい。");
+						return;
+					}
+				}
+				await s.narrate("本と、レコードの空き箱が\nひとつ。");
 			},
 		},
-		// ── テレビ（夕・夜=やきう中継、朝=あさの番組。深夜は砂あらし →まれに NNN → note nnn）。
+		// ── テレビ（夕・夜=やきう中継、朝=あさの番組。深夜は月曜の放送休止＝seen_tv_shinya）。
 		//    夜のナイターは延長戦が町の時計（nostalgia.md P0-2）: 9回うら → 延長10回 → 11回 →
 		//    中継の打ち切り（seen_chukei_end）→ 天気よほう（seen_tenki）→ あとは自分で消す。
-		//    結果は、あしたの朝刊（apart mybox）で。NNN の条件（seen_tv の回数）と文言は変えない ──
+		//    結果は、あしたの朝刊（apart mybox）で ──
 		{
 			id: "tv",
 			x: 7,
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
-				const n = Number(s.flag("seen_tv") ?? 0);
-				s.set("seen_tv", n + 1);
 				const t = s.flag("tod");
 				if (t === "yu" || t === "yoru") {
 					// 段＝max(宵に回った地区の数, 宵にテレビを見た回数)。見た回数は段を読んでから数える
@@ -645,11 +862,21 @@ export const room: MapDef = {
 				if (t === "asa") {
 					await s.narrate("テレビを　つけた。\nあさの番組が、ながれている。");
 					await s.narrate("……いつもの、\n火曜の　朝の　声だ。");
+					// 深夜の放送休止を見た人だけ（seen_tv_shinya）
+					if (s.flag("seen_tv_shinya"))
+						await s.say("kiriko", "（テレビも、おきたンゴ）");
 					return;
 				}
-				s.se("hum", { volume: 0.6 });
-				await s.narrate("テレビを　つけた。\n――ざあ、と　砂あらし。");
-				await s.narrate("なにも　うつらないので、\nけした。");
+				// 深夜（月曜の夜おそく）は、放送休止。2回目からは、つけない
+				if (s.flag("seen_tv_shinya")) {
+					await s.narrate("テレビは、つけずに　おいた。");
+					return;
+				}
+				s.set("seen_tv_shinya");
+				await s.narrate(
+					"テレビを　つけた。\n『ただいま　放送を　休止しています』",
+				);
+				await s.say("kiriko", "（テレビも、ねてるンゴ）");
 			},
 		},
 		{
@@ -659,18 +886,35 @@ export const room: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
+				// 宵は、さわるたびに やかんが進む（seen_kettle_yoru 数。3で止める）:
+				// かけた → わいて、お茶を いれた → もう のんだ。深夜に その のこりを さわる
+				const n = numFlag(s, "seen_kettle_yoru");
 				if (t === "yu" || t === "yoru") {
-					s.set("seen_kettle_yoru");
-					await s.narrate("やかんを　かけた。\nお茶の　じかんだ。");
+					s.set("seen_kettle_yoru", Math.min(3, n + 1));
+					if (n === 0) {
+						await s.narrate("やかんを　かけた。");
+						return;
+					}
+					if (n === 1) {
+						await s.narrate("しゅんしゅん　いってきた。\nお茶を　いれた。");
+						return;
+					}
+					await s.narrate("お茶は、もう　のんだ。");
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("やかんは、つめたい。\nあとで　わかしなおすンゴ。");
+					await s.narrate("やかんは、つめたい。");
+					await s.say("kiriko", "……あとで　わかし\nなおすンゴ");
 					return;
 				}
-				if (s.flag("seen_kettle_yoru")) {
+				if (n >= 2) {
 					await s.narrate("やかん。さわると、\nほんのり　ぬるい。");
 					await s.narrate("……ねるまえの　おちゃの、\nのこりだ。");
+					return;
+				}
+				// かけただけで、お茶を いれずに ねた
+				if (n === 1) {
+					await s.narrate("お茶を　いれそびれた。\nやかんは、もう　ぬるい。");
 					return;
 				}
 				await s.narrate("やかん。つめたい。\n水は　入っていない。");

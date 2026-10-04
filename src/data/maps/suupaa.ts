@@ -11,9 +11,18 @@
 // 新しいフラグは無く、got_korokke／seen_kaikei を流用する）。
 //
 // 座標凍結v3: 入口からの着地 (10,12)／出口 touch (10,13) → ekimae (10,5)。
+//
+// 町をまたぐ筋（nostalgia.ts「町をまたぐ筋」。ここは前振りの店）:
+// ⑧ ガチャ: gacha_kid（seen_gacha_kid）→ gacha の 10円（男の子のあと。seen_gacha_10en）→ street kodomo_asa_b（asa）
+// ⑰ たまご: sumire の うわさ（seen_obachan）→ speaker_ev（seen_suupaa_tamago 数）→ danchi kaimono_yu
+// ⑱ 一晩: hako・milk_a・reitou・pan・housou_first→baachan_ev（seen_suupaa_koe）・okusan（数）→ ekimae・street・danchi
+// ③ 秋まつり: nodojiman 2回目（seen_aki_suupaa）→ akiMatsuri（room calendar・yamamichi susuki）
+// ㉘ コロッケ: korokke（got_korokke）→ room evening・kokudo・tonarimachi
+// 店の中だけの段（数）: okusan・korokke（seen_korokke_n）・wagon は、話す／調べるたびに 進む。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
 import { npc } from "../helpers";
+import { numFlag } from "../nostalgia";
 import { SHOP } from "../tiles";
 
 // 絵は自作チップ（data/tiles.ts の SHOP）。床は木（'.'）——ふるいスーパーの、あぶらのしみた木の床。
@@ -39,7 +48,10 @@ const rows = [
 	"##########D#########", // y13 出口 (10,13)
 ];
 
-/** レジのばあちゃん（3層: 初回／二層目の雑談／待機。会計はいつでも割り込む）。 */
+/**
+ * レジのばあちゃん。会計 ＞ 初回（seen_baa）＞ 駅の話（seen_baa2）＞ 放送の声（seen_suupaa_koe）
+ * ＞ アジフライ（seen_baa_aji）＞ 待機。会計はいつでも割り込む。
+ */
 const baachan = async (s: Story): Promise<void> => {
 	// 会計（かごにコロッケが入っていれば、まずレジを打つ）
 	if (s.flag("got_korokke") && !s.flag("seen_kaikei")) {
@@ -78,10 +90,40 @@ const baachan = async (s: Story): Promise<void> => {
 			name: "レジのばあちゃん",
 		});
 		await s.say("kiriko", "駅は、いつから？");
-		await s.say(null, "さあねえ。……はかりの\n目もりが　もどるくらい前", {
+		await s.say(
+			null,
+			"さあねえ。……あたしが\nおよめに　きたとき、もう　あったよ",
+			{
+				name: "レジのばあちゃん",
+			},
+		);
+		// 駅前の売店（ekimae kiosk_lady の2回目「さあ。……わたしより、うえだね」）を聞いた人は、
+		// ふたりとも 同じように はぐらかしたのに 気づく
+		if (s.flag("seen_kiosk2")) {
+			await s.say("kiriko", "（売店の　おばちゃんと、\nおなじ　こたえンゴ）");
+		} else {
+			await s.say("kiriko", "……おおむかし、\nンゴね");
+		}
+		return;
+	}
+	// 放送の声の種明かし（housou_first の「ずっと　おなじ」を回収。ekimae mise_mado の夕方が読む）
+	if (s.flag("seen_suupaa_housou") && !s.flag("seen_suupaa_koe")) {
+		s.set("seen_suupaa_koe");
+		await s.say(null, "放送、きいたかい？　あれ、\nあたしの　声だよ", {
 			name: "レジのばあちゃん",
 		});
-		await s.say("kiriko", "……ぜんぜん\nわからないンゴ");
+		await s.say("kiriko", "（……いまより、\nたかい　声ンゴ）");
+		await s.say(null, "わかいころのね。\nもう　とりなおさない", {
+			name: "レジのばあちゃん",
+		});
+		return;
+	}
+	// 会計のあとの一度だけ（okusan の「アジフライ」と同じ棚の話。初回の「きょうはコロッケが半額」と対）
+	if (s.flag("seen_kaikei") && !s.flag("seen_baa_aji")) {
+		s.set("seen_baa_aji");
+		await s.say(null, "またおいで。あしたは\nアジフライが　半額", {
+			name: "レジのばあちゃん",
+		});
 		return;
 	}
 	await s.say(null, "ゆっくり　見ておいで", { name: "レジのばあちゃん" });
@@ -103,6 +145,8 @@ export const suupaa: MapDef = {
 			trigger: "auto",
 			once: true,
 			run: async (s) => {
+				// 声の主は baachan_ev が明かす（seen_suupaa_koe）
+				s.set("seen_suupaa_housou");
 				await s.wait(600);
 				await s.narrate("天じょうのスピーカーから、\n店内放送。");
 				await s.narrate(
@@ -139,15 +183,29 @@ export const suupaa: MapDef = {
 			8,
 			"pub:sprites/mob_mama.png",
 			async (s) => {
-				if (!s.flag("seen_suupaa_okusan")) {
-					s.set("seen_suupaa_okusan");
+				// 3段（数）: 迷う → きめる → かごの中。danchi kaimono_yu が「りょうほう　買った」で回収
+				const n = numFlag(s, "seen_suupaa_okusan");
+				if (n < 3) s.set("seen_suupaa_okusan", n + 1);
+				if (n === 0) {
 					await s.say(null, "コロッケにするか、\nアジフライにするか……", {
 						name: "おくさん",
 					});
 					await s.say("kiriko", "（じゃまを　しては\nいけないンゴ）");
 					return;
 				}
-				await s.say(null, "……よし、りょうほう", { name: "おくさん" });
+				if (n === 1) {
+					// 先に コロッケを かごに入れた人には、ゆずってくれる
+					await s.say(
+						null,
+						s.flag("got_korokke")
+							? "あら、コロッケ……\nじゃあ　アジフライ"
+							: "……よし、りょうほう",
+						{ name: "おくさん" },
+					);
+					return;
+				}
+				// 2段目が「りょうほう」でも「アジフライ」でも合うように、うえに見えている分だけ言う
+				await s.narrate("かごの　いちばん　うえに、\nアジフライが　ふたつ。");
 			},
 			{ dir: "down" },
 		),
@@ -157,15 +215,24 @@ export const suupaa: MapDef = {
 			12,
 			"pub:sprites/mob_child.png",
 			async (s) => {
+				// ⑧ 1回目で「あしたのぼく」まで言う（street kodomo_asa_b の朝がこれで通じる）
 				if (!s.flag("seen_gacha_kid")) {
 					s.set("seen_gacha_kid");
 					await s.say(null, "あと10円　たりない", { name: "男の子" });
 					await s.say("kiriko", "（……10円、そっと\nおいていきたいンゴ）");
+					await s.say(null, "きょうは　あきらめる。\nあしたのぼくが　回す", {
+						name: "男の子",
+					});
 					return;
 				}
-				await s.say(null, "きょうは　あきらめる。\nあしたのぼくが　回す", {
-					name: "男の子",
-				});
+				// gacha で 10円を のせた人には、もう あしたの分
+				await s.say(
+					null,
+					s.flag("seen_gacha_10en")
+						? "……それは、あしたの\nぼくの　10円"
+						: "あしたの　ぼく、\nがんばれ",
+					{ name: "男の子" },
+				);
 			},
 			{ dir: "right" },
 		),
@@ -177,8 +244,29 @@ export const suupaa: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("スピーカー。ときどき、\n放送が　入る。");
-				await s.narrate("『たまごは　おひとりさま\n一パックまで――』");
+				// ⑰ たまご（数）: 一パックまで → うりきれ → ほたるの光 → まだ ながれている。
+				// danchi kaimono_yu が 2 以上を読む（「さいごの　一パック」）
+				const n = numFlag(s, "seen_suupaa_tamago");
+				if (n < 3) s.set("seen_suupaa_tamago", n + 1);
+				if (n === 0) {
+					await s.narrate("スピーカー。ときどき、\n放送が　入る。");
+					await s.narrate("『たまごは　おひとりさま\n一パックまで――』");
+					// sumire obachan_a の「たしかめてくる」を聞いた人だけ。答えは 次の段の うりきれと
+					// danchi kaimono_yu（「ちらし、きょうので　あってた」は そっちだけ）
+					if (s.flag("seen_obachan")) {
+						await s.say("kiriko", "（おばちゃん、\nまにあうンゴ？）");
+					}
+					return;
+				}
+				if (n === 1) {
+					await s.narrate("『ほんじつの　たまごは、\nうりきれました――』");
+					return;
+				}
+				if (n === 2) {
+					await s.narrate("『ほたるの光』が、\nしずかに　ながれだした。");
+					return;
+				}
+				await s.narrate("『ほたるの光』が、\nまだ　ながれている。");
 			},
 		},
 		{
@@ -187,6 +275,8 @@ export const suupaa: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
+				// ⑱ おくから取るくせ → ekimae truck_asa（asa）
+				s.set("seen_suupaa_milk");
 				await s.narrate("ぎゅうにゅうの　ケース。\nよく　ひえている。");
 				await s.narrate("……おくのから取るくせは、\nなおらない。");
 			},
@@ -216,6 +306,8 @@ export const suupaa: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
+				// ⑱ → ekimae mise_mado（shinya）
+				s.set("seen_suupaa_reitou");
 				await s.narrate(
 					"ふたつきの　れいとうケース。\nガラスが、白くくもっている。",
 				);
@@ -228,8 +320,15 @@ export const suupaa: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("『みなみ』と書かれた\nはこが　つんである。");
-				await s.narrate("あしたの朝、ならぶ分だ。");
+				// ⑱ 『みなみ』のはこ → ekimae suupaa_in（asa「ゆうべの　『みなみ』の　はこ」）
+				if (!s.flag("seen_suupaa_hako")) {
+					s.set("seen_suupaa_hako");
+					await s.narrate("『みなみ』と書かれた\nはこが　つんである。");
+					await s.narrate("あしたの朝、ならぶ分だ。");
+					return;
+				}
+				s.set("seen_suupaa_hako2");
+				await s.narrate("いちばん　うえの　はこに、\nマジックで『あさ』。");
 			},
 		},
 		{
@@ -278,8 +377,18 @@ export const suupaa: MapDef = {
 			y: 2,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("『みなみ　ちびっこのど自慢』\nの、はり紙。");
-				await s.narrate("日づけは、ずいぶん\nまえだ。");
+				if (!s.flag("seen_nodojiman")) {
+					s.set("seen_nodojiman");
+					await s.narrate("『みなみ　ちびっこのど自慢』\nの、はり紙。");
+					await s.narrate("日づけは、ずいぶん\nまえだ。");
+					return;
+				}
+				// ③ 秋まつり: 2回目で、ふるい はり紙の上の 新しい紙（akiMatsuri → room calendar・yamamichi susuki）
+				if (!s.flag("seen_aki_suupaa")) {
+					s.set("seen_aki_suupaa");
+					await s.narrate("すみに、あたらしい　紙が\nかさねて　ある。");
+				}
+				await s.narrate("『つきみ　秋まつり\nのど自慢　ぼしゅう』");
 			},
 		},
 
@@ -338,6 +447,8 @@ export const suupaa: MapDef = {
 			y: 7,
 			trigger: "talk",
 			run: async (s) => {
+				// ⑱ あんぱん売りきれ → street offerDinner（yu。店主の パン）
+				s.set("seen_suupaa_pan");
 				await s.narrate("パンの棚。あんぱんは\nうりきれている。");
 				await s.narrate("あんぱんは、先に\nなくなるらしい。");
 			},
@@ -402,7 +513,18 @@ export const suupaa: MapDef = {
 					await s.narrate("もう、かごの中だ。");
 					return;
 				}
-				await s.narrate("のこりのコロッケにも、\nシールが　はられていく。");
+				// 会計のあとは 段（数）: シール → のこり ふたつ → あぶらの しみだけ。家の机は room evening
+				const n = numFlag(s, "seen_korokke_n");
+				if (n < 3) s.set("seen_korokke_n", n + 1);
+				if (n === 0) {
+					await s.narrate("のこりのコロッケにも、\nシールが　はられていく。");
+					return;
+				}
+				if (n === 1) {
+					await s.narrate("のこり、ふたつ。");
+					return;
+				}
+				await s.narrate("コロッケの　トレイに、\nあぶらの　しみだけ。");
 			},
 		},
 		{
@@ -429,12 +551,18 @@ export const suupaa: MapDef = {
 			y: 9,
 			trigger: "talk",
 			run: async (s) => {
-				if (!s.flag("seen_suupaa_wagon")) {
-					s.set("seen_suupaa_wagon");
+				// 3段（数）: 山 → ひくく → のこり ひとつ
+				const n = numFlag(s, "seen_suupaa_wagon");
+				if (n < 3) s.set("seen_suupaa_wagon", n + 1);
+				if (n === 0) {
 					await s.narrate("『とくばい』の赤い札。\nティッシュの山だ。");
 					return;
 				}
-				await s.narrate("……山が、すこし\nひくくなっている。");
+				if (n === 1) {
+					await s.narrate("……山が、すこし\nひくくなっている。");
+					return;
+				}
+				await s.narrate("ティッシュの　山は、\nのこり　ひとつ。");
 			},
 		},
 
@@ -465,7 +593,35 @@ export const suupaa: MapDef = {
 			y: 12,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("ガチャガチャが、二台。\n一台は『じゅんびちゅう』。");
+				if (!s.flag("seen_suupaa_gacha")) {
+					s.set("seen_suupaa_gacha");
+					await s.narrate("ガチャガチャが、二台。\n一台は『じゅんびちゅう』。");
+					// 男の子の話を まだ聞いていない人は、ここまで（聞いたあとの 2回目で 10円）
+					if (!s.flag("seen_gacha_kid")) {
+						await s.narrate("まわすところを、\nつい　見てしまう。");
+						return;
+					}
+				}
+				// ⑧ 男の子の「あと10円」を聞いた人だけ、10円を のせられる（先に男の子と話した人は
+				// 1回目から）。その場では回さない。street kodomo_asa_b の朝が seen_gacha_10en を読む
+				if (s.flag("seen_gacha_kid") && !s.flag("seen_gacha_10en")) {
+					await s.narrate("ポケットに、10円玉が\nひとつ　ある。");
+					const i = await s.choose(
+						["＞＞1 10円を　のせる", "＞＞2 やめておく"],
+						{
+							cancel: 1,
+						},
+					);
+					if (i === 0) {
+						s.set("seen_gacha_10en");
+						s.se("item", { volume: 0.8 });
+						await s.narrate("ガチャの　うえに、\n10円玉を　ひとつ　のせた。");
+						await s.say(null, "……あしたの　ぼくの\nぶんに　する", {
+							name: "男の子",
+						});
+					}
+					return;
+				}
 				await s.narrate("まわすところを、\nつい　見てしまう。");
 			},
 		},

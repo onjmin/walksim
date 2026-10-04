@@ -9,7 +9,15 @@
 //           スタンドは営業をおえて、事務所のあかりとラジオのナイター中継だけ（P0-2。延長がつづく）
 //   深夜 … NPC 0体必達。スタンドも消灯。ときどき トラックが とおる。
 //           灯っている自販機 (31,11) で、あたたかい缶が一本買える（P0-6。缶は nostalgia.ts が持つ）
-//   朝   … 始発前後のバス停・ジョギングの人・水をまく店員（夕の「空気はタダ」の payoff）
+//   朝   … 始発前後のバス停・水をまく店員（夕の「空気はタダ」の payoff）
+//
+// このマップの中の段と回収（2026-10-04）:
+//   ストレッチの人（yu・seen_stretch_kokudo／2回目 seen_stretch_kokudo2）→ 朝のバス停の人（bus_asa）
+//   バス待ちの人のあめ玉（yu・seen_bus_obachan）→ 深夜の時こく表のつつみ紙（seen_tsutsumi_kokudo）→ 朝はかれている
+//   店員の2層目（yu・seen_gasman2「バス停のじはんき」）→ 朝の事務所の缶コーヒー・ファミレスの『おかわり自由』の札
+//   洗車機のテスト運転（yu・seen_sensha_scene）→ 朝の店員の2回目
+//   部活帰りの子（yu・seen_bukatsu_kokudo）→ ファミレスのポテトの写真／got_korokke（suupaa）を子が見る
+//   花たば（yu・yoru・shinya で seen_hanataba）→ 朝「あたらしいのに　かわっている」
 //
 // 座標凍結v3: 東 (39,10)→street(1,11)・street からの着地 (38,10)／
 // 西 (0,10)→ekimae(30,9)・ekimae からの着地 (1,10)／
@@ -31,7 +39,17 @@ import type {
 	TileDef,
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
-import { kanHeld, kanShinya, kanTick, yoruAkubi } from "../nostalgia";
+import {
+	arrived,
+	kanHeld,
+	kanLv,
+	kanShinya,
+	kanTick,
+	numFlag,
+	shinyaClock,
+	yoruAkubi,
+	yoruClock,
+} from "../nostalgia";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
@@ -57,11 +75,11 @@ const tiles: Record<string, TileDef> = {
 		color: "#6a4a2a",
 		passable: false,
 	},
-	// ファミレスの通用口（かぎが かかっている。踏むと押し戻す）
+	// ファミレスの通用口（かぎが かかっている。通れない。(18,6) から調べる）
 	J: {
 		layers: [WALL.tileLo, DOOR.sliding],
 		color: "#8a7a3a",
-		passable: true,
+		passable: false,
 	},
 	b: {
 		layers: [JP.ground, JP.susuki],
@@ -108,7 +126,6 @@ const rows = [
 // ── モブの歩行グラ ──
 const OBACHAN = "pub:sprites/mob_obaachan.png";
 const STUDENT = "pub:sprites/mob_student.png";
-const RUNNER = "pub:sprites/mob_student.png";
 const MAN = "pub:sprites/mob_salaryman.png";
 const GASMAN = "pub:sprites/mob_worker.png";
 
@@ -167,8 +184,9 @@ const hodokyoView = async (s: Story): Promise<void> => {
 		return;
 	}
 	if (t === "asa") {
-		await s.narrate("歩道橋の上。とおくの車が、\nぽつ、ぽつ、と走っていく。");
-		await s.narrate("はたらく人の　時間だ。");
+		// 朝は 車が ふえる（深夜の「からっぽ」と arrive_asa の「もう　ならんでいる」の つづき）
+		s.se("train", { pan: 0.4, volume: 0.35 });
+		await s.narrate("歩道橋の上。車が、とぎれずに\nながれていく。");
 		return;
 	}
 	s.se("train", { pan: -0.4, volume: 0.4 });
@@ -208,7 +226,8 @@ const gasman = async (s: Story): Promise<void> => {
 			name: "スタンドの店員",
 		});
 		await s.say("kiriko", "……いまは、ンゴ？");
-		await s.say(null, "いまは　うちのじはんきが\nある。……はは", {
+		// 「バス停の　じはんき」は (31,11)。朝の gasmanAsa の缶コーヒー・famiresu_win2 の札で回収
+		await s.say(null, "いまは　バス停の\nじはんきが　ある。……はは", {
 			name: "スタンドの店員",
 		});
 		return;
@@ -216,10 +235,14 @@ const gasman = async (s: Story): Promise<void> => {
 	await s.say(null, "洗車、いまなら\n待ちゼロだよ", { name: "スタンドの店員" });
 };
 
-/** 朝の店員（水まき中）。夕方に話していれば「徒歩のお客さん」の payoff。 */
+/**
+ * 朝の店員（水まき中）。段は seen_gasman_asa の数（numFlag）。
+ * 1回目＝夕方に話していれば「徒歩のお客さん」の payoff／2回目＝夕方の洗車機のテスト運転を見た人だけ／3回目から水まき。
+ */
 const gasmanAsa = async (s: Story): Promise<void> => {
-	if (!s.flag("seen_gasman_asa")) {
-		s.set("seen_gasman_asa");
+	const n = numFlag(s, "seen_gasman_asa");
+	s.set("seen_gasman_asa", n + 1);
+	if (n === 0) {
 		await s.narrate("ホースで、地面を\nあらっている。");
 		if (s.flag("seen_gasman")) {
 			await s.say(null, "お、きのうの徒歩の\nお客さん", {
@@ -229,11 +252,22 @@ const gasmanAsa = async (s: Story): Promise<void> => {
 			await s.say(null, "空気を入れに来たら\n客だよ", {
 				name: "スタンドの店員",
 			});
-			return;
+		} else {
+			await s.say(null, "おはよう。開店は\nもうちょっと先だよ", {
+				name: "スタンドの店員",
+			});
 		}
-		await s.say(null, "おはよう。開店は\nもうちょっと先だよ", {
+		// 夕方の2層目（「いまは　バス停の　じはんきが　ある」）を聞いた人だけ
+		if (s.flag("seen_gasman2"))
+			await s.narrate("事務所の　まどべに、\nじはんきの　缶コーヒー。");
+		return;
+	}
+	// 夕方の洗車機のテスト運転（sensha_scene）を見た人だけ、2回目に
+	if (n === 1 && s.flag("seen_sensha_scene")) {
+		await s.say(null, "きのう、ぬれなかった？\nあれ、テストでさ", {
 			name: "スタンドの店員",
 		});
+		await s.say("kiriko", "あびる前に、\nにげたンゴ");
 		return;
 	}
 	await s.say(null, "朝に水をまくとね、\n一日、ほこりが立たない", {
@@ -334,6 +368,13 @@ export const kokudo: MapDef = {
 				await s.wait(500);
 				s.se("suzume", { pan: 0.2, volume: 0.7 });
 				await s.wait(500);
+				// 深夜に ここを 歩いた人だけ（arrive_shinya「車が一台も　いない」の 回収）
+				if (arrived(s, "kokudo", "shinya")) {
+					await s.narrate(
+						"ゆうべの　しずかな　国道に、\n車が　もう　ならんでいる。",
+					);
+					return;
+				}
 				await s.narrate("アスファルトが、朝つゆで\nすこし　しめっている。");
 			},
 		},
@@ -419,6 +460,14 @@ export const kokudo: MapDef = {
 					return;
 				}
 				await s.narrate("われた窓に、テープが\nばってん印に　はってある。");
+				if (t === "yoru") {
+					// 宵（P0-1）。arrive_yoru の ライトを つけた トラックが、中まで とどく
+					s.se("train", { pan: -0.3, volume: 0.35 });
+					await s.narrate(
+						"トラックの　ライトが、\nさかさまの　いすを　なでていく。",
+					);
+					return;
+				}
 				await s.narrate("中に、さかさまの\nいすが見える。");
 			},
 		},
@@ -442,16 +491,14 @@ export const kokudo: MapDef = {
 				await s.narrate("はり紙のつづきは、\n日に焼けて　よめない。");
 			},
 		},
-		// 通用口（かぎが かかっている）
+		// 通用口（かぎが かかっている。小道具）
 		{
 			id: "famiresu_back",
 			x: 18,
 			y: 5,
-			trigger: "touch",
-			through: true,
+			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("『従業員通用口』\n……かぎが　かかっている。");
-				await s.move("player", "d");
 			},
 		},
 		{
@@ -461,6 +508,18 @@ export const kokudo: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("窓ごしに、レジだけが\nそのまま　のこっている。");
+				// 深夜は 店の中が まっくら（famiresu_win「中は、くらい」）。札も写真も よめない
+				if (s.flag("tod") === "shinya") return;
+				// 店員の2層目（gasman「夜勤あけに、コーヒーだけ」）を聞いた人だけ
+				if (s.flag("seen_gasman2"))
+					await s.narrate(
+						"レジの　おくに、『コーヒー\nおかわり　自由』の　札。",
+					);
+				// 部活帰りの子（bukatsu_kid「まえは　ポテトが　あったのに」）を見た人だけ
+				if (s.flag("seen_bukatsu_kokudo"))
+					await s.narrate(
+						"かべに、ポテトの　写真が\nはがれかけて　のこっている。",
+					);
 			},
 		},
 		{
@@ -477,18 +536,6 @@ export const kokudo: MapDef = {
 		},
 
 		// ── ファミレス前（歩道橋でしか来られない側） ──
-		// 営業時間のはり紙 (10,5) の前 (10,6) はあけておく
-		{
-			id: "akikan",
-			x: 11,
-			y: 6,
-			sprite: JP.cansCrate,
-			trigger: "talk",
-			fixedDir: true,
-			run: async (s) => {
-				await s.narrate("回収されない　ビールケース。\n中に、空きかんが三本。");
-			},
-		},
 		{
 			id: "densou_ban",
 			x: 16,
@@ -497,10 +544,18 @@ export const kokudo: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
-				await s.narrate("電光掲示板。『スピード\nおとせ』が、ながれている。");
-				if (s.flag("tod") === "shinya") {
-					await s.narrate("……見ている車は、いない。");
+				const t = s.flag("tod");
+				// 宵と深夜は 時刻と気温に かわる（町の時計 yoruClock／shinyaClock と 同じ 時を さす）
+				if (t === "yoru") {
+					await s.narrate(`電光掲示板。\n『${yoruClock(s)}　気温22℃』`);
+					return;
 				}
+				if (t === "shinya") {
+					await s.narrate(`電光掲示板。\n『${shinyaClock(s)}　気温20℃』`);
+					await s.narrate("……見ている車は、\n一台も　とおらない。");
+					return;
+				}
+				await s.narrate("電光掲示板。『スピード\nおとせ』が、ながれている。");
 			},
 		},
 		{
@@ -528,18 +583,6 @@ export const kokudo: MapDef = {
 			},
 		},
 		{
-			id: "taiya_ato",
-			x: 22,
-			y: 6,
-			sprite: JP.tireMarks,
-			trigger: "talk",
-			through: true,
-			fixedDir: true,
-			run: async (s) => {
-				await s.narrate("アスファルトに、黒い\nタイヤのあと。");
-			},
-		},
-		{
 			id: "shinda_jihanki",
 			x: 30,
 			y: 6,
@@ -549,9 +592,13 @@ export const kokudo: MapDef = {
 			run: async (s) => {
 				await s.narrate("じはんき。あかりが、\nついていない。");
 				await s.narrate("見本のかんが、日やけで\nまっしろだ。");
-				// ⑩ 深夜に 缶を 手に 持っていれば、灯らない 自販機と くらべる
+				// ⑩ 深夜に 缶を 手に 持っていれば、灯らない 自販機と くらべる（3 は もう ぬるい）
 				if (s.flag("tod") === "shinya" && kanHeld(s))
-					await s.narrate("手の　中の　缶だけが、\nあたたかい。");
+					await s.narrate(
+						kanLv(s) <= 2
+							? "手の　中の　缶だけが、\nあたたかい。"
+							: "手の　中の　缶も、\nもう　ぬるい。",
+					);
 			},
 		},
 
@@ -566,7 +613,7 @@ export const kokudo: MapDef = {
 				await s.narrate("大きな　へこみが、ひとつ。");
 			},
 		},
-		// ガードレールの花（説明しない。tod で花だけが入れかわる）
+		// ガードレールの花（説明しない。tod で見え方が かわり、朝に 花が 入れかわる）
 		{
 			id: "hanataba",
 			x: 13,
@@ -577,12 +624,22 @@ export const kokudo: MapDef = {
 			fixedDir: true,
 			run: async (s) => {
 				const t = s.flag("tod");
+				if (t === "asa") {
+					// 前の晩までに 花たばを 見た人だけ、入れかわったと わかる
+					await s.narrate(
+						s.flag("seen_hanataba")
+							? "花たばが、あたらしいのに\nかわっている。"
+							: "花たばに、朝つゆが\nついている。",
+					);
+					return;
+				}
+				s.set("seen_hanataba");
 				if (t === "shinya") {
 					await s.narrate("花たばが、くらがりで\n白く見える。");
 					return;
 				}
-				if (t === "asa") {
-					await s.narrate("花たばが、あたらしいのに\nかわっている。");
+				if (t === "yoru") {
+					await s.narrate("街灯の　オレンジで、\n花の　色が　わからない。");
 					return;
 				}
 				await s.narrate("ガードレールの根もとに、\n花たばが　そなえてある。");
@@ -598,11 +655,19 @@ export const kokudo: MapDef = {
 				if (t === "shinya") {
 					await s.narrate("バスていの時こく表。\nさいしゅうは、22時10分。");
 					await s.narrate("……とっくに、\n行ったあとだ。");
+					// 夕方のバス待ちの人（bus_obachan「あめ玉、なめて待つの」）を見た人だけ
+					if (s.flag("seen_bus_obachan")) {
+						s.set("seen_tsutsumi_kokudo");
+						await s.narrate("時こく表の下に、あめ玉の\nつつみ紙が　一枚。");
+					}
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("時こく表。始発は\n6時52分。……もう出た。");
-					await s.narrate("つぎのバスまで、\nもうすこし　ある。");
+					// 深夜に つつみ紙を 見た人だけ（だれが はいたかは 書かない）
+					if (s.flag("seen_tsutsumi_kokudo"))
+						await s.narrate("つつみ紙は、もう\nはかれたあとだ。");
+					await s.narrate("つぎのバスまで、\nまだ　すこし　ある。");
 					return;
 				}
 				if (t === "yoru") {
@@ -629,10 +694,25 @@ export const kokudo: MapDef = {
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("とりだし口に、だれかの\nとりわすれた　おつり。");
+					// ゆうべ どこかの じはんきで 缶を 買った人だけ（got_kan）。
+					// 買った場所は ここと かぎらない（senro の朝と 食いちがわないよう「おなじ列」とだけ言う）
+					if (kanLv(s) > 0) {
+						await s.say("kiriko", "（ゆうべの　一本と、\nおなじ　列ンゴ）");
+						return;
+					}
+					await s.narrate("じはんきの　あかりが、\n朝日で　うすい。");
 					return;
 				}
-				await s.narrate("じはんき。『つめた～い』の\n列が、一本だけ売り切れ。");
+				if (t === "yoru") {
+					// 宵（P0-1）。深夜の 一本（kanShinya）の 前振り
+					await s.narrate(
+						"じはんき。あかりが　ついた。\n『あったか～い』の　列も　ある。",
+					);
+					return;
+				}
+				await s.narrate(
+					"じはんき。『つめた～い』の\nならびに、『あったか～い』が　まじっている。",
+				);
 			},
 		},
 		{
@@ -651,7 +731,19 @@ export const kokudo: MapDef = {
 			y: 11,
 			trigger: "talk",
 			run: async (s) => {
+				const t = s.flag("tod");
+				if (t === "shinya") {
+					await s.narrate("側溝の　水の音が、\n国道の　ほうまで　きこえる。");
+					return;
+				}
+				if (t === "asa") {
+					// 朝の 店員の 水まき（gasmanAsa）の 水
+					await s.narrate("側溝を、スタンドの　ほうから\n水が　ながれてくる。");
+					return;
+				}
 				await s.narrate("草むらのおくに、側溝。\n水の音がしている。");
+				s.se("train", { pan: -0.2, volume: 0.4 });
+				await s.narrate("トラックが　来るたび、\n水の音が　きえる。");
 			},
 		},
 		{
@@ -662,7 +754,8 @@ export const kokudo: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("国道の街灯。オレンジ色に\nついている。");
+					// 音は arrive_shinya の「じー」に まかせる（apart の蛍光灯 罠8 と 言い方を わける）
+					await s.narrate("街灯の　あかりを、虫が　一ぴき\nまわっている。");
 					return;
 				}
 				if (t === "asa") {
@@ -679,7 +772,7 @@ export const kokudo: MapDef = {
 		},
 
 		// ── ガソリンスタンド（夕は営業・宵は店じまいで事務所だけ・深夜は消灯。生きた店の記号） ──
-		// 夕方、前庭にふみこむと洗車機のテスト運転（音の場面。once）
+		// 夕方、前庭にふみこむと洗車機のテスト運転（音の場面。once。朝の gasmanAsa の2回目で回収）
 		...[6, 7, 8, 9, 10].map(
 			(x): EventDef => ({
 				id: `sensha_scene_${x}`,
@@ -725,6 +818,11 @@ export const kokudo: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("『せんしゃ』ののぼりが、\n立てられたばかりだ。");
+					return;
+				}
+				if (t === "yoru") {
+					// 宵（P0-1）。夕方の 風が やんで、深夜には しまわれる 手前
+					await s.narrate("のぼりが、ポールに\nまきついて　とまっている。");
 					return;
 				}
 				await s.narrate("のぼり。『せんしゃ』の\n字が、風でおどっている。");
@@ -895,13 +993,20 @@ export const kokudo: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("ねこが二ひき、ならんで\n毛づくろいしている。");
-					// ⑤ 夜の あつまりを 見た 人だけ
-					if (s.flag("seen_neko_shukai"))
+					// ⑤ ここで 三びきを 見て、夜の あつまりも 見た 人だけ
+					if (s.flag("seen_neko_shukai") && s.flag("seen_neko_kokudo"))
 						await s.say("kiriko", "（もう一ぴきは、まだ\n団地の　うらンゴ？）");
 					return;
 				}
 				s.set("seen_neko_kokudo");
-				await s.narrate("ねこが三びき、\nおしくらまんじゅう中だ。");
+				if (t === "yoru") {
+					// 宵（P0-1）。一ぴきは esara の 皿（「ぴちゃぴちゃ　なめている」）
+					await s.narrate(
+						"二ひきが　おしくらまんじゅう。\n一ぴきは、皿の　ほうだ。",
+					);
+				} else {
+					await s.narrate("ねこが三びき、\nおしくらまんじゅう中だ。");
+				}
 				await s.say("kiriko", "まざりたいンゴ……");
 			},
 		},
@@ -938,6 +1043,12 @@ export const kokudo: MapDef = {
 			11,
 			STUDENT,
 			async (s) => {
+				// 2回目からは ひとことだけ（1回目の seen_bukatsu_kokudo は famiresu_win2 の ポテトの写真で回収）
+				if (s.flag("seen_bukatsu_kokudo")) {
+					await s.say(null, "……はらへった", { name: "部活帰りの子" });
+					return;
+				}
+				s.set("seen_bukatsu_kokudo");
 				await s.say(null, "部活のあとの　この道、\nながいんだよなー", {
 					name: "部活帰りの子",
 				});
@@ -945,16 +1056,31 @@ export const kokudo: MapDef = {
 					name: "部活帰りの子",
 				});
 				await s.say(null, "……はらへった", { name: "部活帰りの子" });
+				// ㉘ スーパーで コロッケを 買った人だけ（suupaa korokke の got_korokke）
+				if (s.flag("got_korokke")) {
+					await s.say(null, "……それ、コロッケ？", {
+						name: "部活帰りの子",
+					});
+					await s.say("kiriko", "（はしっこは、\n吾輩のンゴ）");
+				}
 			},
 			{ dir: "down", when: (st) => st.flags.tod === "yu" },
 		),
-		// 会釈だけの通行人（無害な他者＝深夜の「不在」を効かせるベースライン）
+		// 会釈だけの通行人（無害な他者＝深夜の「不在」を効かせるベースライン）。
+		// 1回目 seen_stretch_kokudo → 朝のバス停の人（bus_asa）で同じ人だとわかる。2回目だけ会釈がもう一回
 		npc(
 			"stretch_man",
 			35,
 			11,
 			MAN,
 			async (s) => {
+				if (s.flag("seen_stretch_kokudo") && !s.flag("seen_stretch_kokudo2")) {
+					s.set("seen_stretch_kokudo2");
+					await s.narrate("会釈を、もう一回\nされた。");
+					await s.say("kiriko", "（二回目は、どう\nかえすのが　正解ンゴ）");
+					return;
+				}
+				s.set("seen_stretch_kokudo");
 				await s.narrate("ストレッチ中だ。\nかるく、会釈をされた。");
 			},
 			{ dir: "up", when: (st) => st.flags.tod === "yu" },
@@ -971,21 +1097,15 @@ export const kokudo: MapDef = {
 			11,
 			MAN,
 			async (s) => {
-				await s.say(null, "始発って、まにあうと\nちょっと　勝った気がするね", {
+				// 夕方の ストレッチの人（stretch_man）を見た人だけ、同じ人だと わかる
+				if (s.flag("seen_stretch_kokudo"))
+					await s.narrate("ゆうがた、ストレッチを\nしていた　人だ。スーツだ。");
+				// 時こく表（busstop の asa「始発は　6時52分。……もう出た」）と あわせる
+				await s.say(null, "始発、目の前で\n行っちゃってね", {
 					name: "バス待ちの人",
 				});
 			},
 			{ dir: "right", when: (st) => st.flags.tod === "asa" },
-		),
-		npc(
-			"jog_asa",
-			14,
-			10,
-			RUNNER,
-			async (s) => {
-				await s.narrate("ジョギングの人が、\n白い息で　走っていく。");
-			},
-			{ wander: true, when: (st) => st.flags.tod === "asa" },
 		),
 	],
 };
