@@ -61,6 +61,7 @@ import {
 	shinyaClock,
 	yoruAkubi,
 	yoruClock,
+	yuClock,
 } from "../nostalgia";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
@@ -338,6 +339,8 @@ export const ekimae: MapDef = {
 			x: 10,
 			y: 4,
 			trigger: "touch",
+			exit: "up",
+			exitWhen: (st) => st.flags.tod === "yu",
 			through: true,
 			run: async (s) => {
 				if (s.flag("tod") === "yu") {
@@ -1047,7 +1050,7 @@ export const ekimae: MapDef = {
 					await s.narrate(`駅前の時計。――${yoruClock(s, 1)}。`);
 					return;
 				}
-				await s.narrate("駅前の時計。――17:15。");
+				await s.narrate(`駅前の時計。――${yuClock(s, 1)}。`);
 				await s.narrate("文字盤が、夕日で\nオレンジ色だ。");
 			},
 		},

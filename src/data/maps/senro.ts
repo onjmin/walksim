@@ -455,6 +455,8 @@ export const senro: MapDef = {
 			x: 0,
 			y: 7,
 			trigger: "touch",
+			exit: "left",
+			exitWhen: (st) => st.flags.tod === "yu",
 			through: true,
 			run: async (s) => {
 				const t = s.flag("tod");

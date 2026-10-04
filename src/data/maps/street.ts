@@ -55,6 +55,7 @@ import {
 	shinyaClock,
 	yoruAkubi,
 	yoruClock,
+	yuClock,
 } from "../nostalgia";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
@@ -1070,7 +1071,7 @@ export const street: MapDef = {
 					return;
 				}
 				s.set("seen_tokei_hato");
-				await s.narrate("まちの時計。――17:03。");
+				await s.narrate(`まちの時計。――${yuClock(s)}。`);
 				await s.narrate("ハトが、うえに\nとまっている。");
 			},
 		},
@@ -1104,7 +1105,7 @@ export const street: MapDef = {
 					return;
 				}
 				await s.narrate("とこやの　まど。サインポールが\nまわっている。");
-				await s.narrate("おくの時計は――17:06。");
+				await s.narrate(`おくの時計は――${yuClock(s, 2)}。`);
 			},
 		},
 		{
@@ -1147,7 +1148,7 @@ export const street: MapDef = {
 					return;
 				}
 				await s.narrate("コンビニのまど。おでんの\nゆげで、くもっている。");
-				await s.narrate("レジのおくの時計は\n――17:08。");
+				await s.narrate(`レジのおくの時計は\n――${yuClock(s, 3)}。`);
 			},
 		},
 		{
@@ -1236,7 +1237,7 @@ export const street: MapDef = {
 					return;
 				}
 				await s.narrate("ならんだテレビが、ぜんぶ\nおなじ夕方のニュース。");
-				await s.narrate("画面のすみに――17:04。");
+				await s.narrate(`画面のすみに――${yuClock(s, 1)}。`);
 			},
 		},
 		// 貼り紙の下の貼り紙（段は denki_bill の run の上のコメントを見る。深夜は上の紙だけ。P0-8）

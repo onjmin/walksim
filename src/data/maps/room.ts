@@ -475,6 +475,7 @@ export const room: MapDef = {
 			x: 5,
 			y: 9,
 			trigger: "touch",
+			exit: "down",
 			through: true,
 			run: async (s) => {
 				// 宵に やかんを かけただけ（kettle の seen_kettle_yoru が 1）で 出かけるなら、火を とめてから。

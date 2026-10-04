@@ -52,6 +52,13 @@ export type EventDef = {
 	when?: (s: GameState) => boolean;
 	/** 1回だけ実行する（実行後 `done:<map>:<id>` が立ち、以後は消える）。 */
 	once?: boolean;
+	/**
+	 * 出口（マップの さかい・戸・階段）。この向きへ 歩いて ぬける。踏みイベントのときだけ、
+	 * 画面に 小さな 三角の 矢印を 出す（engine/exits.ts）。data/helpers.ts の warp() が 着く向きから 入れる。
+	 */
+	exit?: Dir;
+	/** 出口が あいているときだけ 矢印を 出す（夕方だけ 通れる 出口など）。省略なら いつも。 */
+	exitWhen?: (s: GameState) => boolean;
 	run?: Script;
 };
 
@@ -242,6 +249,8 @@ export type GameData = {
 	endingBgm: string;
 	/** 時間帯（flags.tod）ごとの曲。MapDef.bgm が "@tod" の地区で流す。 */
 	todBgm?: Record<string, string>;
+	/** 画面の すみに 出す ゲーム内の 時刻（null なら 出さない）。毎フレーム 呼ぶので 軽く。 */
+	clock?: (state: GameState) => string | null;
 	start: {
 		mapId: string;
 		x: number;

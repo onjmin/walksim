@@ -786,9 +786,26 @@ body.shake #app {
 	z-index: 51;
 }
 
+/* ゲーム内の 時刻（左上。地名の トーストは その 下に 出す） */
+.clock {
+	position: absolute;
+	top: calc(10px + var(--safe-t));
+	left: calc(14px + var(--safe-l));
+	padding: 3px 10px;
+	background: rgba(0, 0, 0, 0.45);
+	font-size: 14px;
+	letter-spacing: 0.05em;
+	pointer-events: none;
+	z-index: 23;
+}
+
+.clock:empty {
+	display: none;
+}
+
 .toast {
 	position: absolute;
-	top: calc(14px + var(--safe-t));
+	top: calc(46px + var(--safe-t));
 	left: calc(14px + var(--safe-l));
 	padding: 6px 14px;
 	background: rgba(0, 0, 0, 0.6);

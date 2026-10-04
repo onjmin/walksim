@@ -370,6 +370,7 @@ export const zakkyo: MapDef = {
 			x: 8,
 			y: 6,
 			trigger: "touch",
+			exit: "down",
 			through: true,
 			run: async (s) => {
 				await s.warp("ekimae", 15, 5, "down", { se: "door" });

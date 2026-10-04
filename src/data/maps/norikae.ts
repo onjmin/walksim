@@ -54,6 +54,7 @@ import {
 	kanTick,
 	numFlag,
 	shinyaClock,
+	yuClock,
 } from "../nostalgia";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 import { STN } from "../tiles-station";
@@ -387,6 +388,7 @@ export const norikae: MapDef = {
 			x: 39,
 			y: 9,
 			trigger: "touch",
+			exit: "right",
 			through: true,
 			run: async (s) => {
 				await s.warp("ekimae", 1, 15, "right");
@@ -398,6 +400,8 @@ export const norikae: MapDef = {
 			x: 3,
 			y: 0,
 			trigger: "touch",
+			exit: "up",
+			exitWhen: (st) => st.flags.tod === "yu",
 			through: true,
 			run: async (s) => {
 				const t = s.flag("tod");
@@ -827,7 +831,7 @@ export const norikae: MapDef = {
 				}
 				await s.narrate("コインパーキング。\n『60分　200円』");
 				await s.narrate("とめてある　車は、ない。");
-				await s.narrate("精算機の　時計――17:24。");
+				await s.narrate(`精算機の　時計――${yuClock(s, 2)}。`);
 			},
 		},
 		{ id: "kurumadome_a", x: 36, y: 5, trigger: "talk", run: kurumadome },

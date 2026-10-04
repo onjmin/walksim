@@ -12,6 +12,7 @@
 
 import { JP } from "../data/tiles";
 import { drawRefInCell } from "./assets";
+import { drawExitMarks, type ExitMark } from "./exits";
 import { type Actor, Field, STRIP_UP } from "./field";
 import { TILE } from "./types";
 
@@ -800,6 +801,8 @@ export const renderDiorama = (
 	tod: string | undefined,
 	/** 暗闇（MapDef.dark）：照らす半径（マス）の外をディザで潰す。 */
 	dark?: { amount: number; radius: number },
+	/** 出口の 矢印（engine/exits.ts）。 */
+	exits: ExitMark[] = [],
 ): void => {
 	// 場面：怪異の地区は MapDef.scene、日常は時間帯
 	const sceneKey =
@@ -1015,6 +1018,23 @@ export const renderDiorama = (
 	// 暗闇：照らす半径の外を、場面のいちばん暗い段でディザ状に潰す（懐中電灯で広がる）
 	if (dark && dark.amount > 0)
 		drawDark(ctx, sx, sy, bw, bh, player, box, dark, pal.ramp[0]);
+	// 出口の 矢印（箱の 中に あるものだけ。場面の いちばん明るい段と、いちばん暗い段の 縁）
+	const rgb = (c: [number, number, number]) => `rgb(${c[0]},${c[1]},${c[2]})`;
+	drawExitMarks(
+		ctx,
+		exits.filter(
+			(e) =>
+				e.x >= box.x &&
+				e.x < box.x + box.w &&
+				e.y >= box.y &&
+				e.y < box.y + box.h,
+		),
+		sx - ox,
+		sy - oy,
+		time,
+		rgb(pal.ramp[pal.ramp.length - 1]),
+		rgb(pal.ramp[0]),
+	);
 	if (fray) {
 		drawFray(ctx, sx, sy - back, bw, bh + back);
 		return;

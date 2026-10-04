@@ -42,6 +42,7 @@ import {
 	shinyaClock,
 	yoruAkubi,
 	yoruClock,
+	yuClock,
 } from "../nostalgia";
 import { home, JP, town } from "../tiles";
 
@@ -225,6 +226,7 @@ export const laundry: MapDef = {
 			x: 5,
 			y: 9,
 			trigger: "touch",
+			exit: "down",
 			through: true,
 			run: async (s) => {
 				await s.warp("sumire", 27, 3, "down", { se: "door" });
@@ -586,7 +588,7 @@ export const laundry: MapDef = {
 							? shinyaClock(s)
 							: t === "asa"
 								? asaClock(s)
-								: "17:31";
+								: yuClock(s);
 				await s.narrate(`かべの時計。――${ji}。`);
 			},
 		},

@@ -305,6 +305,45 @@ export const shinyaClock = (s: Story, off = 0): string => {
 	return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
 };
 
+// ───────────────── 夕方の時計・画面の時刻（2026-10-04） ─────────────────
+
+/** 夕方に着いた屋外の地区の数。arrive_yu の once で数える。 */
+export const yuStep = (s: Story): number =>
+	OUTDOOR_DAILY.filter((m) => arrived(s, m, "yu")).length;
+
+/**
+ * 夕方の町の時計（"17:00" から、地区に着くたびに4分すすむ。off は時計ごとのずれ）。
+ * 町の時計の 固定の 時刻を やめて、画面の 時刻（hudClock）と そろえる。
+ */
+export const yuClock = (s: Story, off = 0): string => {
+	const m = 17 * 60 + 4 * yuStep(s) + off;
+	return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+};
+
+/** GameState 版の、その時間帯に着いた屋外の地区の数。 */
+const todStepSt = (st: GameState, tod: string): number =>
+	OUTDOOR_DAILY.filter((m) => !!st.flags[`done:${m}:arrive_${tod}`]).length;
+
+const hm = (m: number): string =>
+	`${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+
+/**
+ * 画面の すみの ゲーム内の 時刻（GameData.clock）。町の 時計（yuClock・yoruClock・shinyaClock・asaClock）と
+ * 同じ 式で、off は 0。夕方・宵は 9/13(月)、深夜・朝は 9/14(火)。時間帯が 無い（デバッグルーム）ときは 出さない。
+ */
+export const hudClock = (st: GameState): string | null => {
+	const tod = st.flags.tod;
+	if (st.mapId === "debug") return null;
+	if (tod === "yu") return `9/13(月)　${hm(17 * 60 + 4 * todStepSt(st, "yu"))}`;
+	if (tod === "yoru")
+		return `9/13(月)　${hm(20 * 60 + 5 + 7 * todStepSt(st, "yoru"))}`;
+	if (tod === "shinya")
+		return `9/14(火)　${hm(2 * 60 + 5 + 11 * todStepSt(st, "shinya"))}`;
+	if (tod === "asa")
+		return `9/14(火)　${hm(6 * 60 + 58 + 4 * todStepSt(st, "asa"))}`;
+	return null;
+};
+
 // ───────────────── 朝の時計（2026-10-04） ─────────────────
 
 /** 朝に着いた屋外の地区の数（0〜9。umi は arrive_asa を消すので数えない）。 */

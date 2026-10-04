@@ -16,6 +16,7 @@ import type {
 	Story,
 } from "./defs";
 import { boxFor, boxPlacement, DIORAMA, renderDiorama } from "./diorama";
+import { drawExitMarks, type ExitMark } from "./exits";
 import { Actor, Field } from "./field";
 import type { Input } from "./input";
 import { writeSave } from "./save";
@@ -206,6 +207,8 @@ export class Game {
 	private running = false;
 	private fadeEl: HTMLDivElement;
 	private toastEl: HTMLDivElement;
+	/** ゲーム内の 時刻（GameData.clock）。文字が かわったときだけ 書きかえる。 */
+	private clockEl: HTMLDivElement;
 	private rafId = 0;
 	/** 暗闇の作業キャンバス（画面と同じ大きさ。大きさが変わったら作り直す）。 */
 	private darkCanvas: HTMLCanvasElement | null = null;
@@ -241,7 +244,8 @@ export class Game {
 		this.choice = new ChoiceWindow(ui, input, () => audio.seHeld);
 		this.fadeEl = el("div", { class: "fade" });
 		this.toastEl = el("div", { class: "toast" });
-		ui.append(this.fadeEl, this.toastEl);
+		this.clockEl = el("div", { class: "clock" });
+		ui.append(this.fadeEl, this.toastEl, this.clockEl);
 		input.onFieldTap = (x, y) => this.onTap(x, y);
 	}
 
@@ -276,6 +280,7 @@ export class Game {
 
 	stop(): void {
 		this.running = false;
+		this.clockEl.textContent = "";
 		cancelAnimationFrame(this.rafId);
 		this.msg.close();
 		// エンディングなどで暗転したままタイトルへ戻らないようにする
@@ -396,6 +401,7 @@ export class Game {
 		try {
 			this.update(dt);
 			this.render();
+			this.updateClock();
 		} finally {
 			this.rafId = requestAnimationFrame((tt) => this.frame(tt));
 		}
@@ -688,6 +694,16 @@ export class Game {
 		ctx.fillStyle = tod?.outside ?? field?.def.outside ?? "#000";
 		ctx.fillRect(0, 0, this.screen.width, this.screen.height);
 		if (!field) return;
+		// 出口の 矢印：いま 出ている（when が 真の）踏みの 出口だけ
+		const exits: ExitMark[] = (field.def.events ?? [])
+			.filter(
+				(e) =>
+					e.exit &&
+					e.trigger === "touch" &&
+					(!e.when || e.when(this.state)) &&
+					(!e.exitWhen || e.exitWhen(this.state)),
+			)
+			.map((e) => ({ x: e.x, y: e.y, dir: e.exit as ExitMark["dir"] }));
 		if (DIORAMA) {
 			renderDiorama(
 				ctx,
@@ -708,6 +724,7 @@ export class Game {
 								: LIGHT_RADIUS,
 						}
 					: undefined,
+				exits,
 			);
 			return;
 		}
@@ -739,6 +756,7 @@ export class Game {
 			oy,
 			this.time,
 		);
+		drawExitMarks(ctx, exits, -ox, -oy, this.time, "#f4f0e0", "#141414");
 		// 雰囲気（DESIGN §3）：イベントのあと・UI の前に、色 → 暗闇 → 粒 の順で重ねる
 		const def = field.def;
 		const passes: TintPass[] | undefined =
@@ -1022,6 +1040,12 @@ export class Game {
 		await nextFrame();
 		this.fadeEl.style.opacity = "0";
 		await sleep(ms);
+	}
+
+	/** 画面の 時刻を 書きかえる（GameData.clock が無い・null なら かくす）。 */
+	private updateClock(): void {
+		const text = (this.field && this.data.clock?.(this.state)) || "";
+		if (this.clockEl.textContent !== text) this.clockEl.textContent = text;
 	}
 
 	toast(text: string): void {

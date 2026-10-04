@@ -34,6 +34,8 @@ export const warp = (
 	trigger: "touch",
 	through: true,
 	when: opt.when,
+	// 踏みこむ向き＝着く向き（出入口の向きは そろえてある）。画面の 矢印に 使う
+	exit: to.dir,
 	run: async (s) => {
 		await s.warp(to.map, to.x, to.y, to.dir, { se: opt.se });
 	},

@@ -130,6 +130,7 @@ export const apart: MapDef = {
 			x: 2,
 			y: 2,
 			trigger: "touch",
+			exit: "up",
 			through: true,
 			run: async (s) => {
 				const t = s.flag("tod");

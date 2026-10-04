@@ -1320,6 +1320,7 @@ export const tonarimachi: MapDef = {
 				x: 35,
 				y,
 				trigger: "touch",
+				exit: "right",
 				through: true,
 				run: async (s) => {
 					deru(s);
@@ -1334,6 +1335,7 @@ export const tonarimachi: MapDef = {
 			x: 13,
 			y: 19,
 			trigger: "touch",
+			exit: "down",
 			through: true,
 			run: async (s) => {
 				deru(s);

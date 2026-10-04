@@ -59,6 +59,7 @@ import {
 	yoruAkubi,
 	yoruClock,
 	yoruStep,
+	yuClock,
 } from "../nostalgia";
 import { ALL_RECORDS } from "../records";
 import { base, DOOR, FIELD, JP, TOWN, WALL, WIN } from "../tiles";
@@ -1280,7 +1281,7 @@ export const umi: MapDef = {
 					await s.narrate("秒しんが、こつ、こつ、と\nうごいている。");
 					return;
 				}
-				await s.narrate("ホームの時計。――17:38。");
+				await s.narrate(`ホームの時計。――${yuClock(s, 2)}。`);
 				await s.narrate("文字盤が、しおで\nすこし　くもっている。");
 			},
 		},

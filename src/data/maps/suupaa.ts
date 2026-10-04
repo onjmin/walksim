@@ -203,6 +203,7 @@ export const suupaa: MapDef = {
 			x: 10,
 			y: 13,
 			trigger: "touch",
+			exit: "down",
 			through: true,
 			run: async (s) => {
 				if (s.flag("got_korokke") && !s.flag("seen_kaikei")) {

@@ -22,6 +22,7 @@ import { tonarimachi } from "./maps/tonarimachi";
 import { umi } from "./maps/umi";
 import { yamamichi } from "./maps/yamamichi";
 import { zakkyo } from "./maps/zakkyo";
+import { hudClock } from "./nostalgia";
 import { items, records } from "./records";
 import { sfx } from "./sfx";
 
@@ -58,6 +59,8 @@ export const data: GameData = {
 	titleBgm: "title",
 	endingBgm: "ending",
 	// 日常の地区の BGM（生活音の下にごく薄く。作者判断 2026-09-27。MapDef.bgm = "@tod"）
+	// 画面の すみの ゲーム内の 時刻（町の 時計と 同じ 式。data/nostalgia.ts の hudClock）
+	clock: hudClock,
 	todBgm: {
 		yu: "amb_yu",
 		yoru: "amb_yoru",
