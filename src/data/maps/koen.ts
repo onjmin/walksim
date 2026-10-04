@@ -339,9 +339,9 @@ export const koen: MapDef = {
 		warp("to_street", 20, 23, { map: "street", x: 4, y: 4, dir: "down" }),
 		warp("to_yamamichi", 0, 8, {
 			map: "yamamichi",
-			x: 38,
+			x: 42,
 			y: 1,
-			dir: "down",
+			dir: "left",
 		}),
 
 		// ── ながい石段（のぼるときだけ。段は seen_koen_kaidan） ──

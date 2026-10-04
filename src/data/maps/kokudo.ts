@@ -115,10 +115,10 @@ const rows = [
 	"                                        ", // y0
 	"                        fffff           ", // y1  歩道橋のらんかん（北）
 	"                        .....           ", // y2  歩道橋のデッキ (24-28,2)
-	"        nnnnnnnnnnn     fffff           ", // y3  ファミレスの屋根・らんかん（南）
+	"        nnnnnnnnnnn     =fff=           ", // y3  ファミレスの屋根・らんかん（南）
 	"        ^^^^^^^^^^^                     ", // y4
 	"        #t#t#j#t#tJ                     ", // y5  われた窓 (9,5)・営業時間 (10,5)・入口 (13,5)・通用口 (18,5)
-	"      ......................=..         ", // y6  ファミレス前・北階段 (28,6)・死んだ自販機 (30,6)
+	"      .....................f=f.         ", // y6  ファミレス前・北階段 (28,6)・死んだ自販機 (30,6)
 	"      .........................         ", // y7
 	"----------------------------------------", // y8  国道（センターライン）
 	"rrrrrrrrrrrrrrrrrrrrrrrr=rrrrrrrrrrrrrrr", // y9  南階段 (24,9)・へこみ (12,9)・花たば (13,9)
@@ -174,7 +174,7 @@ const belt = (
  * 歩道橋の階段（同じマップの中のワープ）の着地点。ワープのたびに onEnter が走るので、
  * ここに降りたときは「地区を移った」に数えない（深夜の缶が、橋の昇り降りだけで冷めないように）。
  */
-const HODO_LANDING = ["25,2", "24,10", "27,2", "28,7"];
+const HODO_LANDING = ["24,2", "24,10", "28,2", "28,7"];
 
 /** 歩道橋の上からの国道（tod で顔が変わる）。 */
 const hodokyoView = async (s: Story): Promise<void> => {
@@ -398,18 +398,18 @@ export const kokudo: MapDef = {
 		belt("truck_a", 13, truck("truck_a", -0.3)),
 		belt("truck_b", 25, truck("truck_b", 0.4)),
 
-		// ── 歩道橋（階段はワープで昇り降り） ──
+		// ── 歩道橋（階段はワープで昇り降り。上へ のぼって デッキへ、デッキの 両はし (24,3)(28,3) から 下へ おりる） ──
 		warp(
 			"hodo_up_s",
 			24,
 			9,
-			{ map: "kokudo", x: 25, y: 2, dir: "right" },
+			{ map: "kokudo", x: 24, y: 2, dir: "up" },
 			{ se: "stairs" },
 		),
 		warp(
 			"hodo_dn_w",
 			24,
-			2,
+			3,
 			{ map: "kokudo", x: 24, y: 10, dir: "down" },
 			{ se: "stairs" },
 		),
@@ -417,13 +417,13 @@ export const kokudo: MapDef = {
 			"hodo_up_n",
 			28,
 			6,
-			{ map: "kokudo", x: 27, y: 2, dir: "left" },
+			{ map: "kokudo", x: 28, y: 2, dir: "up" },
 			{ se: "stairs" },
 		),
 		warp(
 			"hodo_dn_e",
 			28,
-			2,
+			3,
 			{ map: "kokudo", x: 28, y: 7, dir: "down" },
 			{ se: "stairs" },
 		),

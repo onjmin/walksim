@@ -76,6 +76,8 @@ const tiles: Record<string, TileDef> = {
 		passable: false,
 		counter: true,
 	},
+	// 「S」うらどおりから かわらへ おりる 石段（下へ だけ 入れる。左右は いけがき「b」）
+	S: { layers: [JP.stoneSteps], color: "#8a8a8a", passable: true },
 	"=": {
 		layers: [PAVE, JP.counterM],
 		color: "#b8905a",
@@ -139,7 +141,7 @@ const rows = [
 	"  ,,,ZZZZZ,,,^^^^^,,,,,,      ", // y16
 	"  ,,,[[[[[,,,(((((,,,,,,      ", // y17
 	"  ,,,]m]j],,,)c)o),,,,,,      ", // y18 すずきさん家 (8,18)・たなかさん家 (16,18)
-	"  .....................x      ", // y19 うらどおり。ものおき (23,19)
+	"  ..................bSbx      ", // y19 うらどおり。かわらへの石段 (21,19)（(21,18) から下へ）・ものおき (23,19)
 ];
 
 // ── モブの歩行グラ（同梱の RPGEN DQ 風） ──
@@ -489,12 +491,12 @@ export const street: MapDef = {
 			"to_apart",
 			2,
 			9,
-			{ map: "apart", x: 10, y: 5, dir: "left" },
+			{ map: "apart", x: 10, y: 5, dir: "up" },
 			{ se: "door" },
 		),
 		// ── 出入り口（座標凍結v3: 日常の町 拡張。二重ループの町） ──
 		warp("to_sumire", 2, 19, { map: "sumire", x: 37, y: 3, dir: "left" }),
-		warp("to_kawara", 21, 19, { map: "kawara", x: 37, y: 8, dir: "left" }),
+		warp("to_kawara", 21, 19, { map: "kawara", x: 38, y: 8, dir: "down" }),
 		warp("to_kokudo", 0, 11, { map: "kokudo", x: 38, y: 10, dir: "left" }),
 		// 裏どおりの北はしから、みどりがおか公園への石段（地続きの拡張 2026-09-28）
 		warp("to_koen", 4, 3, { map: "koen", x: 20, y: 22, dir: "up" }),
