@@ -202,7 +202,7 @@ export type RecordDef = {
 	 * （Story.record の opt.trueVoice）でだけ、voice の代わりに使う。
 	 */
 	trueVoice?: { model: string; pitchOffset?: number };
-	/** 日付表記（「2032/03/16(火) 01:12」風）。再生中は名前欄に出る。 */
+	/** 日付表記（「2032/09/14(火) 01:12」風）。再生中は名前欄に出る。 */
 	date: string;
 	/** 本文（1要素 = メッセージ窓1枚。全角22字×2行まで）。 */
 	lines: string[];
