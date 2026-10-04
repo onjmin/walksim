@@ -457,7 +457,7 @@ export const room: MapDef = {
 				});
 				if (c !== 0) return;
 				await s.narrate("ふとんに　もぐりこんだ。");
-				// 布団で聞く町（P0-3）。宵の就寝だけ（深夜2時の電車＝囲いの予兆 seen_densha2 とは混ぜない）。
+				// 布団で聞く町（P0-3）。宵の就寝だけ。
 				// どの地区にも行っていなければ、今までと同じ
 				const tooi = t === "yoru" && (await tooiOto(s));
 				s.se("tick", { volume: 0.6 });
@@ -636,21 +636,6 @@ export const room: MapDef = {
 				if (t === "asa") {
 					await s.narrate("テレビを　つけた。\nあさの番組が、ながれている。");
 					await s.narrate("……いつもの、\n火曜の　朝の　声だ。");
-					return;
-				}
-				// 「まれ」は乱数でなく回数で作る：3回目以降＋レコードを持って外から戻ったあと
-				// （s.has で見る。items を直に読むと validate がこの分岐をたどれない）
-				const rec = ALL_RECORDS.some((id) => s.has(id) > 0);
-				if (!s.flag("note_nnn") && n >= 2 && rec) {
-					await s.narrate("テレビを　つけた。\n――砂あらしが、ふっと　やんだ。");
-					await s.narrate("くらい画面を、白い文字が\nながれていく。");
-					await s.narrate(
-						"『名無しさん』『名無しさん』\n『名無しさん』『名無しさん』",
-					);
-					await s.say("kiriko", "……ぜんぶ、おなじ\n名前ンゴ");
-					await s.narrate("文字は、しばらく　つづいて、\nふつりと　きれた。");
-					await s.note("nnn");
-					await s.narrate("あとには、砂あらしだけが\nのこっている。");
 					return;
 				}
 				s.se("hum", { volume: 0.6 });

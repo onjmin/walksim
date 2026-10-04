@@ -9,9 +9,7 @@
 //   宵   … NPC 0体（docs/nostalgia.md P0-1）。土手の街灯と常夜灯がつき、川の音がちかい。
 //           文は「におい・音・点いた灯り」だけ（減った人・消えた窓は書かない）。つりのバケツだけ残っている
 //   深夜 … NPC 0体必達。音だけの川。土手のふみあとに すわれる（P0-7）・対岸から自分のアパートのあたり（P0-5）。
-//           手の中の缶は、地区を移るたびに冷める（onEnter の kanTick・P0-6）。脇道の怪異はここの担当2つだけ:
-//           modoribashi（渡り切る直前の気配。ふりむいても誰もいない・わたりきれば何もない）
-//           komainu は朝の担当（夕方に狛犬を調べたフラグがある人だけ、朝に差分の一言）
+//           手の中の缶は、地区を移るたびに冷める（onEnter の kanTick・P0-6）。
 //   朝   … きらめきがもどる・スズメ。NPC 3体（つりの人・ランニングの人=周回・犬のさんぽの人）。
 //           しらさぎの飛び立ち・バケツのリリースサイズ・ふみあとの「けさの分」など小さな payoff
 //
@@ -31,7 +29,6 @@ import type {
 	Story,
 	TileDef,
 } from "../../engine/defs";
-import type { Dir } from "../../engine/types";
 import { npc, warp } from "../helpers";
 import { kanHeld, kanLine, kanTick, yoruAkubi } from "../nostalgia";
 import { DOOR, FIELD, JP, TOWN, WALL } from "../tiles";
@@ -112,26 +109,6 @@ const RUNNER = "pub:sprites/mob_student.png";
 const KID = "pub:sprites/mob_child.png";
 const WALKER = "pub:sprites/mob_mama.png";
 
-/** 向きの逆算（戻り橋の「ふりむく」「一歩もどる」に使う）。 */
-const BACK: Record<Dir, "u" | "d" | "l" | "r"> = {
-	up: "d",
-	down: "u",
-	left: "r",
-	right: "l",
-};
-const FORWARD: Record<Dir, "u" | "d" | "l" | "r"> = {
-	up: "u",
-	down: "d",
-	left: "l",
-	right: "r",
-};
-const OPPOSITE: Record<Dir, Dir> = {
-	up: "down",
-	down: "up",
-	left: "right",
-	right: "left",
-};
-
 /**
  * 環境音のワンショット（夕＝ヒグラシ／朝＝スズメ）。street・sumire と同じ方式：
  * 直前に鳴らした帯をモジュール変数で覚え、往復の連打を防ぐ（セーブしない）。
@@ -189,11 +166,10 @@ const kaBelt = (id: string, x: number): EventDef => ({
 	},
 });
 
-/** 狛犬の一言（夕方に見たフラグがある人だけ、朝に差分が出る）。 */
+/** 狛犬の一言。 */
 const komainu = async (s: Story, which: "a" | "b"): Promise<void> => {
 	const t = s.flag("tod");
 	if (t === "yu") {
-		s.set("seen_komainu_yu");
 		if (which === "a") {
 			await s.narrate("こまいぬ。口を　あけている\nほうだ。");
 			await s.narrate("……ちょっと、わらっている\nようにも　見える。");
@@ -204,17 +180,10 @@ const komainu = async (s: Story, which: "a" | "b"): Promise<void> => {
 		return;
 	}
 	if (t === "asa") {
-		if (s.flag("seen_komainu_yu")) {
-			await s.narrate("こまいぬ。……あれ。");
-			await s.wait(500);
-			await s.narrate("きのうは、参道のほうを\nむいていた気がする。");
-			await s.note("komainu");
-			return;
-		}
 		await s.narrate("こまいぬ。あさの光で、\n石のはだが　しろい。");
 		return;
 	}
-	// 深夜はただの石（違和感は担当分だけに絞る。朝の差分をほのめかさない）
+	// 深夜
 	await s.narrate("こまいぬ。くらくて、\nかおが　見えない。");
 };
 
@@ -227,8 +196,7 @@ const jouyatou = async (s: Story): Promise<void> => {
 		return;
 	}
 	if (t === "yoru") {
-		// 宵は、ともしたばかり（深夜＝ちいさな ほのお・朝＝においだけ へつづく）。
-		// 「いつのまにか」は書かない（この地区では戻り橋の怪異の言い回し）
+		// 宵は、ともしたばかり（深夜＝ちいさな ほのお・朝＝においだけ へつづく）
 		await s.narrate("石どうろうに、ひが\n入っている。");
 		await s.narrate("ろうそくは、まだ　ながい。");
 		return;
@@ -411,35 +379,6 @@ export const kawara: MapDef = {
 			},
 		})),
 
-		// ── 戻り橋（深夜・渡り切る直前に一度だけ。どちらを選んでも死なない） ──
-		{
-			id: "modoribashi_ev",
-			x: 20,
-			y: 14,
-			trigger: "touch",
-			through: true,
-			once: true,
-			when: (st) => st.flags.tod === "shinya",
-			run: async (s) => {
-				await s.wait(400);
-				await s.narrate("――うしろで、じゃり、と\n音がした。");
-				const dir = s.state.dir;
-				const i = await s.choose(["＞＞1 ふりむく", "＞＞2 わたりきる"]);
-				if (i === 0) {
-					s.face("player", OPPOSITE[dir] ?? "up");
-					await s.wait(900);
-					await s.narrate("……だれも、いない。");
-					await s.move("player", BACK[dir] ?? "u");
-					await s.narrate("いつのまにか、一歩\nもどっていた。");
-				} else {
-					await s.move("player", FORWARD[dir] ?? "d");
-					await s.narrate("……わたりきった。");
-					await s.wait(700);
-					await s.narrate("なにも、おきない。");
-				}
-				await s.note("modoribashi");
-			},
-		},
 		{
 			id: "hashi_sekihi",
 			x: 19,

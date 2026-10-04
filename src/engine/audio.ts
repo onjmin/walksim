@@ -76,8 +76,9 @@ const hasIntro = (mml: string): boolean =>
  * コア音源（ボイスON時に prepareSpeech。DESIGN §5「声の音源」）。
  * キーワードは dtm の lyrics.ts（KOE_VOICEBANKS）のもの。
  * 2作目の 村の 仲間と 住人の 声（ロゼ・シヨ・アル・リノ）は 3作目に 出ないので 外した（STORY.md §5.97）。
+ * つくよみ・テトも 怪異側（板の 名残）と いっしょに 外した（2026-10-04）。
  */
-const CORE_VOICE_MODELS = ["uc", "rei", "tsukuyomi", "teto"] as const;
+const CORE_VOICE_MODELS = ["uc", "rei"] as const;
 
 /**
  * カメオ音源（終盤専用。DESIGN §5）。コアと同時に落とすと重いので、
@@ -106,9 +107,6 @@ const READINGS: ReadonlyArray<readonly [string, string]> = [
 	["おーぷん2ちゃんねる", "おーぷんにちゃんねる"],
 	["おんJ", "おんジェイ"],
 	["なんJ", "なんジェイ"],
-	["きさらぎ駅", "きさらぎえき"],
-	["八尺様", "はっしゃくさま"],
-	["供養", "くよう"],
 	["LV", "レベル"],
 	["Lv", "レベル"],
 ];

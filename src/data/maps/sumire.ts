@@ -1,18 +1,16 @@
 // すみれ町（住宅街の本体）。docs/content-briefs.md「日常の町 拡張」・docs/style-everyday.md。
-// 40×24・outdoor・BGM null（生活音だけ）。walksim の本体＝日常。怪異は脇道のおまけ。
+// 40×24・outdoor・BGM null（生活音だけ）。walksim の本体＝日常。
 //
 // 四つの顔（flags.tod）:
 //   夕方  … 生きた住宅街。NPC 6体（たいそう帰り・塾かばん・ベビーカー・井戸端×2・うちみず）。
-//           歯科に灯り・家々の窓明かり。怪異ゼロ（必達）
+//           歯科に灯り・家々の窓明かり
 //   宵    … NPC 0体（docs/nostalgia.md P0-1）。家々の窓にテレビの音・公園の外灯がつく。
 //           文は「におい・音・点いた灯り」だけ（減った人・消えた窓は書かない）。
 //           やまだ家のピアノは、また　おなじところでつっかえる（seen_piano_yu・P0-11）。
 //           こんどう家からナイターの実況（延長の段には関係なく「実況」だけ・P0-2）
-//   深夜  … 無人（NPC 0体・必達）。脇道の怪異は4つだけ:
-//           blanko（公園）/ pool（校門）/ seisanki（パーキング）/ denwa（おおた家）。
-//           どれも進行と無関係・説明しない・死なない。
+//   深夜  … 無人（NPC 0体・必達）。
 //           ひみつきちに しゃがめる（seen_kichi_shinya・P0-7）。じはんきで温かい缶が一本買え、
-//           地区を移るたびに冷める（onEnter の kanTick・P0-6）。どちらも怪異ではない
+//           地区を移るたびに冷める（onEnter の kanTick・P0-6）
 //   朝    … NPC 4体（登校の子・ごみ出し・たいそうへ行くじいさん・歯科のそうじ）。
 //           貼り紙『みつかりました』・グローブの回収・ピアノの「こえた」など、小さな payoff
 // 二度目で下の層が見える: 校門のプレート（『80』のふちから『70』。seen_gate_plate・P0-8）。
@@ -174,44 +172,6 @@ const waveBelt = (
 		run: wave(id, pan),
 	}));
 
-/**
- * 怪異 blanko（深夜の公園）。ブランコに近づくと一度だけ。
- * SE は鳴らさない——無音が正解（briefs「脇道の怪異プール」）。
- */
-const blanko = async (s: Story): Promise<void> => {
-	if (s.flag("seen_blanko")) return;
-	s.set("seen_blanko");
-	await s.wait(400);
-	await s.narrate("――ブランコが、ひとつだけ\nゆれている。");
-	await s.wait(900);
-	await s.narrate("ゆれは、小さくなって、\nとまった。");
-	await s.note("blanko");
-};
-/** blanko の接近帯（ブランコのまわりの歩けるマス）。 */
-const blankoBelt = (x: number, y: number): EventDef => ({
-	id: `blanko_${x}_${y}`,
-	x,
-	y,
-	trigger: "touch",
-	through: true,
-	when: (st) => st.flags.tod === "shinya" && !st.flags.seen_blanko,
-	run: blanko,
-});
-
-/** 怪異 denwa の遠聞こえ（おおた家の前のどおり）。 */
-const denwaHint = (x: number, y: number): EventDef => ({
-	id: `denwa_hint_${x}_${y}`,
-	x,
-	y,
-	trigger: "touch",
-	through: true,
-	when: (st) => st.flags.tod === "shinya" && !st.flags.seen_denwa_hint,
-	run: async (s) => {
-		s.set("seen_denwa_hint");
-		await s.narrate("……どこかで、電話が\n鳴っている。");
-	},
-});
-
 export const sumire: MapDef = {
 	id: "sumire",
 	// ジオラマ表示の箱。場面ごとに区切る（engine/diorama.ts の boxFor）
@@ -325,15 +285,7 @@ export const sumire: MapDef = {
 		...waveBelt("wave_e", 31, [12, 13], 0.4),
 		...waveBelt("wave_n", 20, [6], 0),
 
-		// ── 怪異の帯（深夜のみ・すべて任意の脇道） ──
-		blankoBelt(23, 8),
-		blankoBelt(24, 8),
-		blankoBelt(22, 9),
-		blankoBelt(25, 9),
-		denwaHint(16, 12),
-		denwaHint(18, 12),
-
-		// ── 小学校（校門はいつも閉まっている。深夜だけ、おくで水の音＝pool） ──
+		// ── 小学校（校門はいつも閉まっている） ──
 		...[8, 9].map(
 			(x): EventDef => ({
 				id: `gate_${x}`,
@@ -344,11 +296,9 @@ export const sumire: MapDef = {
 					const t = s.flag("tod");
 					if (t === "shinya") {
 						await s.narrate("校門は、しまっている。");
-						await s.wait(600);
-						await s.narrate("――おくで、水の音が\nしている。");
-						await s.say("kiriko", "……プールは、夏で\nおわったはずンゴ");
-						await s.narrate("門は、あかない。");
-						await s.note("pool");
+						await s.narrate(
+							"校舎の　非常口の　みどりの\nあかりだけが　ついている。",
+						);
 						return;
 					}
 					if (t === "asa") {
@@ -785,7 +735,7 @@ export const sumire: MapDef = {
 			},
 		},
 
-		// ── 月ぎめパーキング（深夜＝seisanki） ──
+		// ── 月ぎめパーキング ──
 		{
 			id: "seisanki",
 			x: 1,
@@ -795,9 +745,7 @@ export const sumire: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("車は、一台もない。");
-					await s.wait(600);
-					await s.narrate("……精算機のランプだけ、\nじゅんに　ついていく。");
-					await s.note("seisanki");
+					await s.narrate("精算機の　画面だけが、\nうすく　光っている。");
 					return;
 				}
 				if (t === "asa") {
@@ -927,7 +875,7 @@ export const sumire: MapDef = {
 			},
 		},
 
-		// ── おおた家（深夜＝denwa） ──
+		// ── おおた家 ──
 		{
 			id: "oota_door",
 			x: 17,
@@ -937,11 +885,7 @@ export const sumire: MapDef = {
 				await s.narrate("『おおた』の　ひょうさつ。");
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.wait(500);
-					await s.narrate("――家の中で、電話が\n鳴りつづけている。");
-					await s.narrate("だれも、出ない。");
-					await s.say("kiriko", "……るすンゴ？");
-					await s.note("denwa");
+					await s.narrate("家の中は、しずかだ。\nみんな　ねている。");
 					return;
 				}
 				if (t === "asa") {

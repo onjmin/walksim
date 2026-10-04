@@ -155,40 +155,6 @@ const recordMenu = async (game: Game): Promise<void> => {
 	}
 };
 
-/**
- * かいいノート（DESIGN §6.5）。全 NoteDef を定義順に並べ、未発見は「？？？」
- * （hint があれば薄字＝desc で添える）。発見済みを選ぶと本文を読み返せる。
- */
-const noteMenu = async (game: Game): Promise<void> => {
-	const { data, state } = game;
-	const all = Object.values(data.notes);
-	let start = 0;
-	for (;;) {
-		const v = await listWindow(
-			game,
-			"かいいノート",
-			all.map((n) =>
-				state.flags[`note_${n.id}`]
-					? { label: n.title, value: n.id }
-					: { label: "？？？", desc: n.hint, value: n.id, disabled: true },
-			),
-			{ start },
-		);
-		if (v === null) return;
-		start = all.findIndex((n) => n.id === v);
-		const n = data.notes[v];
-		if (!n) return;
-		// レコード再生と同じく、メッセージ窓で2行ずつ読む（文字だけ。名前欄は見出し）
-		for (let i = 0; i < n.lines.length; i += 2)
-			await game.msg.show({
-				name: `『${n.title}』`,
-				text: n.lines.slice(i, i + 2).join("\n"),
-				portrait: null,
-			});
-		game.msg.hideWindow();
-	}
-};
-
 const voiceLabel = (game: Game) => {
 	if (!settings.voice) return "OFF";
 	const p = game.audio.voiceProgress;
@@ -330,7 +296,6 @@ export const fieldMenu = async (game: Game): Promise<void> => {
 			"",
 			[
 				{ label: "レコード", value: "records" },
-				{ label: "ノート", value: "notes" },
 				{ label: "せってい", value: "settings" },
 				{ label: "きろく", sub: "セーブ", value: "save" },
 				{ label: "タイトルへ", value: "title" },
@@ -339,7 +304,6 @@ export const fieldMenu = async (game: Game): Promise<void> => {
 		);
 		if (v === null) return;
 		if (v === "records") await recordMenu(game);
-		else if (v === "notes") await noteMenu(game);
 		else if (v === "settings") await settingsMenu(game);
 		else if (v === "save") {
 			const ok = writeSave(game.state);

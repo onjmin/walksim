@@ -8,8 +8,7 @@
 //           回覧板（サインらん）・ふとんをとりこむばあちゃん。怪異ゼロ（必達）
 //   宵   … どの窓からもナイターの実況・外灯に羽虫・せっけんのにおい。NPC 0体
 //           （docs/nostalgia.md P0-1。書くのは におい・音・点いた灯り だけ）
-//   深夜 … NPC 0体必達。脇道の怪異はここの担当2つだけ:
-//           kyusuito（給水塔の水音）／shuukaijo（集会所の張り紙が一枚多い）。
+//   深夜 … NPC 0体必達。
 //           ノスタルジー層は A棟の階段のいちばん上（座れる場所）と、じはんきの缶だけ
 //   朝   … ごみ出し・体そうおわりのじいちゃん・会釈の人。回覧板が次の家へ、
 //           かさが消える、ミニトマトが一つぶへる——小さな payoff の束
@@ -354,7 +353,7 @@ export const danchi: MapDef = {
 		taisoBelt(20, 18),
 		taisoBelt(21, 18),
 
-		// ── 給水塔（深夜の水音が kyusuito の担当） ──
+		// ── 給水塔 ──
 		{
 			id: "kyusuito_ev",
 			x: 3,
@@ -365,20 +364,17 @@ export const danchi: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("給水塔。");
-					await s.wait(600);
-					s.se("train", { pan: 0.3, volume: 0.2 });
-					await s.narrate("……上のほうで、水の\nうごく音がしている。");
-					await s.narrate("どの窓も、くらいままだ。");
-					await s.note("kyusuito");
+					await s.narrate(
+						"給水塔。てっぺんの　赤い\nランプが、ゆっくり　点滅している。",
+					);
+					await s.narrate("どの窓も、くらい。\nみんな　ねている。");
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("給水塔のタンクに、\nあさの空が　うつっている。");
 					return;
 				}
-				// 宵は夕日のかわりに、棟の窓あかりをせおう（水の音は深夜の kyusuito だけのもの。
-				// 人影めいた「立っている」は使わず、夕方と同じ「かげ」にそろえる）
+				// 宵は夕日のかわりに、棟の窓あかりをせおう
 				await s.narrate(
 					t === "yoru"
 						? "給水塔。棟の窓あかりを\nせおって、まっくろな　かげになっている。"
@@ -388,7 +384,7 @@ export const danchi: MapDef = {
 			},
 		},
 
-		// ── 集会所（深夜の張り紙が shuukaijo の担当） ──
+		// ── 集会所 ──
 		{
 			id: "shuukaijo_ev",
 			x: 22,
@@ -397,11 +393,7 @@ export const danchi: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("集会所の掲示。");
-					await s.wait(600);
-					await s.narrate("……はり紙が、四枚ある。");
-					await s.narrate("ふえた一枚は、くらくて\nよめない。");
-					await s.note("shuukaijo");
+					await s.narrate("集会所の掲示。はり紙は\n三枚。くらくて　よめない。");
 					return;
 				}
 				if (t === "asa") {

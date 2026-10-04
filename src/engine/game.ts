@@ -1134,18 +1134,6 @@ export class Game {
 			bgm: (name) => this.audio.bgm(name),
 			se: (name, opt) => this.audio.se(name, opt),
 			record: (id, opt) => this.playRecord(id, opt),
-			note: async (id) => {
-				const def = this.data.notes[id];
-				if (!def) {
-					console.warn(`[note] ノート ${id} がありません`);
-					return;
-				}
-				const key = `note_${id}`;
-				if (this.state.flags[key]) return; // 二度目からは何もしない
-				this.state.flags[key] = true;
-				// メッセージ窓でなく、地名と同じ小さなトーストで知らせる（DESIGN §6.5）
-				this.toast(`ノートに　書きとめた──『${def.title}』`);
-			},
 			flag: (name) => this.state.flags[name],
 			set: (name, value = true) => {
 				this.state.flags[name] = value;
@@ -1269,35 +1257,7 @@ export class Game {
 					);
 				}
 			},
-			ending: (opt) => {
-				// かいいノートの収集率をまとめカードへ自動で足す（DESIGN §6.5「ノート　x/y」）。
-				// まとめの中身はシナリオ側のデータなので、すでに「ノート」の行があれば足さない
-				let o = opt;
-				const noteIds = Object.keys(this.data.notes);
-				if (opt?.summary?.sections.length && noteIds.length) {
-					const has = opt.summary.sections.some((sec) =>
-						sec.lines.some((l) => l.includes("ノート")),
-					);
-					if (!has) {
-						const found = noteIds.filter(
-							(id) => this.state.flags[`note_${id}`],
-						).length;
-						o = {
-							...opt,
-							summary: {
-								sections: [
-									...opt.summary.sections,
-									{
-										title: "かいいノート",
-										lines: [`ノート　${found}/${noteIds.length}`],
-									},
-								],
-							},
-						};
-					}
-				}
-				return this.scenes.ending(this, o);
-			},
+			ending: (opt) => this.scenes.ending(this, opt),
 		};
 	}
 }

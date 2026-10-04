@@ -7,9 +7,7 @@
 //   夕方 … トラックの風・バス待ちの人・部活帰り・スタンド営業中（店員の3層会話・洗車機の場面）
 //   宵   … NPC 0体（docs/nostalgia.md P0-1）。トラックはライトをつけて通る・街灯がつく。
 //           スタンドは営業をおえて、事務所のあかりとラジオのナイター中継だけ（P0-2。延長がつづく）
-//   深夜 … NPC 0体必達。スタンドも消灯。脇道の怪異はここの担当2つだけ:
-//           famiresu（割れた窓の奥で一瞬だけ灯り。once・二度目はない）
-//           hodokyo（歩道橋の上。車は来ないのにライトだけが流れる）
+//   深夜 … NPC 0体必達。スタンドも消灯。ときどき トラックが とおる。
 //           灯っている自販機 (31,11) で、あたたかい缶が一本買える（P0-6。缶は nostalgia.ts が持つ）
 //   朝   … 始発前後のバス停・ジョギングの人・水をまく店員（夕の「空気はタダ」の payoff）
 //
@@ -59,7 +57,7 @@ const tiles: Record<string, TileDef> = {
 		color: "#6a4a2a",
 		passable: false,
 	},
-	// ファミレスの通用口（深夜だけ あいている → 黄色い部屋。ほかの時間は踏むと押し戻す）
+	// ファミレスの通用口（かぎが かかっている。踏むと押し戻す）
 	J: {
 		layers: [WALL.tileLo, DOOR.sliding],
 		color: "#8a7a3a",
@@ -156,16 +154,16 @@ const belt = (
  */
 const HODO_LANDING = ["25,2", "24,10", "27,2", "28,7"];
 
-/** 歩道橋の上からの国道（tod で顔が変わる。深夜が hodokyo の担当）。 */
+/** 歩道橋の上からの国道（tod で顔が変わる）。 */
 const hodokyoView = async (s: Story): Promise<void> => {
 	const t = s.flag("tod");
 	if (t === "shinya") {
 		await s.narrate("歩道橋の上。国道は、\nどこまでも　からっぽだ。");
 		await s.wait(800);
-		await s.narrate("……とおくで、ライトだけが\nながれていった。");
-		await s.wait(500);
-		await s.narrate("車の音は、しなかった。");
-		await s.note("hodokyo");
+		s.se("train", { pan: 0.5, volume: 0.3 });
+		await s.narrate(
+			"……とおくから、トラックが\n一台、走ってきて　とおりすぎた。",
+		);
 		return;
 	}
 	if (t === "asa") {
@@ -255,7 +253,7 @@ export const kokudo: MapDef = {
 	],
 	name: "こくどう",
 	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
-	// 深夜は国道の曲（amb_zure「ずれる地層」。車の来ない歩道橋・一瞬灯るファミレスの時間帯）
+	// 深夜は国道の曲（amb_zure「ずれる地層」）
 	todBgm: { shinya: "amb_zure" },
 	outdoor: true,
 	outside: "#0a0a0c",
@@ -402,7 +400,7 @@ export const kokudo: MapDef = {
 			},
 		},
 
-		// ── つぶれたファミレス（深夜の一瞬の灯りが famiresu の担当。once） ──
+		// ── つぶれたファミレス ──
 		{
 			id: "famiresu_win",
 			x: 9,
@@ -411,18 +409,10 @@ export const kokudo: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					if (!s.flag("seen_famiresu")) {
-						s.set("seen_famiresu");
-						await s.narrate("われた窓。中は、くらい。");
-						await s.wait(800);
-						await s.flash("#ffe9b0", 180);
-						await s.narrate("――おくで、一瞬だけ\n灯りがついた。");
-						await s.wait(600);
-						await s.narrate("……もう、つかない。");
-						await s.note("famiresu");
-						return;
-					}
-					await s.narrate("われた窓。中は、くらい。\n……くらい、ままだ。");
+					await s.narrate("われた窓。中は、くらい。");
+					await s.narrate(
+						"国道の　街灯が、さかさまの\nいすの　足を　てらしている。",
+					);
 					return;
 				}
 				await s.narrate("われた窓に、テープが\nばってん印に　はってある。");
@@ -449,8 +439,7 @@ export const kokudo: MapDef = {
 				await s.narrate("はり紙のつづきは、\n日に焼けて　よめない。");
 			},
 		},
-		// 通用口（作者指示「walksim は地続き」: 黄色い部屋は、このファミレスの おくにある。
-		// 深夜だけ あいていて、入ると どこまでも同じ黄色い部屋。ほかの時間は かぎがかかっている）
+		// 通用口（かぎが かかっている）
 		{
 			id: "famiresu_back",
 			x: 18,
@@ -458,15 +447,6 @@ export const kokudo: MapDef = {
 			trigger: "touch",
 			through: true,
 			run: async (s) => {
-				if (s.flag("tod") === "shinya") {
-					if (!s.flag("seen_famiresu_back")) {
-						s.set("seen_famiresu_back");
-						await s.narrate("通用口の戸が、すこし\nあいている。");
-						await s.narrate("おくから、けいこうとうの\nうなる音がする。");
-					}
-					await s.warp("yellow", 3, 2, "down", { se: "door" });
-					return;
-				}
 				await s.narrate("『従業員通用口』\n……かぎが　かかっている。");
 				await s.move("player", "d");
 			},

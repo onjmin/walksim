@@ -14,27 +14,18 @@
 // | 曲       | 測った I | #volume | 直した後 |
 // |----------|----------|---------|----------|
 // | title    | -21.8    | 17 → 15 | -22.9    |
-// | tense    | -30.1    | 15 → 34 | -23.0    |
-// | sad      | -24.9    | 26 → 29 | -24.0    |
 // | ending   | -23.6    | 18 → 17 | -24.1    |
 // roguelike での実測（2026-09。dev/bgm-measure.ts で1周鳴らして測ったもの。
 // 大きい #volume では dtm のリミッタで つぶれて比例しない。測り直して決めること）:
 // | 曲       | 測った I               | #volume | 直した後 |
 // |----------|------------------------|---------|----------|
 // | retro    | -14.0（50）/-27.9（16）| 50 → 26 | -23.6    |
-// | deep1    | -25.4（20）            | 20 → 24 | （比例） |
-// | deep2    | -32.1（20）            | 20 → 53 | -23.7    |
-// | deep4    | -29.0（20）            | 20 → 37 | -23.7    |
 // walksim での実測（2026-09-27。dev/bgm.html＝roguelike から移植。新作曲は make-bgm.mjs の head.volume）。
 // 目標は -23（日常の時間帯の曲 amb_* と kowareta は生活音の下に薄く流すので -30）。
 // 1回目の値から式で直し、2回目の測定で ±0.5 dB 以内（大きな #volume でもリミッタで潰れず比例した）:
 // | 曲         | 1回目 I（#volume） | 直した #volume | 2回目 I |
 // |------------|--------------------|----------------|---------|
 // | title      | -31.3（22）        | 57             | -23.0   |
-// | hub        | -37.7（18）        | 98 → 96        | -22.8   |
-// | yellow     | -43.6（16）        | 172 → 176      | -23.2   |
-// | kakolog    | -44.3（16）        | 185            | -23.0   |
-// | village    | -44.3（16）        | 187 → 188      | -23.1   |
 // | amb_yu     | -47.9（12）        | 95 → 90        | -29.5   |
 // | amb_yoru   | -45.1（12）        | 69 → 68        | -29.8   |
 // | amb_shinya | -48.7（11）        | 95 → 93        | -29.8   |
@@ -67,13 +58,7 @@ import amb_shinya from "./bgm/amb_shinya.mml?raw"; // 日常・深夜（パッ�
 import amb_yoru from "./bgm/amb_yoru.mml?raw"; // 日常・宵（チェレスタ）
 import amb_yu from "./bgm/amb_yu.mml?raw"; // 日常・夕方（ビブラフォン）
 import amb_zure from "./bgm/amb_zure.mml?raw"; // 「ずれる地層」→ こくどう（深夜）
-// 層ごとの曲（roguelike。作曲エージェントが dtm の手書き譜面 docs/handscore.md で書いたもの）
-import deep1 from "./bgm/deep1.mml?raw"; // ハ短調 128・retro_game・8beat（掘る動機の行進）→ 回線の間
-import deep2 from "./bgm/deep2.mml?raw"; // ト短調 90・orchestra（ライン・クリシェ、打楽器なし）→ 黄色い部屋
-import deep4 from "./bgm/deep4.mml?raw"; // ニ短調 150・cyber_punk・16beat → 過去ログの地層
 import ending from "./bgm/ending.mml?raw"; // b312cbafed564277「変ト長調 (G♭) デュエット」
-import hub from "./bgm/hub.mml?raw"; // 回線の間（待合室のラウンジ・遠いチャイム）
-import kakolog from "./bgm/kakolog.mml?raw"; // 過去ログの地層（オルゴールと合唱）
 // 新規手打ち（音響担当。DESIGN §9「品質担保の原則」＝既存MMLの編集的変換）
 // title の「壊れた再演」（#edo=31・t72・2トラック・長い休符・2音だけ約39セントずれ）
 // → クリア後の 無題のレコード『　』（docs/style-kaiwai.md §3-1）。朗読なしで、これを流すだけ。
@@ -81,20 +66,11 @@ import kakolog from "./bgm/kakolog.mml?raw"; // 過去ログの地層（オル�
 import kowareta from "./bgm/kowareta.mml?raw";
 // うんｊレゼ の 名無し155 の曲（使ってよい曲として もらったもの）
 import retro from "./bgm/retro.mml?raw"; // post/1316 の >>9 30b7932c9e1a4102「今回はメロディ手で書いたわ。正直こっちのが好き」
-import sad from "./bgm/sad.mml?raw"; // 155deb066bc94429「イ短調（Aマイナー）」→ 夕暮れの村
-import tense from "./bgm/tense.mml?raw"; // 1d9e7eed2db44ce7「荒ぶるメロディライン」→ きさらぎ駅
 import title from "./bgm/title.mml?raw"; // タイトル（夕方の日常・変ニ長調のローファイ）
-import village from "./bgm/village.mml?raw"; // 夕暮れの村（都節の箏と尺八）
-import yellow from "./bgm/yellow.mml?raw"; // 黄色い部屋（蛍光灯のうなり）
 
 export const bgm: Record<string, string> = {
 	title,
 	ending,
-	sad,
-	tense,
-	deep1,
-	deep2,
-	deep4,
 	retro,
 	kowareta,
 	amb_yu,
@@ -106,8 +82,4 @@ export const bgm: Record<string, string> = {
 	amb_zure,
 	amb_kansouki,
 	amb_hakuhyo,
-	hub,
-	yellow,
-	kakolog,
-	village,
 };

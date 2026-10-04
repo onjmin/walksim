@@ -4,11 +4,9 @@
 //
 // 夕焼けのグラデーションの空＋電柱と電線のシルエット（商店街の夕方＝原風景）。
 // タイトルは控えめな白の文字だけ（プレートなし・発光なし）。画面隅に小さく 17:03。
-// 怪異は差分でチラ見せだけ：数十秒に一度、半秒だけ空が深夜色に反転して戻る
-// （電線のシルエットはそのまま＝同じ町の別の時間が一瞬さしこむ）。
-// ごく稀に題字が1字だけ化けて戻る。それ以外のホラー演出は置かない。
+// ホラー演出は置かない（2026-10-04 怪異側を 消した ときに、空の 反転と 題字の 化けも 外した）。
 // キリコのシルエットが数十秒に一度ゆっくり横切る（日常の描写として続投）。
-// クリア済み（hasClearMark）なら朝：時計 7:00・空が朝の金色・反転も化けも止まる。
+// クリア済み（hasClearMark）なら朝：時計 7:00・空が朝の金色。
 
 import type { GameState } from "../engine/defs";
 import { BAYER4, DIORAMA, scenePalette } from "../engine/diorama";
@@ -17,17 +15,6 @@ import { hasClearMark, hasSave, readSave } from "../engine/save";
 import { drawWalk, stepFrame } from "../engine/sprite";
 import { el } from "./dom";
 import { listWindow, settingsMenu } from "./menu";
-
-/** 1文字化けの置換表（似た字・濁点の増減・かなの混入だけ。派手にしない）。 */
-const GLITCH: Record<string, string> = {
-	か: "が",
-	し: "じ",
-	ち: "ぢ",
-	と: "ど",
-	キ: "ギ",
-	コ: "ゴ",
-	リ: "り",
-};
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -63,7 +50,7 @@ const noise = (x: number, y: number): number => {
 /**
  * ジオラマ表示のタイトルの書き割り（ドット絵）。低解像度の画用紙に描いて整数倍で拡大する。
  * 空は場面パレットの段をベイヤーディザでつなぐ。家並み・電柱・電線・歩道・横切るキリコは
- * いちばん暗い段のシルエット。夕（17:03）／深夜の一瞬の反転／朝（クリア後）で パレットだけ替える。
+ * いちばん暗い段のシルエット。夕（17:03）／朝（クリア後）で パレットだけ替える。
  */
 const drawPixelScape = (
 	c: HTMLCanvasElement,
@@ -181,19 +168,17 @@ export const showTitle = (game: Game): Promise<GameState> =>
 		document.title = data.title.replace(/\n/g, " ");
 
 		const cleared = hasClearMark();
-		// 動きを減らす設定の端末では、化け・空の反転・シルエット横断を出さない
+		// 動きを減らす設定の端末では、シルエット横断を出さない
 		const calm =
 			window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
 		// ── 背景（空・電柱・電線・歩道）。すべてシルエットの書き割り ──
 		const root0Class: string[] = [];
-		const skyNight = el("div", { class: "title-sky-night" });
 		const walker = el("canvas", { class: "title-walker" });
 		walker.width = 16;
 		walker.height = 16;
 		const scape = el("div", { class: "title-scape" });
 		scape.appendChild(el("div", { class: "title-sky" }));
-		scape.appendChild(skyNight);
 		scape.appendChild(wiresSvg());
 		scape.appendChild(el("div", { class: "title-pole p1" }));
 		scape.appendChild(el("div", { class: "title-pole p2" }));
@@ -240,64 +225,24 @@ export const showTitle = (game: Game): Promise<GameState> =>
 		);
 		game.ui.appendChild(root);
 
-		// ── 演出ループ（空の一瞬の反転・1文字化け・シルエット横断・ヒグラシ1波） ──
+		// ── 演出ループ（シルエット横断・ヒグラシ1波） ──
 		let busy = false; // メニュー決定後は SE を足さない（下のメニュー処理と共有）
 		const walkRef = data.cast.kiriko?.walk ?? "sa:vHsmy5";
 		const walkerCtx = walker.getContext("2d");
-		// 化けられる字の位置（行・字番号）を先に拾っておく
-		const spots = lineEls.flatMap((lineEl, li) => {
-			const base = data.title.split("\n")[li];
-			return [...base].flatMap((ch, i) =>
-				GLITCH[ch] ? [{ lineEl, base, i }] : [],
-			);
-		});
-		let nextGlitch = 0; // 次に化ける時刻
-		let glitchUntil = 0; // 化けている間は戻す時刻
-		let glitched: { lineEl: HTMLElement; base: string } | null = null;
-		let nextNight = 0; // 次に空が深夜色になる時刻
-		let nightUntil = 0; // 反転している間は戻す時刻
 		let nextCross = 0; // 次にシルエットが現れる時刻
 		let cross: { start: number; dur: number; dir: 1 | -1 } | null = null;
 		let seDone = false; // ヒグラシ（朝はスズメ）を1波だけ
 		let raf = 0;
 		const anim = (t: number) => {
 			if (!root.isConnected) return;
-			if (!nextGlitch) {
+			if (!nextCross) {
 				// 初回フレームで時刻を初期化
-				nextGlitch = t + 45_000 + Math.random() * 45_000;
-				nextNight = t + 18_000 + Math.random() * 22_000;
 				nextCross = t + 8_000 + Math.random() * 14_000;
 			}
 			// ヒグラシの1波（音が出せるようになった最初のフレームで。BGM title の前奏として）
 			if (!seDone && !busy && game.audio.unlocked) {
 				seDone = true;
 				game.audio.se(cleared ? "suzume" : "higurashi", { volume: 0.6 });
-			}
-			// 空の反転（数十秒に一度・半秒だけ深夜色→戻る）。朝は起きない
-			if (!cleared && !calm) {
-				if (nightUntil && t >= nightUntil) {
-					root.classList.remove("night");
-					nightUntil = 0;
-					nextNight = t + 40_000 + Math.random() * 20_000;
-				} else if (!nightUntil && t >= nextNight) {
-					root.classList.add("night");
-					nightUntil = t + 500;
-				}
-			}
-			// 1文字化け（ごく稀に・0.4〜0.7秒で戻る）。朝は化けない
-			if (!cleared && !calm && spots.length) {
-				if (glitchUntil && t >= glitchUntil) {
-					if (glitched) glitched.lineEl.textContent = glitched.base;
-					glitched = null;
-					glitchUntil = 0;
-					nextGlitch = t + 50_000 + Math.random() * 40_000;
-				} else if (!glitchUntil && t >= nextGlitch) {
-					const s = spots[Math.floor(Math.random() * spots.length)];
-					s.lineEl.textContent =
-						s.base.slice(0, s.i) + GLITCH[s.base[s.i]] + s.base.slice(s.i + 1);
-					glitched = s;
-					glitchUntil = t + 400 + Math.random() * 300;
-				}
 			}
 			// シルエット横断（数十秒に一度・十数秒かけてゆっくり）
 			if (!calm) {
@@ -347,11 +292,7 @@ export const showTitle = (game: Game): Promise<GameState> =>
 					pix.style.width = `${W * scale}px`;
 					pix.style.height = `${H * scale}px`;
 				}
-				const tod = cleared
-					? "asa"
-					: root.classList.contains("night")
-						? "shinya"
-						: "yu";
+				const tod = cleared ? "asa" : "yu";
 				let wk: { x: number; frame: HTMLCanvasElement | null } | null = null;
 				if (cross) {
 					const p = (t - cross.start) / cross.dur;

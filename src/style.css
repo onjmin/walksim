@@ -1564,8 +1564,7 @@ body.shake #app {
 
 /* ───────── タイトル（walksim「夕方の日常」ui/title.ts）v2 ─────────
  * 夕焼けの空＋電柱と電線のシルエットの上に、白い題字が2行だけ（プレート廃止）。
- * 怪異は差分でチラ見せのみ：title.ts が .night を半秒だけ付けて空が深夜色に反転して戻る。
- * .cleared（クリア済み＝朝）では空が金色になり、反転も化けも止まる。
+ * .cleared（クリア済み＝朝）では空が金色になる。
  * ジャンプスケア禁止：急な大変化・高速点滅は入れない */
 
 .title {
@@ -1621,25 +1620,6 @@ body.shake #app {
 		#f6e3a4 82%,
 		#fbeebc 100%
 	);
-}
-
-/* 深夜色の空（同じ町の別の時間が一瞬さしこむ。電線のシルエットはそのまま残る） */
-.title-sky-night {
-	position: absolute;
-	inset: 0;
-	opacity: 0;
-	background: linear-gradient(
-		to bottom,
-		#030510 0%,
-		#091126 45%,
-		#16224e 80%,
-		#202f63 100%
-	);
-	transition: opacity 0.12s linear;
-}
-
-.title.night .title-sky-night {
-	opacity: 1;
 }
 
 /* 電線（SVG。たわみは viewBox 比で伸び縮み・線の太さは non-scaling-stroke で一定。

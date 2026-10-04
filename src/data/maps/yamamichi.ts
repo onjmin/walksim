@@ -7,15 +7,13 @@
 //           ランニングの人=会釈だけ）。無人販売所は売れのこりが ふたふくろ
 //   宵   … NPC 0体（docs/nostalgia.md P0-1）。文は「におい・音・点いた灯り」だけ
 //   深夜 … NPC 0体必達。峠のベンチに すわれる（seen_suwari_yamamichi）。
-//           脇道の怪異はここの担当1つだけ: バス停の時刻表に、深夜だけ『2:00』の行（否認できる。ノートは無し）。
-//           峠の通行止めのさくは、深夜だけ すきまを ぬけられる（夢の村へ。空が夕やけの色。説明しない）
 //   朝   … スズメ。NPC 3体（田んぼの人・自転車の子・販売所のおばちゃん）。
 //           『つけ』のメモ・水門・道祖神の花など、夕方の小さな payoff
 //
 // 座標（統合担当と共有）:
 //   東 (43,12)→kawara(1,8) right・kawara からの着地 (42,12) left
 //   北東 (38,0)→koen(1,8) right・koen からの着地 (38,1) down
-//   峠 (4,0)＝深夜だけ village(3,2) down へ／ほかは通行止めで一歩もどされる。村からの着地 (4,1) down
+//   峠 (4,0)＝通行止めで一歩もどされる
 //
 // 経路: 川ぞいの舗装路(y12)が背骨。北＝田んぼとあぜ道(y6)→公園への道(x38)。
 // 南＝用水路と田んぼ→川原の道(y17)→用水路の小橋(x34)でもどる輪。西＝林道のつづら折り(x14→y9→x6→y6→x13→y4→x4)。
@@ -64,7 +62,7 @@ const tiles: Record<string, TileDef> = {
 
 const rows = [
 	"   .:.                               ,:,    ", // y0  峠の出口 (4,0)・通行止めのさく (3,0)(5,0)・公園への出口 (38,0)
-	" T..:..Nn.,f                        b,:,b   ", // y1  峠。村からの着地 (4,1)・ベンチ (7,1)(8,1)・みはらし (11,1)・公園からの着地 (38,1)
+	" T..:..Nn.,f                        b,:,b   ", // y1  峠。ベンチ (7,1)(8,1)・みはらし (11,1)・公園からの着地 (38,1)
 	" T..:....,,f                       ,,,:,,b  ", // y2
 	" TTT:TTTT                         ,,u,:,,,  ", // y3
 	" TTT::::::::::TT                 ,,,,,:,u,, ", // y4  つづら折り（上）
@@ -243,7 +241,7 @@ export const yamamichi: MapDef = {
 	],
 	name: "やまみち",
 	bgm: "@tod", // 時間帯の曲（生活音の下にごく薄く。data/index.ts の todBgm）
-	// 深夜は山の曲（amb_kazan「活火山の底」。峠のむこうが夕暮れの村になる時間帯）
+	// 深夜は山の曲（amb_kazan「活火山の底」）
 	todBgm: { shinya: "amb_kazan" },
 	outdoor: true,
 	outside: "#0a0c08",
@@ -326,7 +324,7 @@ export const yamamichi: MapDef = {
 		// ── 出入り口 ──
 		warp("to_kawara", 43, 12, { map: "kawara", x: 1, y: 8, dir: "right" }),
 		warp("to_koen", 38, 0, { map: "koen", x: 1, y: 8, dir: "right" }),
-		// 峠（深夜だけ、さくの すきまから むこうへ。ほかは通行止めで一歩もどる）
+		// 峠（通行止めで一歩もどる）
 		{
 			id: "touge",
 			x: 4,
@@ -335,19 +333,7 @@ export const yamamichi: MapDef = {
 			through: true,
 			run: async (s) => {
 				const t = s.flag("tod");
-				if (t === "shinya") {
-					if (!s.flag("seen_touge_yuyake")) {
-						s.set("seen_touge_yuyake");
-						await s.narrate("さくの　すきまが、\nひとり分　あいている。");
-						await s.wait(600);
-						await s.narrate("峠の　むこうの空が、\n夕やけの色を　している。");
-						await s.say("kiriko", "……2時ンゴ。");
-						await s.wait(500);
-					}
-					await s.warp("village", 3, 2, "down");
-					return;
-				}
-				if (t === "yoru") {
+				if (t === "yoru" || t === "shinya") {
 					await s.narrate("さくが　ある。\nむこうは、まっくらだ。");
 				} else if (t === "asa") {
 					await s.narrate("さくが　ある。\n谷から、もやが　あがってくる。");
@@ -481,7 +467,7 @@ export const yamamichi: MapDef = {
 			},
 		},
 
-		// ── バス停（深夜だけ、時刻表に一行。脇道の怪異・否認できる） ──
+		// ── バス停 ──
 		{
 			id: "basutei",
 			x: 22,
@@ -493,10 +479,7 @@ export const yamamichi: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("時刻表。くらくて、\n顔を　ちかづける。");
-					await s.narrate("さいごの行は　19:12。\nその下に、『2:00』。");
-					await s.wait(700);
-					s.set("seen_basutei_niji");
-					await s.say("kiriko", "（……ペンの　いたずら\nンゴ）");
+					await s.narrate("さいごの行は　19:12。\n始発は　6:40。");
 					return;
 				}
 				await s.narrate("バス停『かみがわら』。\n時刻表の　数字が　すくない。");

@@ -55,7 +55,6 @@
 // got_korokke/seen_kaikei 真 立て: suupaa korokke／baachan_ev（会計）            読み: nikkiKey・suupaa baachan_ev（レシートの1行）・room desk（asa のレシート）
 // got_taiyaki             真 立て: tonarimachi taiyaki_obachan                   読み: nikkiKey
 // seen_kairan_danchi      真 立て: danchi kairan_hito                            読み: danchi kairanban（サインの選択肢の条件）
-// seen_densha2            真 深夜の電車（囲いの予兆）。P0-3 の遠い音はこれと混ぜない（tod が yoru の就寝時だけ鳴らす）
 
 import type { GameState, Story } from "../engine/defs";
 

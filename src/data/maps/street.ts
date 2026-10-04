@@ -4,30 +4,25 @@
 // BGM null（ヒグラシ・チャイム・電車などの生活音が音楽のかわり）。
 //
 // 同一マップが flags.tod（"yu"|"yoru"|"shinya"|"asa"）で四つの顔を持つ：
-//   夕方  … 生きた町。NPC 7体・時計は 17:XX・東端は工事の囲い（お知らせ掲示＝不穏の種①）
+//   夕方  … 生きた町。NPC 7体・時計は 17:XX・東端は工事の囲い（お知らせ掲示）
 //   宵    … 晩ごはんのあとの任意の散歩（docs/nostalgia.md P0-1）。NPC 0体・時計は 20:XX
 //           （地区を回るたびに進む＝yoruClock）・街灯がつく。文は におい・音・点いた灯り だけ
 //           （消えた窓・減った人は書かない）。自販機の赤い札・コンビニの牛乳・自分の窓のあかり
-//   深夜  … 無人（NPC 0体・必達）。時計は全部 2:00（2つ目で s.note("nisen")）。
-//           囲いが駅の入口に変わっている（触れると hub へ）。違和感はこの3系統だけ
+//   深夜  … 無人（NPC 0体・必達）。時計は 2:00。
 //   朝    … 光と音が戻る。NPC 5体・セリフ全差し替え・setup/payoff の対（§4）。
 //
 // 物語（STORY.md §5.5）：夕方の 地の文で「キリコが 外の 町で 暮らしはじめた」ことを はっきり 言う。
-// 深夜の バス停で レコード「早番」（rec_q。辞めた 人。名残から もどると その 声が もう一度 聞こえる＝hayaban_echo）。rec_q と 板の 名残の レコード 2枚で、
+// 深夜の バス停で レコード「早番」（rec_q。辞めた 人）。rec_q を 拾うと、
 // 深夜の この 通りで「窓」の 場面（転：声の 主たちは 窓の むこうで 暮らしていた）→ 夜明け（tod="asa"・
 // ending_ready）→ うみべへ（結は umi.ts）。
 //
-// 座標凍結v2: (2,9)→apart(10,5)／apart 階段→(2,10)／東端の駅入口 (28,10)→hub(10,12)
-// （深夜のみ）／hub 南口→(27,10)。開始位置は (24,10) 西向き（data/index.ts）。
+// 座標凍結v2: (2,9)→apart(10,5)／apart 階段→(2,10)。開始位置は (24,10) 西向き（data/index.ts）。
 // 座標凍結v3（日常の町 拡張）: うらどおり西端 (2,19)→sumire(37,3)／うらどおり (21,19)→
 // kawara(37,8)／大どおり西 (0,11)→kokudo(38,10)。もどりの着地は (3,19)/(20,19)/(1,11)。
 //
 // 環境音は seLoop でなくワンショットの重ね掛けで作る（Story API に seLoop が無いため）。
 // onEnter で一波 ＋ 道の途中の見えない帯（wave）で歩くたびに遠近を変えて鳴らす。
 // MML SE は待ち時間 0（loudness.ts）なので文送りを止めない。
-//
-// 不穏の種（夕方の時点では完全に日常）: ①工事のお知らせ掲示（開始すぐ・東端）
-// ②下校の子の「道の下から線路が出た」 ③バス停のらくがき『2じ』
 
 import { prepareCameoVoices } from "../../engine/audio";
 import type {
@@ -40,16 +35,15 @@ import type {
 import { settings } from "../../engine/settings";
 import { npc, warp } from "../helpers";
 import { kanShinya, kanTick, yoruAkubi, yoruClock } from "../nostalgia";
-import { EPISODE_RECORDS, records } from "../records";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
 // ── タイル ──
-// TOWN をベースに、店先と東端の駅の名残を足す。
+// TOWN をベースに、店先を足す。
 //   i  店の中の床   < = >  店のカウンター（むこうの店主に話しかけられる）
 //   o  しまった戸（白壁）   j  しまった戸（板壁）
 //   c  大きな窓（白壁の下段。コンビニ・民家）   t  大きな窓（レンガ壁の下段。電器屋）
-//   m  窓（板壁の下段）   s  すなば   E  囲いのおくの下り階段（見えるだけ・通れない）
+//   m  窓（板壁の下段）   s  すなば
 const PAVE = JP.pave;
 const WIN_LOW_WHITE = WIN.sash;
 const WIN_LOW_BRICK = WIN.sash;
@@ -100,11 +94,6 @@ const tiles: Record<string, TileDef> = {
 		passable: false,
 	},
 	s: { layers: [JP.sand], color: "#e8cc90", passable: true },
-	E: {
-		layers: [JP.stationStairs],
-		color: "#3a3a40",
-		passable: false,
-	},
 };
 
 // 西＝アパート（ドア (2,9)）と裏どおり（x4 の路地から。無印の隠し）。
@@ -121,7 +110,7 @@ const rows = [
 	"(w(w.^^^^^^ AAAA (((((( zzz   ", // y7  キリコの部屋の窓 (3,7)（(4,7) から）・コンビニ (17-22)・とこや (24-26)
 	"(w(w.%iiii% %WW% (w((w( ZZZ   ", // y8  店主 (7,8)
 	"))d).%<==>%P%tt%x)ccoc)p]j]!f ", // y9  アパートのドア (2,9)・カウンター・電器屋の窓 (13,9)・お知らせ (27,9)
-	"!::::::::::::::::::::::::::::E", // y10 大どおり。開始 (24,10)・hub からの戻り (27,10)・駅の入口 (28,10)
+	"!:::::::::::::::::::::::::::::", // y10 大どおり。開始 (24,10)・工事の囲い (28,10)
 	",::::::::::::::::::::::::::ff ", // y11
 	",L,,,*&Kk,,L,,,,Bb,V,,,!,L,   ", // y12 花だん (5,12)・掲示板 (7,12)・時計塔 (13,12)・ベンチ (16,12)・バス停 (23,12)
 	"  ,,,,,,,,,,,,,,,,,,,,,,,     ", // y13 公園のこみち
@@ -167,21 +156,6 @@ const waveBelt = (id: string, x: number, pan: number): EventDef[] =>
 		when: (st: GameState) => st.flags.tod === "yu" || st.flags.tod === "asa",
 		run: wave(id, pan),
 	}));
-
-/**
- * 深夜の時計（全部 2:00）。べつべつの時計を2つ見たところで、ノートに書き留める
- * （1つ目は「止まってるのか」で流せる微差。反復で必然に変わる。style-everyday §3）。
- */
-const NISEN_KEYS = ["tower", "barber", "conbini"] as const;
-const nisen = async (s: Story, key: string): Promise<void> => {
-	if (s.flag(`seen_nisen_${key}`)) return;
-	s.set(`seen_nisen_${key}`);
-	const n = NISEN_KEYS.filter((k) => !!s.flag(`seen_nisen_${k}`)).length;
-	if (n === 2) await s.say("kiriko", "……さっきのも、\n2時だったンゴ");
-	else if (n >= 3) await s.narrate("……ぜんぶ、おなじ時間だ。");
-	// 2つ目で書き留める（3つ目以降の note() は何もしない）
-	if (n >= 2) await s.note("nisen");
-};
 
 // ── 店主（街路のガイド役。3層: 初回＝買い物／二層目＝雑談／待機） ──
 
@@ -302,30 +276,19 @@ const tenshuAsa = async (s: Story): Promise<void> => {
 	});
 };
 
-// ── 転：窓（STORY.md §5.5・§5.97）。rec_q と 板の 名残の レコード 2枚で 開く ──
+// ── 転：窓（STORY.md §5.5・§5.97）。rec_q で 開く ──
+// 2026-10-04 怪異側（板の 名残）を 消して 作りなおし中。それまでの 仮の 条件として、早番の レコード 1枚で 開く。
 
-/** 窓の 場面を 見られるか（深夜・早番の レコードと 名残の レコード 2枚・まだ 見ていない）。 */
+/** 窓の 場面を 見られるか（深夜・早番の レコード・まだ 見ていない）。 */
 export const madoReady = (st: GameState): boolean =>
-	st.flags.tod === "shinya" &&
-	!st.flags.seen_mado &&
-	(st.items.rec_q ?? 0) > 0 &&
-	EPISODE_RECORDS.filter((id) => (st.items[id] ?? 0) > 0).length >= 2;
+	st.flags.tod === "shinya" && !st.flags.seen_mado && (st.items.rec_q ?? 0) > 0;
 
 const mado = async (s: Story): Promise<void> => {
 	s.set("seen_mado");
 	await s.wait(600);
 	await s.narrate("まちのどおりの　窓に、\nあかりが　ついていた。");
-	await s.narrate("ひとつ、また　ひとつ。\n……時計は、2:00の　ままなのに。");
-	// 拾った レコードの 声の 主（名残の 4話）
-	if (s.has("rec_a") > 0)
-		await s.narrate("二階の　窓。\nネクタイを　ほどく　かげ。");
-	if (s.has("rec_b") > 0)
-		await s.narrate("となりの　窓。\n赤ちゃんを　あやす　声。");
-	if (s.has("rec_c") > 0)
-		await s.narrate("角の　家。\n釣りざおを　そろえる　音。");
-	if (s.has("rec_d") > 0)
-		await s.narrate("むかいの　窓。\n画面の　光と、ちいさな　笑い声。");
-	// 名残を 使わない 去り方（受験・鯖・ミスキー。STORY.md §4.5）
+	await s.narrate("ひとつ、また　ひとつ。");
+	// 去り方の 目録（受験・鯖・ミスキー。STORY.md §4.5）
 	await s.narrate("机の　あかり。\n単語帳を　めくる　音。");
 	await s.narrate("ヘッドホンごしの　声が、\n窓の　むこうで　笑っている。");
 	await s.narrate("みじかい　文を　打っては、\n消している　指。");
@@ -479,23 +442,7 @@ export const street: MapDef = {
 		warp("to_kokudo", 0, 11, { map: "kokudo", x: 38, y: 10, dir: "left" }),
 		// 裏どおりの北はしから、みどりがおか公園への石段（地続きの拡張 2026-09-28）
 		warp("to_koen", 4, 3, { map: "koen", x: 20, y: 22, dir: "up" }),
-		// 深夜だけ、囲いのあった場所が駅の入口（→ hub）
-		{
-			id: "sta_in",
-			x: 28,
-			y: 10,
-			trigger: "touch",
-			through: true,
-			when: (st) => st.flags.tod === "shinya",
-			run: async (s) => {
-				if (!s.flag("seen_sta_in")) {
-					s.set("seen_sta_in");
-					await s.narrate("くらい階段が、下へ\nつづいている。");
-				}
-				await s.warp("hub", 10, 12, "up", { se: "stairs" });
-			},
-		},
-		// 夕方・朝は工事の囲いがふさいでいる（見た目つきの talk イベント＝通れない）
+		// 工事の囲いがふさいでいる（見た目つきの talk イベント＝通れない）
 		{
 			id: "kakoi",
 			x: 28,
@@ -503,8 +450,13 @@ export const street: MapDef = {
 			sprite: JP.kakoi,
 			trigger: "talk",
 			fixedDir: true,
-			when: (st) => st.flags.tod !== "shinya",
 			run: async (s) => {
+				if (s.flag("tod") === "shinya") {
+					await s.narrate(
+						"工事の囲いだ。赤いランプが、\nゆっくり　点滅している。",
+					);
+					return;
+				}
 				if (s.flag("tod") === "asa") {
 					await s.narrate("工事の囲いだ。\n――もとどおりに、ある。");
 					await s.narrate("おくで、作業の音が\nしている。");
@@ -514,13 +466,12 @@ export const street: MapDef = {
 				await s.say("kiriko", "……おっきい穴ンゴ");
 			},
 		},
-		// 囲いのよこの掲示（夕方・朝＝工事のお知らせ／深夜＝駅名標）
+		// 囲いのよこの掲示（工事のお知らせ）
 		{
 			id: "notice",
 			x: 27,
 			y: 9,
 			trigger: "talk",
-			when: (st) => st.flags.tod !== "shinya",
 			run: async (s) => {
 				await s.narrate("『道路補修工事のおしらせ』");
 				await s.narrate("『期間中は　通りぬけが\nできません』");
@@ -529,46 +480,7 @@ export const street: MapDef = {
 					await s.narrate("……きのうと、おなじ\n掲示だ。");
 			},
 		},
-		{
-			id: "ekimei",
-			x: 27,
-			y: 9,
-			trigger: "talk",
-			when: (st) => st.flags.tod === "shinya",
-			run: async (s) => {
-				await s.narrate("駅名標だ。ひらがなで\n『かいせん』。");
-				await s.narrate("となりの駅は、\n書かれていない。");
-			},
-		},
-
-		// ── 深夜、囲いに近づくと遠くで終電の音（右パン・一度だけ。否認可能なまま） ──
-		{
-			id: "densha2_a",
-			x: 25,
-			y: 10,
-			trigger: "touch",
-			through: true,
-			when: (st) => st.flags.tod === "shinya" && !st.flags.seen_densha2,
-			run: async (s) => {
-				s.set("seen_densha2");
-				s.se("densha_far", { pan: 0.7, volume: 0.7 });
-				await s.narrate("とおくで、電車の音が\nした。……気がする。");
-			},
-		},
-		{
-			id: "densha2_b",
-			x: 25,
-			y: 11,
-			trigger: "touch",
-			through: true,
-			when: (st) => st.flags.tod === "shinya" && !st.flags.seen_densha2,
-			run: async (s) => {
-				s.set("seen_densha2");
-				s.se("densha_far", { pan: 0.7, volume: 0.7 });
-				await s.narrate("とおくで、電車の音が\nした。……気がする。");
-			},
-		},
-		// 夕方の遠い電車（定時音を正常の側に置いておく。深夜の反転の下ごしらえ）
+		// 夕方の遠い電車
 		{
 			id: "densha_yu_a",
 			x: 15,
@@ -619,32 +531,7 @@ export const street: MapDef = {
 				await s.say("kiriko", "……いってらっしゃいンゴ");
 			},
 		},
-		// ── 早番の 声の くりかえし①（名残から もどった 深夜の 通り。夜明けの うみべで 本人の 声を 聞く 前ぶれ。
-		// 聞かなくても 進む。二度目は hub.ts の hayaban_echo） ──
-		{
-			id: "hayaban_echo",
-			x: 6,
-			y: 0,
-			trigger: "auto",
-			once: true,
-			when: (st) =>
-				st.flags.tod === "shinya" &&
-				(st.items.rec_q ?? 0) > 0 &&
-				EPISODE_RECORDS.some((id) => (st.items[id] ?? 0) > 0) &&
-				!madoReady(st) &&
-				!st.flags.seen_mado,
-			run: async (s) => {
-				await s.wait(600);
-				s.se("needle", { pan: 0.3, volume: 0.6 });
-				await s.narrate("バス停の　ほうで、\nレコードの　まわる　音。");
-				await s.say("rei", "……今日も　早番や", {
-					name: records.rec_q.date,
-					noPortrait: true,
-				});
-				await s.narrate("バス停の　よこには、\nもう　なにも　ない。");
-			},
-		},
-		// ── 転：窓（深夜。早番の レコードと 名残の レコード 2枚で。エンディングは umi.ts） ──
+		// ── 転：窓（深夜。早番の レコードで。エンディングは umi.ts） ──
 		{
 			id: "mado_ev",
 			x: 5,
@@ -668,14 +555,18 @@ export const street: MapDef = {
 			async (s) => {
 				if (!s.flag("seen_kids")) {
 					s.set("seen_kids");
-					await s.say(null, "あのさ、工事のとこ、道の\n下から線路が出たって", {
-						name: "男の子",
-					});
-					await s.say("kiriko", "せんろ？");
+					await s.say(
+						null,
+						"あのさ、工事のとこ、道の\n下から　なんか　出たって",
+						{
+							name: "男の子",
+						},
+					);
+					await s.say("kiriko", "なんか？");
 					await s.say(null, "おっちゃんが言ってた。\nむかしのやつ、だって", {
 						name: "男の子",
 					});
-					await s.say(null, "……ほんとかなあ", { name: "男の子" });
+					await s.say(null, "……たからものかなあ", { name: "男の子" });
 					return;
 				}
 				await s.say(null, "宿題？　やってない。\nこれから　やる", {
@@ -792,7 +683,7 @@ export const street: MapDef = {
 			10,
 			CHILD,
 			async (s) => {
-				await s.say(null, "きのうの線路のこと、\n先生に聞いてみるんだ", {
+				await s.say(null, "工事の　なんかのこと、\n先生に聞いてみるんだ", {
 					name: "男の子",
 				});
 			},
@@ -839,7 +730,7 @@ export const street: MapDef = {
 					await s.say(null, "おはよう。きょうで\n埋めもどしだよ", {
 						name: "作業員",
 					});
-					await s.say("kiriko", "……線路、あったンゴ？");
+					await s.say("kiriko", "……なにが　出たンゴ？");
 					await s.say(null, "ん？　ただの\nふるい土管だったよ", {
 						name: "作業員",
 					});
@@ -872,7 +763,7 @@ export const street: MapDef = {
 			when: (st) => st.flags.tod === "shinya",
 		},
 
-		// ── しらべられるもの（時計は夕方から見られるようにしておく＝深夜の反復の前提） ──
+		// ── しらべられるもの ──
 		{
 			id: "clock_tower",
 			x: 13,
@@ -884,7 +775,6 @@ export const street: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("まちの時計。――2:00。");
-					await nisen(s, "tower");
 					return;
 				}
 				if (t === "asa") {
@@ -912,7 +802,6 @@ export const street: MapDef = {
 				if (t === "shinya") {
 					await s.narrate("とこやの　サインポールは、\nとまっている。");
 					await s.narrate("おくの時計――2:00。");
-					await nisen(s, "barber");
 					return;
 				}
 				if (t === "asa") {
@@ -941,7 +830,6 @@ export const street: MapDef = {
 					await s.narrate("あかりが、ついている。");
 					await s.narrate("レジには、だれもいない。");
 					await s.narrate("……時計は――2:00。");
-					await nisen(s, "conbini");
 					return;
 				}
 				if (t === "asa") {
@@ -1090,7 +978,7 @@ export const street: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("さいしゅうバスは、\nとっくに行ったあとだ。");
-					await s.narrate("らくがきの『2じ』が、\nそのままある。");
+					await s.narrate("すみの　らくがきが、\nくらがりで　うすく　見える。");
 					return;
 				}
 				if (t === "asa") {
@@ -1098,11 +986,11 @@ export const street: MapDef = {
 					return;
 				}
 				await s.narrate("バスてい。さいしゅうは\n19:20だ。");
-				await s.narrate("すみに、らくがき。\n――『2じ』");
+				await s.narrate("すみに、らくがき。\n――『へのへのもへじ』");
 				await s.say("kiriko", "……おこさまンゴ");
 			},
 		},
-		// ── ポスト（脇道の怪異 post。深夜だけ、中でかすかに紙の音。朝は普通） ──
+		// ── ポスト ──
 		{
 			id: "post_ev",
 			x: 21,
@@ -1113,11 +1001,7 @@ export const street: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("ゆうびんポスト。");
-					await s.wait(500);
-					await s.narrate("……中で、かさ、と\n紙の音がした。");
-					await s.narrate("あつめは、夕方で\nおわっているはずだ。");
-					await s.note("post");
+					await s.narrate("ゆうびんポスト。つぎの\nあつめは、あしたの　朝だ。");
 					return;
 				}
 				if (t === "asa") {

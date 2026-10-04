@@ -208,21 +208,6 @@ export type RecordDef = {
 	lines: string[];
 };
 
-/**
- * かいいノートの1ページ（怪異コレクション。DESIGN §6.5）。
- * 発見はシナリオが Story.note(id) で書き留め（フラグ `note_<id>`）、
- * メニューの「ノート」がいつでも読み返せる一覧にする。
- */
-export type NoteDef = {
-	id: string;
-	/** ノートの見出し（短い通称。「きさらぎ駅」等）。 */
-	title: string;
-	/** 本文（キリコのメモ書き風。1要素 = 1行、全角22字まで・2〜4行）。 */
-	lines: string[];
-	/** 未発見のとき「？？？」の下に薄く出すヒント（数語）。 */
-	hint?: string;
-};
-
 // ───────────────── セーブされる状態 ─────────────────
 
 export type GameState = {
@@ -249,8 +234,6 @@ export type GameData = {
 	items: Record<string, ItemDef>;
 	/** レコード盤（Story.record が引く）。 */
 	records: Record<string, RecordDef>;
-	/** かいいノート（Story.note が引き、メニューの「ノート」が一覧する）。 */
-	notes: Record<string, NoteDef>;
 	/** BGM 名 → MML。 */
 	bgm: Record<string, string>;
 	/** 効果音名 → `rpgen:<id>`（RPGEN の mp3）か MML。 */
@@ -318,11 +301,6 @@ export type Story = {
 	 * 「本人の声」で読む（DESIGN §6）。
 	 */
 	record(id: string, opt?: { trueVoice?: boolean }): Promise<void>;
-	/**
-	 * かいいノートに書き留める（DESIGN §6.5）。フラグ `note_<id>` を立て、
-	 * 初回だけ小さなトーストを出す。すでに書き留めてあれば何もしない。
-	 */
-	note(id: string): Promise<void>;
 	flag(name: string): number | boolean | string | undefined;
 	set(name: string, value?: number | boolean | string): void;
 	/** マップ移動。 */

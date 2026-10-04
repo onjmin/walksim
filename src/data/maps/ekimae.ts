@@ -1,6 +1,5 @@
 // えきまえ（本物の駅）。docs/content-briefs.md「日常の町 拡張」・docs/style-everyday.md。
-// 32×18・outdoor・BGM null。工事囲いの「偽の駅口」（street 深夜）との対比の要＝
-// こちらは昼夜のある、生きている駅。ノスタルジーが本体・怪異はおまけ（kaisatsu のみ）。
+// 32×18・outdoor・BGM null。昼夜のある、生きている駅。ノスタルジーが本体。
 //
 // 時間帯の四つの顔:
 //   夕方  … 生きた駅前。NPC 4体（キオスクのおばちゃん・タクシーの運転手・
@@ -8,8 +7,7 @@
 //   宵    … 晩ごはんのあとの任意の散歩（docs/nostalgia.md P0-1）。NPC 0体。駅はまだ動いている
 //           （ホームのあかり・時計は 20 時台で地区を回るたびに進む＝yoruClock。ほかの時計より1分すすむ）。
 //           タクシーは本日終了、改札は「きょうは、やめとく」。文は におい・音・点いた灯り だけ
-//   深夜  … 無人。駅舎のシャッターが降りている。違和感は kaii `kaisatsu`
-//           （シャッターの奥からかすかな改札機の音・s.note）ただ一つ。
+//   深夜  … 無人。駅舎のシャッターが降りている。
 //           じはんきで温かい缶が一本買える（nostalgia.md P0-6。地区を移るたびに冷める＝kanTick）
 //   朝    … NPC 3体（仲直りの男の子×2・搬入の運転手）。伝言板の書き込みが
 //           1つ増えている。スーパーの前に開店前のトラック（suupaa の payoff）
@@ -140,23 +138,6 @@ const norikomi = async (s: Story): Promise<void> => {
 	await s.narrate("――夕日が、ながれていく。");
 	await s.wait(400);
 	await s.warp("tonarimachi", 3, 10, "down");
-};
-
-/**
- * 深夜の脇道怪異 `kaisatsu`（担当分はこれだけ）。駅に近づくと一度だけ、
- * シャッターの奥からかすかに改札機の音。無音の駅前でだけ効く＝SEは小さく。
- */
-const kaisatsuOto = async (s: Story): Promise<void> => {
-	if (s.flag("seen_kaisatsu_oto")) return;
-	s.set("seen_kaisatsu_oto");
-	await s.wait(300);
-	s.se("tick", { volume: 0.5, pan: -0.2 });
-	await s.wait(500);
-	s.se("tick", { volume: 0.4, pan: -0.2 });
-	await s.narrate("シャッターのおくで、\nかちり、と　音がした。");
-	await s.narrate("……改札の音、だった\n気がする。");
-	await s.narrate("耳をすますと、もう\nなにも　しない。");
-	await s.note("kaisatsu");
 };
 
 export const ekimae: MapDef = {
@@ -317,19 +298,6 @@ export const ekimae: MapDef = {
 				await s.narrate("改札だ。");
 			},
 		},
-
-		// ── 深夜、駅の前で一度だけ（脇道怪異 kaisatsu） ──
-		...[4, 5, 6].map(
-			(x): EventDef => ({
-				id: `kaisatsu_oto_${x}`,
-				x,
-				y: 9,
-				trigger: "touch",
-				through: true,
-				when: (st) => st.flags.tod === "shinya" && !st.flags.seen_kaisatsu_oto,
-				run: kaisatsuOto,
-			}),
-		),
 
 		// ── 環境音の帯（夕方＝ヒグラシ／朝＝スズメ） ──
 		...waveBelt("wave_w", 12, -0.2),

@@ -12,12 +12,6 @@ export const SPR = {
 	/** 灯ったランプ（懐中電灯の落ちている見た目の仮） */
 	lantern: PROPS.lantern,
 
-	// ── 新しく描いた歩行グラ（scripts/make-sprites.mjs） ──
-	/** ミャウミャウ（紙袋の 服・イカの 頭巾の エルフ。出会うたび姿が違うので A/B/C をイベント側で使い分ける） */
-	myaumyauA: "pub:sprites/myaumyau_a.png",
-	myaumyauB: "pub:sprites/myaumyau_b.png",
-	myaumyauC: "pub:sprites/myaumyau_c.png",
-
 	// ── モブ（同梱の RPGEN DQ 風キャラ） ──
 	townsfolk: "pub:sprites/mob_man.png",
 	woman: "pub:sprites/mob_mama.png",

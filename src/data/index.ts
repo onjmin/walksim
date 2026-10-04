@@ -7,26 +7,17 @@ import { apart } from "./maps/apart";
 import { danchi } from "./maps/danchi";
 import { debug, debugStart } from "./maps/debug";
 import { ekimae } from "./maps/ekimae";
-import { hub } from "./maps/hub";
-import { kakolog2 } from "./maps/kakolog2";
 import { kawara } from "./maps/kawara";
-import { kisaragi } from "./maps/kisaragi";
 import { koen } from "./maps/koen";
 import { kokudo } from "./maps/kokudo";
-import { kura } from "./maps/kura";
 import { room } from "./maps/room";
 import { senro } from "./maps/senro";
 import { street } from "./maps/street";
 import { sumire } from "./maps/sumire";
 import { suupaa } from "./maps/suupaa";
 import { tonarimachi } from "./maps/tonarimachi";
-import { train } from "./maps/train";
-import { tunnel } from "./maps/tunnel";
 import { umi } from "./maps/umi";
-import { village } from "./maps/village";
 import { yamamichi } from "./maps/yamamichi";
-import { yellow } from "./maps/yellow";
-import { notes } from "./notes";
 import { items, records } from "./records";
 import { sfx } from "./sfx";
 
@@ -49,20 +40,11 @@ export const data: GameData = {
 		yamamichi,
 		koen,
 		umi,
-		hub,
-		yellow,
-		village,
-		kura,
-		kakolog2,
-		train,
-		kisaragi,
-		tunnel,
 		debug,
 	},
 	cast,
 	items,
 	records,
-	notes,
 	bgm,
 	sfx,
 	titleBgm: "title",
@@ -97,19 +79,9 @@ export const data: GameData = {
 		"（音声: 面倒ミル / キャラクター: wQ8G）",
 		"https://tabaneroze.ninja-web.net/",
 		"",
-		"重音テト",
-		"© 線・小山乃舞世／TWINDRILL",
-		"https://kasaneteto.jp/",
-		"",
-		"足立レイ",
+		"足立レイ（レコードの　朗読の　声）",
 		"© Mechanical Girl",
 		"https://mechanicalgirl.jp/",
-		"",
-		"つくよみちゃん",
-		"© Rei Yumesaki",
-		"（フリー素材キャラクター。音源の利用は",
-		"　公式の利用規約に　したがっています）",
-		"https://tyc.rei-yumesaki.net/",
 		"",
 		"革命シヨ（スレの　書きこみ）",
 		"https://kakumeisiyo.my.canva.site/dagkuyjwycs",
@@ -123,22 +95,12 @@ export const data: GameData = {
 		"https://www.nicovideo.jp/watch/sm40031282",
 		"https://www.bilibili.com/video/BV1V24y1a7qs",
 		"",
-		"ミャウミャウ・ネムリン・おんちゃん",
-		"にぃちぇ・ムッジェ",
-		"（おんJwiki 出典の　非公式ファン創作）",
 		"なんJ・おんJ のみんな",
-		"",
-		"優音アイ・君野うしろ",
-		"（おんJ・おーぷん2ちゃんねるの企画スレ発",
-		"　キャラクターの　非公式ファン創作）",
 		"",
 		"（本作のキャラクターの口調・設定の一部は",
 		"　非公式の創作です）",
 		"",
-		"# もとになった　インターネット怪談",
-		"きさらぎ駅・八尺様・バックルーム　ほか",
-		"（ネットロアを　もとにした創作です。",
-		"　本作はフィクションです。実在の駅・",
+		"（本作はフィクションです。実在の駅・",
 		"　人物・掲示板の出来事とは　関係ありません）",
 		"",
 		"# 原案・ディレクター",

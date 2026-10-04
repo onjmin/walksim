@@ -3,8 +3,6 @@
 // Vite の SSR で src/data/index.ts を読み込み、次を調べる。
 // - マップ: 行の長さがそろっているか、未定義のタイル文字、イベントの座標・重複、BGM 名
 // - レコード（data/records.ts）: 声の音源（voice / trueVoice）・日付・本文の長さ、items への登録
-// - かいいノート（data/notes.ts）: 本文の行数・長さ。s.note(id) の id が notes に有るか。
-//   どこからも呼ばれていないノートは警告（1つにまとめて出す）
 // - イベントのスクリプトを「何もしない Story」で実際に走らせ、呼ばれた命令を調べる
 //   （話し手・道具・BGM・効果音・ワープ先・レコード・セリフの長さ）
 //   フラグ2通り（空・すべて立っている）× 選び方（pick 0〜4）で走らせ、
@@ -49,13 +47,7 @@ const FLAG_OK =
 // 到達性の検査から外す talk イベント（"マップ イベントid" → 理由）。
 // わざと歩いて行けない場所に置いたものだけを、理由を書いて足す。
 // 無いイベント・歩いて調べられるようになったものは警告する（消し忘れ防止）。
-const REACH_OK = {
-	// village.ts「八尺様（遠景。…話しかけられる距離には来ない）」
-	"village hass1": "八尺様①は田の向こうの遠景",
-	"village hass3": "八尺様③は用水路の向こうの遠景",
-	// kakolog2.ts「ムッジェ（柵の向こうの赤い気配。近づくと一度だけ声）」
-	"kakolog2 mujje": "柵のむこうの気配。声は柵の手前の帯 mujje_tr_* が出す",
-};
+const REACH_OK = {};
 
 const server = await createServer({
 	server: { middlewareMode: true, hmr: false, ws: false },
@@ -275,35 +267,9 @@ try {
 		checkText(`item ${id} desc`, it.desc);
 	}
 
-	// ── かいいノート（data/notes.ts。DESIGN §6.5：1行 全角22字・2〜4行） ──
-	for (const [id, nd] of Object.entries(data.notes ?? {})) {
-		if (nd.id !== id) err(`note ${id}: id が "${nd.id}" になっている`);
-		if (!Array.isArray(nd.lines) || !nd.lines.length)
-			err(`note ${id}: 本文（lines）が空`);
-		if ((nd.lines ?? []).length > 4)
-			warn(`note ${id}: 本文が ${nd.lines.length} 行（4 行まで）`);
-		for (const l of nd.lines ?? []) {
-			if (typeof l !== "string") {
-				err(`note ${id}: 行が文字列でない: ${String(l)}`);
-				continue;
-			}
-			if (l.includes("\n"))
-				warn(`note ${id}: 行に改行がある（1要素 = 1行）: ${oneLine(l)}`);
-			if (width(l) > MAX_COLS)
-				warn(`note ${id}: 1行が長い（${width(l)}字）: ${l}`);
-			checkValue(`note ${id}`, l);
-		}
-		if (width(nd.title) > MAX_COLS)
-			warn(`note ${id}: 見出しが長い（${width(nd.title)}字）: ${nd.title}`);
-		if (nd.hint !== undefined && width(nd.hint) > MAX_COLS)
-			warn(`note ${id}: ヒントが長い（${width(nd.hint)}字）: ${nd.hint}`);
-	}
-
 	// ── スクリプトを走らせる ──
 	/** スクリプトの set で立ったフラグ（名前 → 値の集合）。フラグの約束の検査に使う。 */
 	const setFlags = new Map();
-	/** s.note() で書き留められたノート id（呼ばれていないノートの警告に使う）。 */
-	const usedNotes = new Set();
 	/** 2周目で入れる値（フラグ名 → 1周目にスクリプトが set した文字列・数）。 */
 	const typedDomain = new Map();
 	/** warp の着地点（マップ id → "x,y" の集合）。到達性の入口に使う。 */
@@ -433,14 +399,6 @@ try {
 				tick();
 				if (!data.records[id])
 					err(`${where}: レコード "${id}" が records に無い`, note);
-			},
-			note: async (id) => {
-				tick();
-				usedNotes.add(id);
-				if (!data.notes[id])
-					err(`${where}: ノート "${id}" が notes に無い`, note);
-				// 本物と同じくフラグ note_<id> を立てる（when・考察会話の分岐に効く）
-				flags[`note_${id}`] = true;
 			},
 			flag: (name) => flags[name],
 			set: (name, value = true) => {
@@ -660,13 +618,6 @@ try {
 	}
 	for (const [where, fn, mapId] of jobs)
 		for (let i = 0; i < TYPED; i++) await runBase(where, fn, mapId, i);
-
-	// ── どこからも s.note() されていないノート（未実装の呼び出し箇所。警告のみ） ──
-	const unusedNotes = Object.keys(data.notes ?? {}).filter(
-		(id) => !usedNotes.has(id),
-	);
-	if (unusedNotes.length)
-		warn(`ノート: どこからも s.note() されていない: ${unusedNotes.join("・")}`);
 
 	// ── フラグの約束（DESIGN §7）：スクリプトが set するフラグの形 ──
 	for (const k of setFlags.keys())

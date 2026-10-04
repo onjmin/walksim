@@ -23,27 +23,9 @@ const AWAKE: Flags = {
 	seen_door: true,
 	tod: "shinya",
 };
-// 名残を 3つ（黄色い部屋・蔵・地層）回った ところ。まちのどおりの 窓（転）は rec_q を 足すと 開く
-const REC3: Flags = {
-	...AWAKE,
-	seen_nemurin: true,
-	got_rec_a: true,
-	got_rec_b: true,
-	got_rec_c: true,
-	flashlight: true,
-	got_omamori: true,
-};
-
-const KEYS3: Items = {
-	rec_a: 1,
-	rec_b: 1,
-	rec_c: 1,
-	omamori: 1,
-	flashlight: 1,
-};
-
-/** 窓の 場面（転）の 直前：名残 3枚と バス停の「早番」。 */
-const KEYS_MADO: Items = { ...KEYS3, rec_q: 1 };
+/** 窓の 場面（転）の 直前：バス停の「早番」。 */
+const MADO: Flags = { ...AWAKE, got_rec_q: true };
+const KEYS_MADO: Items = { rec_q: 1 };
 
 type Checkpoint = {
 	id: string;
@@ -139,74 +121,10 @@ const CHECKPOINTS: Checkpoint[] = [
 		to: { map: "tonarimachi", x: 3, y: 10, dir: "right" },
 	},
 	{
-		id: "cp_hub",
-		label: "回線の間（レコード0まい）",
-		sprite: "char:nemurin",
-		flags: AWAKE,
-		items: {},
-		to: { map: "hub", x: 10, y: 12, dir: "up" },
-	},
-	{
-		id: "cp_yellow",
-		label: "黄色い部屋",
-		sprite: SPR.myaumyauA,
-		flags: AWAKE,
-		items: {},
-		to: { map: "yellow", x: 3, y: 2, dir: "down" },
-	},
-	{
-		id: "cp_village",
-		label: "夕暮れの村",
-		sprite: "char:tsukuyomi",
-		flags: AWAKE,
-		items: {},
-		to: { map: "village", x: 3, y: 2, dir: "down" },
-	},
-	{
-		id: "cp_kura",
-		label: "蔵のなか（お守りあり）",
-		sprite: SPR.myaumyauB,
-		flags: { ...AWAKE, got_omamori: true },
-		items: { omamori: 1 },
-		to: { map: "kura", x: 4, y: 6, dir: "up" },
-	},
-	{
-		id: "cp_kakolog",
-		label: "過去ログの地層",
-		sprite: "char:onchan",
-		flags: AWAKE,
-		items: {},
-		to: { map: "kakolog2", x: 3, y: 2, dir: "down" },
-	},
-	{
-		id: "cp_train",
-		label: "終電",
-		sprite: "char:rei",
-		flags: REC3,
-		items: KEYS3,
-		to: { map: "train", x: 2, y: 3, dir: "right" },
-	},
-	{
-		id: "cp_kisaragi",
-		label: "きさらぎ駅",
-		sprite: "char:oldman",
-		flags: REC3,
-		items: KEYS3,
-		to: { map: "kisaragi", x: 4, y: 4, dir: "down" },
-	},
-	{
-		id: "cp_tunnel",
-		label: "伊佐貫トンネル",
-		sprite: SPR.myaumyauC,
-		flags: REC3,
-		items: KEYS3,
-		to: { map: "tunnel", x: 8, y: 3, dir: "left" },
-	},
-	{
 		id: "cp_mado",
 		label: "まちのどおり（深夜・窓の場面の直前）",
 		sprite: "pub:sprites/mob_worker.png",
-		flags: { ...REC3, got_rec_q: true },
+		flags: MADO,
 		items: KEYS_MADO,
 		to: { map: "street", x: 20, y: 10, dir: "right" },
 	},
@@ -241,8 +159,7 @@ const CHECKPOINTS: Checkpoint[] = [
 		label: "団地（朝・うみべへ）",
 		sprite: "pub:sprites/mob_ojiichan.png",
 		flags: {
-			...REC3,
-			got_rec_q: true,
+			...MADO,
 			seen_mado: true,
 			tod: "asa",
 			ending_ready: true,
@@ -269,9 +186,7 @@ const jump =
 
 /** 大事なものを配る。 */
 const supply = async (s: Story): Promise<void> => {
-	for (const id of [...ALL_RECORDS, "omamori", "flashlight"])
-		if (!s.has(id)) s.give(id);
-	s.set("flashlight");
+	for (const id of ALL_RECORDS) if (!s.has(id)) s.give(id);
 	s.se("item");
 	await s.narrate("大事なものを　ぜんぶ　もらった。");
 };
@@ -309,21 +224,8 @@ const events: EventDef[] = [
 	...CHECKPOINTS.map((cp, i) =>
 		npc(cp.id, spots[i][0], spots[i][1], cp.sprite, jump(cp)),
 	),
-	npc("dbg_items", 10, 8, "char:mujje", supply, { dir: "left" }),
+	npc("dbg_items", 10, 8, "char:nanj", supply, { dir: "left" }),
 	savePoint("dbg_save", 6, 8),
-	// 八尺様の 16×32 グラの表示テスト（遠景専用キャラ。話しかけても「ぽ」だけ）
-	{
-		id: "dbg_hasshaku",
-		x: 2,
-		y: 8,
-		sprite: "char:hasshaku",
-		dir: "down",
-		trigger: "talk",
-		fixedDir: true,
-		run: async (s) => {
-			await s.say("hasshaku", "ぽ　ぽ　ぽ");
-		},
-	},
 ];
 
 export const debug: MapDef = {
