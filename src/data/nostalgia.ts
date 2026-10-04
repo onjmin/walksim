@@ -252,7 +252,7 @@ export const strFlag = (s: Story, name: string): string | null => {
 
 /**
  * 日常の屋外の地区（宵の段・深夜に歩いたか を数える地区。apart・room は入らない）。
- * 2026-09-28 地続きの拡張で、やまみち・せんろぞいのみち・うみべ・みどりがおか公園を足して10地区。
+ * 2026-09-28 地続きの拡張で、やまみち・せんろぞいのみち・うみべ・みどりがおか公園を足して10地区。2026-10-04 駅と駅のあいだの道（norikae）を足して11地区。
  */
 export const OUTDOOR_DAILY: readonly string[] = [
 	"street",
@@ -265,6 +265,7 @@ export const OUTDOOR_DAILY: readonly string[] = [
 	"senro",
 	"umi",
 	"koen",
+	"norikae",
 ];
 
 type Tod = "yu" | "yoru" | "shinya" | "asa";

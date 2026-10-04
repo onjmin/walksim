@@ -11,6 +11,7 @@ import { kawara } from "./maps/kawara";
 import { koen } from "./maps/koen";
 import { kokudo } from "./maps/kokudo";
 import { laundry } from "./maps/laundry";
+import { norikae } from "./maps/norikae";
 import { okujo } from "./maps/okujo";
 import { room } from "./maps/room";
 import { senro } from "./maps/senro";
@@ -43,6 +44,7 @@ export const data: GameData = {
 		laundry,
 		tonarimachi,
 		senro,
+		norikae,
 		yamamichi,
 		koen,
 		umi,
