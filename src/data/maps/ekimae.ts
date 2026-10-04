@@ -46,6 +46,7 @@ import { npc, warp } from "../helpers";
 import {
 	arrived,
 	asaClock,
+	chukeiDan,
 	kanLv,
 	kanShinya,
 	kanTick,
@@ -314,8 +315,14 @@ export const ekimae: MapDef = {
 				await s.narrate("シャッターが　おりている。");
 				if (s.flag("tod") === "asa") {
 					await s.narrate("おくで、はこを置く音が\nしている。");
-					// ⑱ 夕方の 店の おくで『みなみ』の はこを 見た 人だけ（suupaa hako）
-					if (s.flag("seen_suupaa_hako"))
+					// ⑱ 夕方の 店の おく（suupaa hako）の回収。マジックの『あさ』まで見た人
+					// （seen_suupaa_hako2）は そちらを優先、『みなみ』だけの人は『みなみ』
+					if (s.flag("seen_suupaa_hako2"))
+						await s.say(
+							"kiriko",
+							"（マジックの　『あさ』、\nいま　あけてるンゴ）",
+						);
+					else if (s.flag("seen_suupaa_hako"))
 						await s.say("kiriko", "（ゆうべの　『みなみ』の\nはこンゴね）");
 				}
 				await s.move("player", "d");
@@ -409,6 +416,12 @@ export const ekimae: MapDef = {
 					await s.say(null, "さあ。……わたしより、\nうえだね", {
 						name: "売店のおばちゃん",
 					});
+					// ㊿ スーパーの おかし売り場で ガムを 見た 人（suupaa okashi の seen_suupaa_gum）。二段目だけ＝一度
+					if (s.flag("seen_suupaa_gum"))
+						await s.say(
+							"kiriko",
+							"（こっちのは、おばちゃんが\nてわたしで　くれるンゴ）",
+						);
 					return;
 				}
 				// 三段目（宵の kiosk_closed で「二部、うれた」と回収する）
@@ -764,9 +777,23 @@ export const ekimae: MapDef = {
 			y: 8,
 			trigger: "talk",
 			run: async (s) => {
+				const t = s.flag("tod");
+				// 深夜は 色だけ（字は よめない。seen_natsu_eki は 立てない）
+				if (t === "shinya") {
+					await s.narrate(
+						"ポスターの　あかい色だけ、\n入口の　街灯で　わかる。",
+					);
+					return;
+				}
+				// 朝の「つきみ」は、前に いちど このポスターを 読んだ 人だけ（朝の 1回目も ふくむ。set の前に 見る）
+				const yonda = !!s.flag("seen_natsu_eki");
 				s.set("seen_natsu_eki");
 				await s.narrate("『なつまつり』のポスター。\n……もう、おわったやつだ。");
 				await s.narrate("はがすのを、わすれられて\nいる。");
+				if (t === "yoru")
+					await s.narrate("はがれかけた　かどが、\nかぜで　ゆれている。");
+				if (t === "asa" && yonda)
+					await s.narrate("となりに、あたらしく\n『つきみ　秋まつり』。");
 				await natsuOwari(s);
 			},
 		},
@@ -933,9 +960,28 @@ export const ekimae: MapDef = {
 			x: 15,
 			y: 10,
 			trigger: "talk",
+			// ⑩ 段: 初回は 地図、2回目から すみの『売地』。
+			// 回収: 予想図（seen_urichi_yosozu）か 団地の 案内図（danchi annaizu の 初回 seen_annaizu2＝シールが はがれかけ）を 見た 人に キリコ
 			run: async (s) => {
-				await s.narrate("『えきまえ　あんない』。\n手がきの地図だ。");
-				await s.narrate("スーパーのところに、\n二重まる。『やすい』。");
+				// 深夜は よめない（フラグは 立てない）
+				if (s.flag("tod") === "shinya") {
+					await s.narrate("くらくて、手がきの　線は\nよめない。");
+					return;
+				}
+				if (!s.flag("seen_annaizu_eki")) {
+					s.set("seen_annaizu_eki");
+					await s.narrate("『えきまえ　あんない』。\n手がきの地図だ。");
+					await s.narrate("スーパーのところに、\n二重まる。『やすい』。");
+					return;
+				}
+				await s.narrate("すみに、えんぴつで　『売地』と\nかきたしてある。");
+				if (s.flag("seen_urichi_yosozu"))
+					await s.say("kiriko", "（予想図の　駅ビルは、\nかいてないンゴ）");
+				else if (s.flag("seen_annaizu2"))
+					await s.say(
+						"kiriko",
+						"（団地の　案内図も、\nシールが　はがれかけてたンゴ）",
+					);
 			},
 		},
 		{
@@ -1217,16 +1263,26 @@ export const ekimae: MapDef = {
 					await s.narrate("カーテンが　しまっている。");
 					return;
 				}
+				// 夕方の「おなじ小節を三回」（seen_piano_eki）を、宵の ふた・朝の 一回で 回収する。
+				// sumire の seen_piano_yu とは 別の家（混ぜない）
 				if (t === "asa") {
 					await s.narrate("ふとんが、ベランダに\nほしてある。");
+					if (s.flag("seen_piano_eki"))
+						await s.narrate("おくで、きのうの　小節が\n一回で　とおった。");
 					return;
 				}
-				// 宵はピアノを出さない（宵のピアノは sumire のやまだ家だけ）。おふろのあと
+				// 宵はピアノを鳴らさない（宵のピアノは sumire のやまだ家だけ）。ふたの かげだけ
 				if (t === "yoru") {
-					await s.narrate("まどに、あかり。ゆげで\nすこし　くもっている。");
+					if (s.flag("seen_piano_eki"))
+						await s.narrate(
+							"まどに、あかり。ふたの\nしまった　ピアノの　かげ。",
+						);
+					else
+						await s.narrate("まどに、あかり。ゆげで\nすこし　くもっている。");
 					return;
 				}
-				await s.narrate("まどのおく、ピアノの\nれんしゅうの音がする。");
+				s.set("seen_piano_eki");
+				await s.narrate("まどのおく、ピアノ。\nおなじ　小節を　三回。");
 			},
 		},
 		{
@@ -1238,15 +1294,24 @@ export const ekimae: MapDef = {
 				await s.narrate("『いのうえ』の　ひょうさつ。");
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("しずかだ。");
+					await s.narrate("げんかんの　あかりが、\nひとつ　ついたまま。");
 					return;
 				}
+				// ⑲ 朝: 部屋の テレビで 天気よほうを 見た 人（room tv の seen_tenki）だけ キリコ
 				if (t === "asa") {
 					await s.narrate("テレビの天気よほうが\nきこえる。");
+					if (s.flag("seen_tenki"))
+						await s.say(
+							"kiriko",
+							"（ゆうべ　部屋で　見たのと\nおなじ　声ンゴ）",
+						);
 					return;
 				}
+				// ⑲・P0-2 宵: 中継の 段（chukeiDan）と おなじ テレビが、おくで 鳴っている
 				if (t === "yoru") {
-					await s.narrate("おくで、ドライヤーの\n音がする。");
+					if (chukeiDan(s) < 3)
+						await s.narrate("おくで、ナイターの\n延長の　声。");
+					else await s.narrate("おくの　テレビが、\n天気よほうに　かわった。");
 					return;
 				}
 				await s.narrate("ゆうげの　においがする。");
@@ -1503,8 +1568,22 @@ export const ekimae: MapDef = {
 					);
 					return;
 				}
+				const t = s.flag("tod");
+				// 宵: 19時を すぎて、もう しまったあと
+				if (t === "yoru") {
+					await s.narrate("札の　『19:00』を、\nもう　すぎている。");
+					return;
+				}
+				if (t === "yu") {
+					await s.narrate("『えいぎょう時間』の札。\n10:00〜19:00。");
+					await s.say("kiriko", "（あと　すこしで\nしまうンゴ）");
+					return;
+				}
 				await s.narrate("『えいぎょう時間』の札。\n10:00〜19:00。");
-				await s.say("kiriko", "……あさは、おそいンゴ");
+				// 朝: 搬入の トラック（truck_asa の seen_ekimae_truck）と 話した 人だけ、10時の 前を つなげる
+				if (numFlag(s, "seen_ekimae_truck") >= 1)
+					await s.say("kiriko", "（10時の　前が、\nトラックの　しごとンゴ）");
+				else await s.say("kiriko", "……あさは、おそいンゴ");
 			},
 		},
 	],

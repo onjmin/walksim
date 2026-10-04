@@ -55,6 +55,7 @@ import type {
 import { npc, warp } from "../helpers";
 import {
 	arrived,
+	chukeiDan,
 	kanHeld,
 	kanLine,
 	kanLv,
@@ -184,8 +185,29 @@ const wave = (id: string, pan: number) => async (s: Story) => {
 	if (lastWave === id) return;
 	lastWave = id;
 	const t = s.flag("tod");
-	if (t === "yu") s.se("higurashi", { pan, volume: 0.8 });
-	else if (t === "asa") s.se("suzume", { pan, volume: 0.8 });
+	// 夏まつりのおわり（seen_natsu_owari）を見た人には、ヒグラシが遠のく
+	if (t === "yu")
+		s.se("higurashi", {
+			pan,
+			volume: s.flag("seen_natsu_owari") ? 0.4 : 0.8,
+		});
+	else if (t === "asa") {
+		// 朝の上のどおり：夕方に来た人だけ、ヒグラシが一声のこる（一度きり）
+		if (
+			id === "wave_n" &&
+			arrived(s, "sumire", "yu") &&
+			!s.flag("seen_higurashi_asa")
+		) {
+			s.set("seen_higurashi_asa");
+			// 小さいヒグラシがスズメにかき消されないよう、先に一声だけ鳴らす
+			s.se("higurashi", { pan, volume: 0.3 });
+			await s.wait(1200);
+			await s.narrate("ヒグラシが、ひとこえ\nだけ。");
+			s.se("suzume", { pan, volume: 0.8 });
+			return;
+		}
+		s.se("suzume", { pan, volume: 0.8 });
+	}
 };
 /** 見えない環境音の帯（大どおりの2列にまたがせる）。 */
 const waveBelt = (
@@ -249,7 +271,8 @@ export const sumire: MapDef = {
 		lastWave = "";
 		kanTick(s);
 		const t = s.flag("tod");
-		if (t === "yu") s.se("higurashi", { volume: 0.8 });
+		if (t === "yu")
+			s.se("higurashi", { volume: s.flag("seen_natsu_owari") ? 0.4 : 0.8 });
 		else if (t === "asa") s.se("suzume", { volume: 0.8 });
 	},
 	events: [
@@ -280,7 +303,14 @@ export const sumire: MapDef = {
 			when: (st) => st.flags.tod === "yoru",
 			run: async (s) => {
 				await s.wait(500);
-				await s.narrate("あちこちの窓から、\nテレビの　笑い声。");
+				// 宵の窓の音を、町をまわった数（chukeiDan）で進める。
+				// 実況 → 延長 → 天気よほう（kondo_win の『ぷつん』とは別の文）
+				const dan = chukeiDan(s);
+				if (dan <= 1)
+					await s.narrate("あちこちの窓から、\nナイターの　実況が　かさなる。");
+				else if (dan === 2)
+					await s.narrate("あっちの窓も、こっちの窓も\n『延長』の　声。");
+				else await s.narrate("あちこちの窓が、いっせいに\n天気よほうの　声。");
 				await yoruAkubi(s);
 			},
 		},

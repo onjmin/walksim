@@ -55,6 +55,7 @@ import {
 	shinyaStep,
 	yoruAkubi,
 	yoruClock,
+	yoruStep,
 } from "../nostalgia";
 import { ALL_RECORDS } from "../records";
 import { base, DOOR, FIELD, JP, TOWN, WALL, WIN } from "../tiles";
@@ -359,13 +360,19 @@ export const umi: MapDef = {
 			run: async (s) => {
 				s.set("seen_yoake_umi");
 				await s.wait(800);
-				// 1行目は、ゆうべ この海を 見たかで かえる（深夜 ＞ 夕方 ＞ はじめて）
+				// 1行目は、ゆうべ この海を 見たかで かえる（深夜 ＞ 宵 ＞ 夕方 ＞ はじめて）
+				// 宵の枝は arrive_yoru で 見た方（seen_umi_furo 1=ふろ／2=つめたい風）の 回収
+				const furo = numFlag(s, "seen_umi_furo");
 				await s.narrate(
 					arrived(s, "umi", "shinya")
 						? "坂を　くだると、ゆうべ\n見えなかった　海が　ひかっていた。"
-						: arrived(s, "umi", "yu")
-							? "坂を　くだると、夕方は\n金いろだった　海が、しろい。"
-							: "坂を　くだると、\n海が　しろく　ひかっていた。",
+						: furo === 1
+							? "坂を　くだると、ゆうべ\nふろの　においが　した　海。"
+							: furo === 2
+								? "坂を　くだると、ゆうべ\nかぜの　つめたかった　海。"
+								: arrived(s, "umi", "yu")
+									? "坂を　くだると、夕方は\n金いろだった　海が、しろい。"
+									: "坂を　くだると、\n海が　しろく　ひかっていた。",
 				);
 				s.se("tick", { volume: 0.7 });
 				await s.wait(500);
@@ -461,7 +468,14 @@ export const umi: MapDef = {
 			when: (st) => st.flags.tod === "yoru",
 			run: async (s) => {
 				await s.wait(500);
-				await s.narrate("しおかぜに、どこかの\nふろの　においが　まじる。");
+				// 宵の段（yoruStep）。はやく来れば ふろの におい、まわってから来れば つめたい風。
+				// seen_umi_furo 数（1=ふろ／2=つめたい風）。朝の yoake_arrive の 1行目が 見た方を 読む
+				s.set("seen_umi_furo", yoruStep(s) < 2 ? 1 : 2);
+				await s.narrate(
+					yoruStep(s) < 2
+						? "しおかぜに、どこかの\nふろの　においが　まじる。"
+						: "しおかぜが、\nだいぶ　つめたく　なった。",
+				);
 				await yoruAkubi(s);
 			},
 		},
@@ -619,10 +633,27 @@ export const umi: MapDef = {
 			y: 4,
 			trigger: "talk",
 			run: async (s) => {
-				// 宵も 深夜も、街灯の 輪の 外
+				// 深夜は、街灯の 輪の 外
 				const t = s.flag("tod");
-				if (t === "shinya" || t === "yoru") {
+				if (t === "shinya") {
 					await s.narrate("かべの　メニューは、\nくらくて　よめない。");
+					return;
+				}
+				// 宵は 字が よめない かわりに、夕方の 店の のこりが ひとつ
+				if (t === "yoru") {
+					await s.narrate(
+						"ラムネの　あきびんが、\nかべに　一本　立てかけて　ある。",
+					);
+					return;
+				}
+				// 筋(54) 朝は、夕方の ブルーハワイの 字を 見た 人だけ
+				if (t === "asa" && s.flag("seen_umi_menu")) {
+					await s.narrate("ブルーハワイの　字に、\n朝日が　あたって　青い。");
+					// キリコの 一言は 一度だけ（seen_umi_menu_asa）
+					if (!s.flag("seen_umi_menu_asa")) {
+						s.set("seen_umi_menu_asa");
+						await s.say("kiriko", "（やっぱり　なぞンゴ）");
+					}
 					return;
 				}
 				await s.narrate("かべの　メニュー。『やきそば\nラムネ　かき氷』");
@@ -630,6 +661,8 @@ export const umi: MapDef = {
 					s.set("seen_umi_menu");
 					await s.narrate("かき氷の　ブルーハワイだけ、\n字が　青い。");
 					await s.say("kiriko", "（味は、いまだに\nなぞンゴ）");
+					// 筋(54) は umi → suupaa reitou の 一方向（suupaa は umi を 見た 人にしか
+					// シロップを 出さないので、逆向きの「スーパーでも」は 見ていない 回収になる）
 					return;
 				}
 				await s.narrate(
@@ -1308,6 +1341,22 @@ export const umi: MapDef = {
 					await s.say(null, "……じゃあ、ひきわけ。\nほんとは、ぼくも　三回", {
 						name: "浜の子",
 					});
+					return;
+				}
+				// ⑥ kawara の 水きりの子と 二回 話した（「五回はねる人も、いるんだ」を 聞いた）人だけ、
+				//   ここで 五回を 見る。かわらの 子は ゼロ回（きろくは、ゼロンゴ）。かわらで 投げた 人は 上を 優先
+				if (
+					!s.flag("seen_mizukiri_nage") &&
+					numFlag(s, "seen_mizukiri_kid") >= 2 &&
+					!s.flag("seen_mizukiri_gokai")
+				) {
+					s.set("seen_mizukiri_gokai");
+					await s.say(null, "見てて。……そりゃっ", { name: "浜の子" });
+					await s.narrate("石は、五回　はねて\nしずんだ。");
+					await s.say(null, "……いまのは、ほんとの　五回", {
+						name: "浜の子",
+					});
+					await s.say("kiriko", "（かわらの　子は、\nゼロ回ンゴ）");
 					return;
 				}
 				// 歩数の話は、護岸の チョークの字（chalk・seen_umi_chalk）を 見た 人だけ

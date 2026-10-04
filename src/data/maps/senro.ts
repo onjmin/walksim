@@ -507,7 +507,13 @@ export const senro: MapDef = {
 					await s.narrate("荷おろしの　トラックが、\nエンジンを　かけたまま。");
 					// tonarimachi kissa_door（『モーニングやってます』）＞ yaoya_oyaji（朝の 最初の 通過だけ）
 					if (arcadeTod !== "asa") {
-						if (s.flag("seen_kissa_nioi")) {
+						// tonarimachi yaoya_win の のこりの だいこん（八百屋に 3回以上）は、ほかの 行の かわりに
+						if (s.flag("seen_daikon_nokori")) {
+							arcadeTod = "asa";
+							await s.narrate(
+								"トラックから、だいこんの\n箱が　おろされていく。",
+							);
+						} else if (s.flag("seen_kissa_nioi")) {
 							arcadeTod = "asa";
 							await s.narrate(
 								"シャッターの　すきまから、\nコーヒーの　におい。",
@@ -714,6 +720,9 @@ export const senro: MapDef = {
 					return;
 				}
 				await s.narrate("ふみきり。左を見て、\n右を見る。");
+				// guard_board の ポスター『とまって　みて　わたろう』を 見た人
+				if (numFlag(s, "seen_guard_board") >= 1)
+					await s.say("kiriko", "（とまって、みて、ンゴ）");
 				await s.say("kiriko", "……よし、ンゴ");
 			},
 		},
@@ -802,7 +811,18 @@ export const senro: MapDef = {
 			x: 30,
 			y: 3,
 			trigger: "talk",
+			// 筋(56) はやせみち: 初回で seen_hayasemichi → cosmos_jii（yu）3回目
 			run: async (s) => {
+				const t = s.flag("tod");
+				if (s.flag("seen_hayasemichi") && t === "yu") {
+					await s.narrate("名札の　うらに、\nさびた　ねじ　あと。");
+					return;
+				}
+				if (s.flag("seen_hayasemichi") && t === "asa") {
+					await s.narrate("名札に　あさつゆ。\n『はやせ』の　字だけ　よめる。");
+					return;
+				}
+				s.set("seen_hayasemichi");
 				await s.narrate("けいほうきの　名札。\n『はやせみち　ふみきり』");
 				await s.narrate("むかしの　道の名前が、\nここにだけ　のこっている。");
 			},
@@ -889,7 +909,9 @@ export const senro: MapDef = {
 			sprite: JP.signpost,
 			trigger: "talk",
 			fixedDir: true,
+			// ② 距離の筋: seen_kilo_senro → kokudo kiropost
 			run: async (s) => {
+				s.set("seen_kilo_senro");
 				await s.narrate("白い　くいに、数字。\n『1.2』");
 				await s.narrate("えきから　1.2キロ、\nという　しるしらしい。");
 				await s.say("kiriko", "（あるいた　きょりンゴ）");
@@ -935,7 +957,22 @@ export const senro: MapDef = {
 			y: 1,
 			trigger: "talk",
 			run: async (s) => {
+				const t = s.flag("tod");
 				await s.narrate("小屋の名札。\n『東3号　信号所』");
+				// 宵: shingo_mado の みどりの ランプを 見た人
+				if (t === "yoru" && s.flag("seen_senro_midori")) {
+					await s.narrate("当番表が、まどの　ランプで\nうっすら　みどり。");
+					return;
+				}
+				// 朝: ㉜ 深夜の 保線の 車（seen_senro_hosen）を 見た人
+				if (t === "asa") {
+					if (s.flag("seen_senro_hosen"))
+						await s.narrate(
+							"当番表の　いちばん下に、\nゆうべの　日付が　ふえている。",
+						);
+					else await s.narrate("戸の　ノブに、あさつゆ。");
+					return;
+				}
 				await s.narrate("戸のよこの　当番表は、\nいちばん下の日付が　古い。");
 			},
 		},
@@ -959,9 +996,23 @@ export const senro: MapDef = {
 						await s.narrate(
 							"西は　まっくら。黄色い　ランプは、\nうしろの　ガードの　ほう。",
 						);
+					// 夕方 to_tonarimachi で アーケードを くぐった人（seen_senro_arcade）
+					// 西が「まっくら」の 分岐（保線の 車が 東へ 去ったあと）とは 重ねない
+					if (
+						s.flag("seen_senro_arcade") &&
+						(!s.flag("seen_senro_hosen") || shinyaStep(s) < 5)
+					)
+						await s.narrate("アーケードの　あかりは、\nもう　ひとつだけ。");
 					return;
 				}
 				if (t === "yoru") {
+					// 夕方 to_tonarimachi で アーケードを くぐった人（seen_senro_arcade）
+					if (s.flag("seen_senro_arcade")) {
+						await s.narrate(
+							"夕方　くぐった　アーケード。\nあかりが　はしから　へっていく。",
+						);
+						return;
+					}
 					await s.narrate("西のほうに、アーケードの\nあかりが　ぼんやり。");
 					return;
 				}
@@ -1033,13 +1084,20 @@ export const senro: MapDef = {
 				if (s.flag("tod") === "shinya") {
 					await s.narrate("蛍光灯の下で、ポスターが\n白っぽく　見える。");
 				}
-				if (!s.flag("seen_guard_board")) {
-					s.set("seen_guard_board");
+				// seen_guard_board は数（1＝ポスター、2＝古いポスターの はしまで）。夕の fumikiri・朝ここで 読む
+				const n = numFlag(s, "seen_guard_board");
+				if (s.flag("tod") === "asa" && n >= 2) {
+					await s.narrate("ポスターの　画びょうが、\nひとつ　あたらしい。");
+					return;
+				}
+				if (n === 0) {
+					s.set("seen_guard_board", 1);
 					await s.narrate("ガード下の　掲示板。\nこどもの　交通安全ポスター。");
 					await s.narrate("クレヨンの　電車と、\n『とまって　みて　わたろう』");
 					await s.narrate("すみに、金色の\n『入選』の　シール。");
 					return;
 				}
+				if (n === 1) s.set("seen_guard_board", 2);
 				await s.narrate(
 					"画びょうの下から、もっと\n古い　ポスターの　はしっこ。",
 				);
@@ -1172,9 +1230,35 @@ export const senro: MapDef = {
 			x: 18,
 			y: 12,
 			trigger: "talk",
+			// 筋(57) もりた製作所の ばね: ひろう→got_senro_bane（room desk・kirokuLines）／そのまま→seen_senro_bane（朝ここで）
 			run: async (s) => {
+				const t = s.flag("tod");
+				const got = !!s.flag("got_senro_bane");
 				await s.narrate("『もりた　製作所』\nペンキが、うすく　なっている。");
+				if (got) {
+					if (t === "yu" || t === "yoru")
+						await s.narrate("ポケットの　ばねを、\nぎゅっと　にぎった。");
+					return;
+				}
+				if (t === "shinya") {
+					// ばねを 見て、そのまま 置いてきた人だけ
+					if (s.flag("seen_senro_bane"))
+						await s.narrate("ばねは、くらくて\n見えない。");
+					return;
+				}
+				if (t === "asa") {
+					if (s.flag("seen_senro_bane"))
+						await s.narrate("ばねは、シャッターの\nまえに　よせてある。");
+					else
+						await s.narrate("足もとに、小さな　ばねが\nひとつ　おちている。");
+					return;
+				}
 				await s.narrate("足もとに、小さな　ばねが\nひとつ　おちている。");
+				const i = await s.choose(["＞＞1 ひろう", "＞＞2 そのまま"], {
+					cancel: 1,
+				});
+				if (i === 0) s.set("got_senro_bane");
+				else s.set("seen_senro_bane");
 			},
 		},
 		{
@@ -1440,6 +1524,16 @@ export const senro: MapDef = {
 					});
 					await s.say("kiriko", "コスモスが？");
 					await s.say(null, "ばあさんが、だよ", { name: "コスモスの人" });
+					return;
+				}
+				// 3回目: 筋(56) keihouki_n の名札『はやせみち』を見た人だけ
+				if (s.flag("seen_senro_jii2") && s.flag("seen_hayasemichi")) {
+					await s.say(null, "あのふみきり、むかしは\nはやせみち、いってな", {
+						name: "コスモスの人",
+					});
+					await s.say(null, "ばあさんの　かよった\n道だよ", {
+						name: "コスモスの人",
+					});
 					return;
 				}
 				// 2回目（朝の cosmos_b が「ほんとうに」で回収）

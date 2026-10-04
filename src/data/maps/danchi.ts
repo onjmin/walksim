@@ -43,6 +43,7 @@ import { npc, warp } from "../helpers";
 import {
 	akiMatsuri,
 	arrived,
+	chukeiDan,
 	kanHeld,
 	kanLine,
 	kanShinya,
@@ -132,8 +133,18 @@ const wave = (id: string, pan: number) => async (s: Story) => {
 	if (lastWave === id) return;
 	lastWave = id;
 	const t = s.flag("tod");
-	if (t === "yu") s.se("higurashi", { pan, volume: 0.8 });
-	else if (t === "asa") s.se("suzume", { pan, volume: 0.8 });
+	if (t === "yu") {
+		// 段: 通るたびに ヒグラシが 遠のく（0.8 → 0.5 → 鳴かない）。3回目以降は gaito_niwa が読む
+		const n = numFlag(s, "seen_higurashi_danchi") + 1;
+		s.set("seen_higurashi_danchi", n);
+		if (n === 1) s.se("higurashi", { pan, volume: 0.8 });
+		else if (n === 2) s.se("higurashi", { pan, volume: 0.5 });
+	} else if (t === "asa") {
+		// 回収: クスノキの スズメ（seen_kusunoki_suzume）を 見た人には、東の帯で 近く大きく
+		if (id === "wave_e" && s.flag("seen_kusunoki_suzume"))
+			s.se("suzume", { pan: 0.4, volume: 1.0 });
+		else s.se("suzume", { pan, volume: 0.8 });
+	}
 };
 /** 見えない環境音の帯。 */
 const waveBelt = (
@@ -278,8 +289,12 @@ export const danchi: MapDef = {
 		lastWave = "";
 		kanTick(s);
 		const t = s.flag("tod");
-		if (t === "yu") s.se("higurashi", { volume: 0.8 });
-		else if (t === "asa") s.se("suzume", { volume: 0.8 });
+		if (t === "yu") {
+			// ヒグラシは 帯（seen_higurashi_danchi）と おなじ段で: 0.8 → 0.5 → 鳴かない。ここでは 数えない
+			const n = numFlag(s, "seen_higurashi_danchi");
+			if (n < 2) s.se("higurashi", { volume: 0.8 });
+			else if (n === 2) s.se("higurashi", { volume: 0.5 });
+		} else if (t === "asa") s.se("suzume", { volume: 0.8 });
 	},
 	events: [
 		// ── 着いたとき（時間帯ごとに一度だけ） ──
@@ -297,7 +312,8 @@ export const danchi: MapDef = {
 			},
 		},
 		{
-			// 宵（P0-1）。ナイターは段に関係なく「実況が聞こえる」だけ（P0-2）
+			// 宵（P0-1）。ナイターの実況は chukeiDan の段で進む（P0-2）: 0〜1 きこえる → 2 大きくなる → 3 とぎれる。
+			// 深夜の arrive_shinya が「しない」で回収する
 			id: "arrive_yoru",
 			x: 3,
 			y: 0,
@@ -306,7 +322,16 @@ export const danchi: MapDef = {
 			when: (st) => st.flags.tod === "yoru",
 			run: async (s) => {
 				await s.wait(500);
-				await s.narrate("どの窓からも、\nおなじ実況が　きこえる。");
+				const dan = chukeiDan(s);
+				// 深夜の arrive_shinya が 読む（3＝宵で もう とぎれた）
+				s.set("seen_danchi_jikkyo", dan);
+				if (dan >= 3) {
+					await s.narrate("実況が　とぎれた。\nどこかで、窓が　しまる音。");
+				} else if (dan === 2) {
+					await s.narrate("実況の　声が、\nひときわ　大きくなる。");
+				} else {
+					await s.narrate("どの窓からも、\nおなじ実況が　きこえる。");
+				}
 				await yoruAkubi(s);
 			},
 		},
@@ -325,6 +350,15 @@ export const danchi: MapDef = {
 						? "ひとつ、またひとつ　ついた\n窓が、ひとつも　ない。"
 						: "窓のあかりが、\nひとつも　ない。",
 				);
+				// 宵の arrive_yoru（実況）を 聞いた人には、音の ぬけたあとを
+				// 宵で とぎれたのを 見た人（段3）には、とぎれた ままを
+				if (arrived(s, "danchi", "yoru")) {
+					await s.narrate(
+						numFlag(s, "seen_danchi_jikkyo") >= 3
+							? "とぎれた　まま、\nどの窓も　しずかだ。"
+							: "あれだけ　きこえた　実況が、\nどの窓からも　しない。",
+					);
+				}
 				await s.narrate("A棟も、B棟も、\nC棟も。");
 				await s.narrate("棟のあいだを、風が\nとおりぬけていく。");
 			},
@@ -359,7 +393,6 @@ export const danchi: MapDef = {
 		// ── 環境音の帯（大どおり2箇所 ＋ 棟の前の通路） ──
 		...waveBelt("wave_w", 8, [12], -0.4),
 		...waveBelt("wave_e", 24, [12], 0.4),
-		...waveBelt("wave_n", 16, [6], 0),
 
 		// ── 場面の帯（上のかいの窓：夕＝呼び声／宵＝お皿／朝＝わすれもの） ──
 		// （朝のラジオのかたづけは、taiso_jichan の初回の頭へ移した）
@@ -613,9 +646,12 @@ export const danchi: MapDef = {
 						return;
 					}
 					await s.narrate("回覧板が、なくなっている。\nもう、つぎの家だ。");
-					// ゆうべサインしていれば一言（P0-9）
+					// ゆうべサインしていれば一言（P0-9）。そうでなく 回覧板の人に「つぎは」を
+					// 聞いた人（kairan_hito の2回目・seen_kairan_tsugi）には、行き先を
 					if (s.flag("seen_kairan_sign"))
 						await s.say("kiriko", "（吾輩の字も、\nいっしょに　行ったンゴ）");
+					else if (s.flag("seen_kairan_tsugi"))
+						await s.say("kiriko", "（やまもとさんちンゴ）");
 					return;
 				}
 				if (t === "shinya") {
@@ -1085,6 +1121,9 @@ export const danchi: MapDef = {
 					return;
 				}
 				await s.narrate("中庭の外灯。\nまだ、ついていない。");
+				// 回収: 大どおりの帯で ヒグラシが 鳴かなくなった人（seen_higurashi_danchi 3回以上）
+				if (numFlag(s, "seen_higurashi_danchi") >= 3)
+					await s.narrate("ヒグラシが、もう\nきこえない。");
 				if (numFlag(s, "seen_nawatobi") >= 2)
 					await s.say("kiriko", "（これが　つくまで、\nンゴね）");
 			},
@@ -1531,6 +1570,8 @@ export const danchi: MapDef = {
 					await s.say("kiriko", "（こども　あつかい\nンゴ）");
 					return;
 				}
+				// 2回目: 行き先（seen_kairan_tsugi → 朝の kairanban で回収）
+				s.set("seen_kairan_tsugi");
 				await s.say(null, "つぎは　A棟の\nやまもとさんち", {
 					name: "回覧板の人",
 				});

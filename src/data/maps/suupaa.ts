@@ -330,11 +330,19 @@ export const suupaa: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				// ⑱ → ekimae mise_mado（shinya）
+				const first = !s.flag("seen_suupaa_reitou");
 				s.set("seen_suupaa_reitou");
 				await s.narrate(
 					"ふたつきの　れいとうケース。\nガラスが、白くくもっている。",
 				);
 				await s.narrate("ふたを　すこしあけて、\nすぐ　しめた。つめたい。");
+				// 筋(54) umi uminoie_menu のブルーハワイを見た人だけ（逆向きは umi 側が受ける）
+				if (first && s.flag("seen_umi_menu")) {
+					await s.say(
+						"kiriko",
+						"（かき氷の　シロップ、\nブルーハワイだけ　のこってるンゴ）",
+					);
+				}
 			},
 		},
 		{
@@ -417,11 +425,23 @@ export const suupaa: MapDef = {
 			y: 5,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("おかしの棚。あたりつきの\nガムが、まだ　うっている。");
+				// ㊿ あたりつきガム → ekimae kiosk_lady が seen_suupaa_gum を読む
+				const again = s.flag("seen_suupaa_gum");
+				s.set("seen_suupaa_gum");
 				// ㊿ ekimae kiosk_lady の「おまけは　つかないよ」を聞いた人だけ
-				if (s.flag("seen_kiosk")) {
+				if (s.flag("seen_kiosk") && !again) {
+					await s.narrate(
+						"おかしの棚。あたりつきの\nガムが、まだ　うっている。",
+					);
 					await s.say("kiriko", "（こっちは、あたりが\nおまけンゴ）");
+					return;
 				}
+				// 2回目以降は、見本の色あせに目がいく
+				await s.narrate(
+					again
+						? "あたりの　見本が、\nいろあせている。"
+						: "おかしの棚。あたりつきの\nガムが、まだ　うっている。",
+				);
 			},
 		},
 		{

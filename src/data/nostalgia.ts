@@ -139,6 +139,48 @@
 // seen_saisen         真 立て: kawara saisen（5円いれた）                  読み: nikkiKey（saisen）
 // seen_koen_fu_nage   真 立て: koen ike（麩をなげた）                      読み: nikkiKey（fu）
 // seen_funsui         真 立て: ekimae funsui（shinya・ふちに　のぼる）     読み: poemKey（fuchi）
+// ── 3巡目（2026-10-04）で足したフラグ（下の「3巡目で足した筋」(51)〜(60)と強めた筋） ──
+// seen_post_hagaki    真 立て: street post_ev（yu）                         読み: street post_ev（yoru・shinya・asa）・nikkiKey（hagaki）
+// seen_post_okuri     真 立て: street post_ev（asa・seen_post_hagaki の人）  読み: kirokuLines
+// seen_kids_shukudai  真 立て: street kodomo_a（2回目）                     読み: street kodomo_asa_b（asa）
+// seen_tanaka_inu     真 立て: street h2_win（yoru）                        読み: room bed（TOOI_OTO）・street h2_door（asa）
+// seen_phono_asa      真 立て: room phono（asa）                            読み: room shelf（asa）
+// seen_kitaku_yoru    真 立て: room evening（宵に帰った）                   読み: room evening・window（yoru）
+// seen_higurashi_asa  真 立て: sumire wave_n（asa・arrived(sumire,yu) の人） 読み: 同じ（一度だけ）
+// seen_higurashi_danchi 数 立て: danchi wave_w_12/wave_e_12（yu）           読み: 同じ・gaito_niwa（yu）
+// seen_kairan_tsugi   真 立て: danchi kairan_hito（2回目）                  読み: danchi kairanban（asa）
+// seen_yashiro_match  真 立て: kawara yashiro（yoru）                       読み: kawara yashiro（shinya）・houki_baachan（asa）
+// seen_kazoe          真 立て: kawara kazoe（yu・yoru）                     読み: kawara kazoe（asa）・houki_baachan
+// seen_kutsuato       真 立て: kawara susuki_taigan（yu）                   読み: 同じ（asa）
+// seen_mizukiri_kid   数（真から数へ） 立て: kawara mizukiri_kid（話すたび +1） 読み: kawara mizukiri_ishi（asa）・umi mizukiri_umi
+// seen_gs_kuuki       真 立て: kokudo gs_air（yu）                          読み: kokudo gasmanAsa（asa）・nikkiKey（kuuki）
+// seen_kiro_kokudo    真 立て: kokudo kiropost                              読み: なし（一度目の印）
+// seen_kilo_senro     真 立て: senro kilopost                               読み: kokudo kiropost
+// seen_annaizu_eki    真 立て: ekimae annaizu（yu・yoru・asa の初回）       読み: 同じ（2回目から）
+// seen_piano_eki      真 立て: ekimae h_win（yu）                           読み: ekimae h_win（yoru・asa）
+// seen_koen_kaikan    真 立て: koen kaikan_jikan（yu・yoru）                読み: koen kaikan_jikan（yoru）・shisho_asa（asa）・room calendar（asa）
+// seen_ga_yama        数 立て: yamamichi lamp_bus（yoru）                   読み: lamp_bus（shinya・asa）・poemKey（ga）
+// seen_tsuukou_yama   真 立て: yamamichi sakuW/sakuE（yu）                  読み: 同じ（yoru・asa）
+// seen_tanbo_kita     真 立て: yamamichi tanbo_kita（yu）                   読み: 同じ（asa）
+// seen_susuki_yama    （既存・読み手を足す）                                読み: yamamichi susuki（shinya・asa）・room calendar（asa）
+// seen_hayasemichi    真 立て: senro keihouki_n                             読み: senro keihouki_n・cosmos_jii（yu）・tonarimachi mokei_b
+// got_senro_bane      真 立て: senro koujou_fuda（＞＞1 ひろう）            読み: senro koujou_fuda・room desk（asa）・kirokuLines
+// seen_senro_bane     真 立て: senro koujou_fuda（＞＞2 そのまま）          読み: senro koujou_fuda（asa）
+// seen_guard_board    （真から数へ。2＝古いポスターまで見た）               読み: senro fumikiri（yu）・guard_board（asa）
+// seen_senro_arcade   （既存・読み手を足す）                                読み: senro michi_owari（yoru・shinya）
+// seen_umi_furo       真 立て: umi arrive_yoru                              読み: umi yoake_arrive（asa）
+// seen_mokei_a        数 立て: tonarimachi mokei_a                          読み: 同じ・rideHome
+// seen_jihanki_tonari 真 立て: tonarimachi jihanki_kubomi                   読み: street vending_ev（asa）
+// seen_post_tonari    真 立て: tonarimachi maru_post                        読み: 同じ
+// seen_tawashi        真 立て: tonarimachi kanamono_door                    読み: tonarimachi kaimono_wife（3回目）
+// seen_kotto_win      真 立て: tonarimachi kotto_win                        読み: tonarimachi kotto_phono
+// seen_daikon_nokori  真 立て: tonarimachi yaoya_win（seen_yaoya_n 3以上）  読み: senro to_tonarimachi（asa）
+// seen_suupaa_gum     真 立て: suupaa okashi                                読み: ekimae kiosk_lady
+// （既存フラグで新しく読むもの）seen_fuzai→street post_ev（asa）／seen_502_yakiu・seen_503_yoru→room phono（shinya）／
+//   seen_jihanki_st→tonarimachi jihanki_kubomi／seen_suupaa_hako2→ekimae suupaa_in（asa）／seen_umi_menu→suupaa reitou／
+//   seen_suupaa_reitou→umi uminoie_menu／seen_kyori_0→kokudo kiropost／seen_tenki→ekimae h_door（asa）／
+//   seen_annaizu2・seen_urichi_yosozu→ekimae annaizu／seen_ekimae_10en→tonarimachi denwa_box／
+//   seen_natsu_owari→sumire wave（yu）／seen_eshaku_kutsu→street mado_ev（shinya）
 // ── 既存のフラグ（ノスタルジー層は読むだけ。立て方は変えない） ──
 // done:<map>:arrive_yoru  真 立て: エンジン（新設の arrive_yoru。6地区＋apart）   読み: yoruStep/yoruStepSt（6地区だけ数える）・yoruAkubi
 // done:<map>:arrive_yu    真 立て: エンジン（既存の arrive_yu）                   読み: room bed（yoru の就寝。遠い音。arrived(s, map, "yu")）
@@ -379,6 +421,8 @@ export type NikkiKey =
 	| "saisen"
 	| "chukei"
 	| "fu"
+	| "hagaki"
+	| "kuuki"
 	| "onigiri"
 	| "pan"
 	| "gyunyu"
@@ -394,6 +438,8 @@ export const NIKKI: Record<NikkiKey, string> = {
 	saisen: "『かわらの　やしろに、\n5円。ねがいは　なし』",
 	chukei: "『やきう、延長。\nさいごまで　見られず』",
 	fu: "『公園の　コイに、麩。\nもらいものの』",
+	hagaki: "『ポストに、残暑みまいが\nひっかかっていた』",
+	kuuki: "『国道の　空気入れを、\nシュッと　ならした』",
 	onigiri: "『晩ごはん、おにぎり。\n鮭だった』",
 	pan: "『晩ごはん、あんぱん。\n牛乳は　なかった』",
 	gyunyu: "『あんぱんと、牛乳。\n牛乳は　コンビニの』",
@@ -401,7 +447,14 @@ export const NIKKI: Record<NikkiKey, string> = {
 };
 
 /** 深夜のポエムのキー（`seen_nikki_shinya` に文字で入れる）。 */
-export type PoemKey = "kan" | "nushi" | "ue" | "kichi" | "fuchi" | "machi";
+export type PoemKey =
+	| "kan"
+	| "nushi"
+	| "ue"
+	| "kichi"
+	| "fuchi"
+	| "ga"
+	| "machi";
 
 /** 深夜のポエム（朝に消す前提の、少しダサい文）。 */
 export const POEM: Record<PoemKey, string> = {
@@ -410,6 +463,7 @@ export const POEM: Record<PoemKey, string> = {
 	ue: "『町の灯りを　かぞえた。\n吾輩も、そのひとつ』",
 	kichi: "『ひみつきちに、夜だけ\n入団した』",
 	fuchi: "『噴水の　ふちは、\n吾輩の　国境だった』",
+	ga: "『街灯の　蛾と、吾輩。\nおなじ　夜ふかしだった』",
 	machi: "『夜の町は、吾輩だけの\nものだった』",
 };
 
@@ -500,6 +554,28 @@ export const POEM: Record<PoemKey, string> = {
 //    P0-1 誘い: room window（seen_yoru_sasoi）→ street arrive_yoru（seen_sasoi_kaeri）
 //    P0-2: sumire kondo_win（yoru）が seen_chukei_end を読む
 //    日記・ポエム: kawara saisen（seen_saisen）・koen ike（seen_koen_fu_nage）→ nikkiKey／sumire kichi_board（seen_kichi_shinya）・ekimae funsui（seen_funsui）→ poemKey
+// ── 3巡目（2026-10-04）で足した筋 ──
+// (51) 残暑みまいのはがき: street post_ev（yu・seen_post_hagaki）→ post_ev（yoru・shinya・asa・seen_post_okuri）→ nikkiKey（hagaki）・kirokuLines／apart nbox（seen_fuzai）→ street post_ev（asa）
+// (52) たなかさんちの犬: street h2_win（yoru・seen_tanaka_inu）→ room TOOI_OTO → street h2_door（asa）
+// (53) かべのむこうの宵: apart d502（seen_502_yakiu）・d503（seen_503_yoru）→ room phono（shinya）→ phono（asa・seen_phono_asa）→ shelf（asa）
+// (54) あまったブルーハワイ: umi uminoie_menu（seen_umi_menu）⇄ suupaa reitou（seen_suupaa_reitou）
+// (55) 図書館の木曜: koen kaikan_jikan（seen_koen_kaikan）→ koen shisho_asa・room calendar（asa）
+// (56) はやせみち: senro keihouki_n（seen_hayasemichi）→ senro cosmos_jii（yu）・tonarimachi mokei_b
+// (57) もりた製作所のばね: senro koujou_fuda（got_senro_bane／seen_senro_bane）→ koujou_fuda（asa）・room desk（asa）・kirokuLines
+// (58) ふたつの自販機の赤札: street vending_ev（seen_jihanki_st）→ tonarimachi jihanki_kubomi（seen_jihanki_tonari）→ street vending_ev（asa）
+// (59) 国道の空気入れ: kokudo gs_air（seen_gs_kuuki）→ gasmanAsa（asa）・nikkiKey（kuuki）
+// (60) やまみちの蛾: yamamichi lamp_bus（seen_ga_yama 数）→ lamp_bus（shinya・asa）・poemKey（ga）
+// （3巡目で強めた筋）
+//    ②: senro kilopost（seen_kilo_senro）・umi kyori_0（seen_kyori_0）→ kokudo kiropost
+//    ③: yamamichi susuki（seen_susuki_yama）→ room calendar（asa）／ekimae poster（asa）に『つきみ　秋まつり』／sumire wave（seen_natsu_owari でヒグラシを弱める）
+//    ⑥: kawara mizukiri_kid（seen_mizukiri_kid 数）→ kawara mizukiri_ishi（asa）・umi mizukiri_umi
+//    ⑦: kawara yashiro（yoru・seen_yashiro_match）・kazoe（seen_kazoe）→ houki_baachan（asa）
+//    ⑩: danchi annaizu（seen_annaizu2）・ekimae urichi（seen_urichi_yosozu）→ ekimae annaizu（2回目）
+//    ⑪: street eshaku（seen_eshaku_kutsu）→ street mado_ev（shinya）
+//    ⑱: suupaa hako（seen_suupaa_hako2）→ ekimae suupaa_in（asa）
+//    ⑲・P0-2: chukeiDan → sumire arrive_yoru・danchi arrive_yoru・ekimae h_door（yoru）／seen_tenki → ekimae h_door（asa）
+//    ㉖: tonarimachi yaoya_win（seen_daikon_nokori）→ senro to_tonarimachi（asa）
+//    ㊿: suupaa okashi（seen_suupaa_gum）→ ekimae kiosk_lady／ekimae denwa（seen_ekimae_10en）→ tonarimachi denwa_box
 
 /** 夏まつりの 名残を いくつ 見たか（0〜3）。3つめで キリコが 一言（seen_natsu_owari）。 */
 export const natsuCount = (s: Story): number =>
@@ -569,6 +645,8 @@ export const kirokuLines = (s: Story): string[] => {
 	if (s.flag("seen_koen_ball_bench") && s.flag("seen_koen_kid_asa"))
 		lines.push("ボールを　ベンチに　のせた");
 	if (s.flag("seen_kakashi_naoshi")) lines.push("かかしの　ぼうしを　かけた");
+	if (s.flag("seen_post_okuri")) lines.push("残暑みまいを　見おくった");
+	if (s.flag("got_senro_bane")) lines.push("もりた製作所の　ばね");
 	return lines.slice(0, KIROKU_MAX);
 };
 
@@ -578,7 +656,7 @@ export const NIKKI_TITLE = "きのうの　にっき";
 /**
  * 宵に書く一行を選ぶ（優先順で一つだけ）。
  * got_hari > got_taiyaki > got_korokke > seen_kairan_sign > seen_ka > seen_saisen（saisen）> seen_chukei_end >
- * seen_koen_fu_nage（fu）> got_dinner_onigiri > got_dinner_pan（got_gyunyu なら gyunyu）> nashi。
+ * seen_koen_fu_nage（fu）> seen_post_hagaki（hagaki）> seen_gs_kuuki（kuuki）> got_dinner_onigiri > got_dinner_pan（got_gyunyu なら gyunyu）> nashi。
  * room diary が `s.set("seen_nikki_yoru", nikkiKey(s))` する。
  */
 export const nikkiKey = (s: Story): NikkiKey => {
@@ -590,6 +668,8 @@ export const nikkiKey = (s: Story): NikkiKey => {
 	if (s.flag("seen_saisen")) return "saisen";
 	if (s.flag("seen_chukei_end")) return "chukei";
 	if (s.flag("seen_koen_fu_nage")) return "fu";
+	if (s.flag("seen_post_hagaki")) return "hagaki";
+	if (s.flag("seen_gs_kuuki")) return "kuuki";
 	if (s.flag("got_dinner_onigiri")) return "onigiri";
 	if (s.flag("got_dinner_pan")) return s.flag("got_gyunyu") ? "gyunyu" : "pan";
 	return "nashi";
@@ -599,7 +679,7 @@ export const nikkiKey = (s: Story): NikkiKey => {
  * 深夜のポエムを選ぶ（場所の記憶を先に。缶はどこでも買えるので後ろ）:
  * nushi（深夜の川で2回・numFlag(seen_kawa_shinya)>=2）> ue（丘・峠から町の灯りを見た：
  * seen_danchi_ue・seen_suwari_koen・seen_suwari_yamamichi。yamamichi の suwaru で灯りをかぞえる回収）>
- * kichi（seen_kichi_shinya）> fuchi（seen_funsui）> kan（kanLv>0）> machi。
+ * kichi（seen_kichi_shinya）> fuchi（seen_funsui）> ga（やまみちの街灯の蛾・numFlag(seen_ga_yama)>=1）> kan（kanLv>0）> machi。
  * room diary が `s.set("seen_nikki_shinya", poemKey(s))` する。
  */
 export const poemKey = (s: Story): PoemKey => {
@@ -612,6 +692,7 @@ export const poemKey = (s: Story): PoemKey => {
 		return "ue";
 	if (s.flag("seen_kichi_shinya")) return "kichi";
 	if (s.flag("seen_funsui")) return "fuchi";
+	if (numFlag(s, "seen_ga_yama") >= 1) return "ga";
 	if (kanLv(s) > 0) return "kan";
 	return "machi";
 };

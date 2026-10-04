@@ -257,14 +257,22 @@ const gasmanAsa = async (s: Story): Promise<void> => {
 				name: "スタンドの店員",
 			});
 			await s.say("kiriko", "きゃくでは、ないンゴ……");
-			await s.say(null, "空気を入れに来たら\n客だよ", {
-				name: "スタンドの店員",
-			});
 		} else {
 			await s.say(null, "おはよう。開店は\nもうちょっと先だよ", {
 				name: "スタンドの店員",
 			});
 		}
+		// 夕方の gs_air でホースを にぎった人だけ（筋(59)。店員と話していなくても）
+		if (s.flag("seen_gs_kuuki")) {
+			await s.say(null, "きのう、ホース\nならしてったろ", {
+				name: "スタンドの店員",
+			});
+			await s.say("kiriko", "……見てたンゴ");
+		}
+		if (s.flag("seen_gasman"))
+			await s.say(null, "空気を入れに来たら\n客だよ", {
+				name: "スタンドの店員",
+			});
 		// 夕方の2層目（「いまは　バス停の　じはんきが　ある」）を聞いた人だけ
 		if (s.flag("seen_gasman2"))
 			await s.narrate("事務所の　まどべに、\nじはんきの　缶コーヒー。");
@@ -734,8 +742,28 @@ export const kokudo: MapDef = {
 			y: 11,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("キロポスト。\n『東京まで　112km』");
-				await s.say("kiriko", "……とおいのか、ちかいのか\nわからない数字ンゴ");
+				const t = s.flag("tod");
+				// 初めて調べた人には、どの時間帯でも 112 を見せる
+				const first = !s.flag("seen_kiro_kokudo");
+				if (t === "yoru")
+					await s.narrate("ライトが来るたび、\n数字が　白く　ひかる。");
+				else if (t === "shinya")
+					await s.narrate("数字だけ、街灯で\nうかんでいる。");
+				else if (t === "asa")
+					await s.narrate("東京の　ほうへ、トラックが\nならんでいく。");
+				else await s.narrate("キロポスト。\n『東京まで　112km』");
+				if (t !== "yu" && first) await s.narrate("『東京まで　112km』");
+				s.set("seen_kiro_kokudo");
+				// 筋②。川の距離標（seen_kyori_0）・線路のキロポスト（seen_kilo_senro）と くらべる
+				if (s.flag("seen_kyori_0"))
+					await s.say(
+						"kiriko",
+						"（川は　0で　おわって、\n国道は　まだ　112ンゴ）",
+					);
+				else if (s.flag("seen_kilo_senro"))
+					await s.say("kiriko", "（1.2の　つぎが、\n112ンゴ）");
+				else
+					await s.say("kiriko", "……とおいのか、ちかいのか\nわからない数字ンゴ");
 			},
 		},
 		{
@@ -909,16 +937,27 @@ export const kokudo: MapDef = {
 						);
 						return;
 					}
+					// 夕方の テスト運転（sensha_scene・seen_sensha_scene）を 見た人だけ、宵・朝に あとが のこる
+					const test = s.flag("seen_sensha_scene");
 					if (t === "asa") {
 						await s.narrate(
-							"洗車機の下に、ゆうべの\n水たまりが　のこっている。",
+							test
+								? "ゆうべの　水たまりに、\nブラシの　あとが　のこる。"
+								: "洗車機の下は、\nかわいている。",
 						);
 						return;
 					}
 					if (t === "yoru") {
 						await s.narrate(
-							"洗車機。ブラシから、\nぽた、ぽた、と　しずくの音。",
+							test
+								? "テストの　ブラシから、\nまだ　しずくの音。"
+								: "洗車機。ブラシが　だらりと\nさがっている。",
 						);
+						return;
+					}
+					// 夕方。テスト運転の前は しずか（前庭に ふみこむと sensha_scene で うなりだす）
+					if (!test) {
+						await s.narrate("洗車機は、しずかだ。\nブラシが　かわいている。");
 						return;
 					}
 					s.se("hum", { volume: 0.5 });
@@ -962,8 +1001,37 @@ export const kokudo: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				const t = s.flag("tod");
+				if (t === "shinya") {
+					await s.narrate("札だけが、くらがりで\n白い。");
+					return;
+				}
+				if (t === "asa") {
+					await s.narrate("ホースの　先が、ぬれている。");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("ホースが、きちんと\nまかれている。");
+					return;
+				}
+				// 夕方の2回目は「見てたンゴ？」だけ（朝の gasmanAsa で 店員が こたえる）
+				if (s.flag("seen_gs_kuuki")) {
+					await s.say("kiriko", "（さっきの　シュッ、\nだれか　見てたンゴ？）");
+					return;
+				}
 				await s.narrate("空気入れのホース。\n『ご自由に　どうぞ』");
-				await s.say("kiriko", "（タダ、ンゴ）");
+				const i = await s.choose(
+					["＞＞1 ホースを　にぎってみる", "＞＞2 やめておく"],
+					{ cancel: 1 },
+				);
+				if (i !== 0) return;
+				// 筋(59)。seen_gs_kuuki → 朝の gasmanAsa「きのう、ホース　ならしてったろ」・日記 nikkiKey『kuuki』
+				s.se("popo", { volume: 0.4 });
+				await s.narrate("ホースが、シュッ、と\nから　ぶきした。");
+				s.set("seen_gs_kuuki");
+				// 店員の「空気なら　タダだよ」を 聞いた人だけ
+				if (s.flag("seen_gasman"))
+					await s.say("kiriko", "（……ほんとに　タダ\nンゴ）");
 			},
 		},
 		{
@@ -1176,7 +1244,7 @@ export const kokudo: MapDef = {
 			MAN,
 			async (s) => {
 				// 夕方の ストレッチの人（stretch_man）を見た人だけ、一度だけ 同じ人だと わかる
-				// （seen_stretch_asa で 一回きり。二回目からは「始発、目の前で…」だけ）
+				// （seen_stretch_asa で 一回きり。二回目からは seen_bus_asa の「つぎ、何分だっけ」）
 				if (s.flag("seen_stretch_kokudo") && !s.flag("seen_stretch_asa")) {
 					s.set("seen_stretch_asa");
 					await s.narrate("ゆうがた、ストレッチを\nしていた　人だ。スーツだ。");
@@ -1186,9 +1254,16 @@ export const kokudo: MapDef = {
 						await s.say("kiriko", "（……これが　正解ンゴ）");
 					}
 				}
+				// 2回目から（seen_bus_asa）は つぎのバスを 待つ 1往復（夕方の bus_obachan と 名を わける）
+				if (s.flag("seen_bus_asa")) {
+					await s.say(null, "……つぎ、何分だっけ", { name: "スーツの人" });
+					await s.say("kiriko", "（つぎのバスまで、\nまだ　すこし　あるンゴ）");
+					return;
+				}
+				s.set("seen_bus_asa");
 				// 時こく表（busstop の asa「始発は　6時52分。……もう出た」）と あわせる
 				await s.say(null, "始発、目の前で\n行っちゃってね", {
-					name: "バス待ちの人",
+					name: "スーツの人",
 				});
 			},
 			{ dir: "right", when: (st) => st.flags.tod === "asa" },

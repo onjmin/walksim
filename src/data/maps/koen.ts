@@ -520,13 +520,29 @@ export const koen: MapDef = {
 			y: 16,
 			trigger: "talk",
 			run: async (s) => {
-				if (s.flag("tod") === "shinya") {
+				// 筋(55) 図書館の木曜: 手書きの『19時まで』（seen_koen_kaikan）
+				// → 朝 shisho_asa「木曜は　夜も　あけるの」
+				const t = s.flag("tod");
+				if (t === "shinya") {
 					await s.narrate("入口の　あかりで、\n『休館』の字だけ　よめる。");
+					return;
+				}
+				if (t === "asa") {
+					await s.narrate("『開館　9:00』。\nまだ　二時間　ちかく　ある。");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate(
+						"入口の　あかりで、手書きの\n『19時まで』だけ　白い。",
+					);
+					s.set("seen_koen_kaikan");
+					await s.say("kiriko", "（来月の　木曜でも、\nもう　しまってるンゴ）");
 					return;
 				}
 				// 9/13 は月曜（夕方に図書館が あいている）
 				await s.narrate("『開館　9:00～17:00』\n『水曜・第3木曜　休館』");
 				await s.narrate("下に　手書きで\n『10月から　木曜は19時まで』");
+				s.set("seen_koen_kaikan");
 			},
 		},
 		{
@@ -1314,6 +1330,16 @@ export const koen: MapDef = {
 						});
 						await s.say(null, "けさは、一本目", { name: "図書館の人" });
 						await s.say("kiriko", "（しんきろくンゴ）");
+					}
+					// 筋(55): 開館時間の手書き（kaikan_jikan・夕/宵）を 見た人だけ
+					if (s.flag("seen_koen_kaikan")) {
+						await s.say(
+							null,
+							"10月から、木曜は　夜も\nあけるの。……かぎ、ふえるわ",
+							{
+								name: "図書館の人",
+							},
+						);
 					}
 					// ぬいぐるみ（宵のポストのしっぽ・掲示板の『さがしています』を 見た人だけ）→ 掲示板の下の台
 					if (s.flag("seen_koen_post_shippo") || s.flag("seen_koen_board")) {
