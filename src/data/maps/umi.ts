@@ -17,8 +17,10 @@
 //           駅の ベンチの やきうの となりで「保守」と 書いて おわる（yakiu_end → まとめカード）
 //
 // 海の中の 筋（段・時間帯・回収）:
-//   電気うき … 宵、つり座（tsuri_za）から 見える 防波堤の さきの 置きざおと 赤い 電気うき（seen_umi_denkiuki）→ 深夜は うろこ一まい →
-//              朝の つり人「……それは、きかない　やくそく」（日の入りまでの 決まりの 外で だれかが つっていた）
+//   電気うき … 宵、つり座（tsuri_za）から 見える 防波堤の さきの 置きざおと 赤い 電気うき（seen_umi_denkiuki）→
+//              深夜は さおが きえて うろこ一まい（うきを 見た 人だけ。seen_umi_uroko）→
+//              朝の つり人「……それは、きかない　やくそく」（日の入りまでの 決まりの 外で だれかが つっていた）→
+//              2回目に うろこの 話（seen_umi_uroko_neko）「ねこの　ぶんだ」→ sakanabako の ねこに キリコの 一言
 //   あみ     … 夕方の あたらしい糸（seen_umi_ami。せがれの 話を 聞いた 人には まだ しろい）→ 宵は あみ針 →
 //              深夜の 夜ふけに 半分 なくなる（seen_amiban2。第三の あかりと 同じ 条件）→ 朝、第三が もどった あと ぬれて もどる
 //   夕日の道 … 桟橋の さき（seen_umi_yuhi）→ 宵は 灯台の あかりが とおる → 深夜は 第三の エンジン → 朝は 船の すじ
@@ -27,6 +29,7 @@
 //   しお見表 … 夕方の『満潮　6:52』の 赤丸（seen_umi_shiomi）→ 朝は「もう　すぎている」
 //   つり人の ぬし … kawara の じいさんの 鯉（seen_tsuri2）を 夕方の つり人に きく（seen_umi_nushi）
 //   電車     … 夕方の 車庫の 音（seen_umi_densha）→ トンネルの 口（夕・深夜）・時刻表（深夜）・room の 布団の 遠い音
+//   始発     … 時刻表の 夕方『さいごは　17:20』→ 宵は 赤い字の『始発　5:58』（seen_umi_shihatsu）→ 朝「もう　出ていった」
 //
 // 座標: 北 (20,0)→danchi(15,22)・danchi からの着地 (20,1) 下向き。
 // 線路 y17（x35〜42 が歩ける）。(43,17) はトンネルの口（決してワープしない・一歩押しもどす）。
@@ -986,7 +989,9 @@ export const umi: MapDef = {
 							"kiriko",
 							s.flag("seen_neko_shukai")
 								? "（ゆうべの　あつまりの\nかおンゴ）"
-								: "（……もらったんじゃ\nないンゴね）",
+								: s.flag("seen_umi_uroko")
+									? "（ゆうべの　うろこの\nねこンゴ？）" // 深夜の tsuri_za の うろこ
+									: "（……もらったんじゃ\nないンゴね）",
 						);
 						return;
 					}
@@ -1144,7 +1149,8 @@ export const umi: MapDef = {
 		},
 		// つり座（つり人の いない 宵・深夜だけ。夕方と朝は つり人が ここに 立つ）。
 		// 宵は 日の入りの あとの、防波堤の さきの 置きざおと 赤い 電気うき（seen_umi_denkiuki。人は 出さない＝さおと うきだけ）→
-		// 深夜は のこった うろこ → 朝の tsuribito_asa で キリコが きく「……それは、きかない　やくそく」
+		// 深夜は さおが きえて うろこ（denkiuki を 見た 人だけ・seen_umi_uroko。見て いない 人には 夜つゆ）→
+		// 朝 tsuribito_asa 1回目「きかない　やくそく」・2回目「ねこの　ぶん」・sakanabako の ねこ
 		{
 			id: "tsuri_za",
 			x: 23,
@@ -1153,7 +1159,15 @@ export const umi: MapDef = {
 			when: (st) => st.flags.tod === "yoru" || st.flags.tod === "shinya",
 			run: async (s) => {
 				if (s.flag("tod") === "shinya") {
-					await s.narrate("つり座に、アジの\nうろこが　一まい。");
+					// 宵の 電気うき（seen_umi_denkiuki）の つづき。うろこは 朝の tsuribito_asa・sakanabako が 読む
+					if (s.flag("seen_umi_denkiuki")) {
+						s.set("seen_umi_uroko");
+						await s.narrate(
+							"置きざおは、もう　ない。\nつり座に、アジの　うろこが　一まい。",
+						);
+						return;
+					}
+					await s.narrate("つり座が、夜つゆで\nぬれている。");
 					return;
 				}
 				s.set("seen_umi_denkiuki");
@@ -1285,8 +1299,25 @@ export const umi: MapDef = {
 						await s.narrate("……夕方の　あれが、\nここの　さいごだった。");
 					return;
 				}
+				if (s.flag("tod") === "yoru") {
+					// 宵は 赤い字だけ（seen_umi_shihatsu）→ 朝に「もう　出ていった」で 回収
+					s.set("seen_umi_shihatsu");
+					await s.narrate(
+						"字は、灯りの　輪の　そと。\n『始発　5:58』の　赤い字だけ　見える。",
+					);
+					return;
+				}
+				if (s.flag("tod") === "asa" && s.flag("seen_umi_shihatsu")) {
+					await s.narrate("始発の　5:58は、もう\n出ていった　あとだ。");
+					await s.say("kiriko", "（一本、のりそこねた\nンゴ）");
+					return;
+				}
 				await s.narrate("時刻表。のぼりが\n一日　四本。くだりは　ない。");
 				await s.narrate("ここが　はしっこで、\nトンネルの　むこうは　車庫だ。");
+				if (s.flag("tod") === "yu")
+					await s.narrate(
+						"のぼりの　さいごは　17:20。\nもう、きょうの　ぶんは　ない。",
+					);
 			},
 		},
 		{
@@ -1583,6 +1614,13 @@ export const umi: MapDef = {
 							name: "つり人",
 						});
 					}
+					return;
+				}
+				// 深夜の つり座の うろこ（seen_umi_uroko）を 見た 人に、一度だけ（ボラより 先）
+				if (s.flag("seen_umi_uroko") && !s.flag("seen_umi_uroko_neko")) {
+					s.set("seen_umi_uroko_neko");
+					await s.say("kiriko", "つり座に、うろこが\n一まい　あったンゴ");
+					await s.say(null, "……あれは、ねこの\nぶんだ", { name: "つり人" });
 					return;
 				}
 				await s.narrate("バケツの中は、\n海の水だけだ。");

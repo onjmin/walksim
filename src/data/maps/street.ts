@@ -25,6 +25,7 @@
 //   seen_mywin_ao     my_win（shinya・モニター、あんなに あかるい）→ apart door_room（shinya）
 //   seen_eshaku_kutsu eshaku（yu の 2回目・くつひも）         → umi yoake_arrive（asa）
 //   seen_sasoi_kaeri  arrive_yoru（room window の 誘い seen_yoru_sasoi の 回収）→ 同じ（一度だけ）
+//   seen_mywin_yoru   my_win（yoru・はしの窓に、あかり）       → room evening（宵に 帰った 人の へやの でんき）
 //
 // 座標凍結v2: (2,9)→apart(10,5)／apart 階段→(2,10)。開始位置は (24,10) 西向き（data/index.ts）。
 // 座標凍結v3（日常の町 拡張）: うらどおり西端 (2,19)→sumire(37,3)／うらどおり (21,19)→
@@ -863,6 +864,22 @@ export const street: MapDef = {
 			10,
 			CHILD,
 			async (s) => {
+				// 一度に 一つだけ（ガチャ → かさ → 土管 の 順に、話すたび 進む）
+				// ⑧ スーパーの ガチャの 子（「あしたのぼくが　回す」）本人。話した 人だけ、一度
+				if (s.flag("seen_gacha_kid") && !s.flag("seen_gacha_asa")) {
+					s.set("seen_gacha_asa");
+					await s.say(null, "あ、ガチャの　とこに\nいた人", { name: "男の子" });
+					// ガチャに 10円を のせて きた 人だけ（suupaa gacha・seen_gacha_10en）
+					await s.say(
+						null,
+						s.flag("seen_gacha_10en")
+							? "あの　10円で、\nかえりに　回すんだ"
+							: "きょうの　ぼくが、\nかえりに　回すんだ",
+						{ name: "男の子" },
+					);
+					await s.say("kiriko", "（あしたのぼく、\nえらいンゴ）");
+					return;
+				}
 				// ⑬ 公園の わすれがさ『3の2　さとう』を 見た 人だけ、一度
 				if (s.flag("seen_koen_kasa") && !s.flag("seen_kasa_sato")) {
 					s.set("seen_kasa_sato");
@@ -871,6 +888,7 @@ export const street: MapDef = {
 					);
 					await s.narrate("えに、マジックで\n『3の2　さとう』。");
 					await s.say("kiriko", "（公園の、あの\nかさンゴ）");
+					return;
 				}
 				// 夕方の「道の下から なんか出た」を 聞いた 人だけ、その つづき
 				if (s.flag("seen_kids")) {
@@ -935,20 +953,6 @@ export const street: MapDef = {
 						await s.narrate(
 							"女の子の　手さげから、\nプリンの　型が　のぞいている。",
 						);
-				}
-				// ⑧ スーパーの ガチャの 子（「あしたのぼくが　回す」）と 話した 人だけ
-				if (s.flag("seen_gacha_kid") && !s.flag("seen_gacha_asa")) {
-					s.set("seen_gacha_asa");
-					await s.say(null, "あ、ガチャの　とこに\nいた人", { name: "男の子" });
-					// ガチャに 10円を のせて きた 人だけ（suupaa gacha・seen_gacha_10en）
-					await s.say(
-						null,
-						s.flag("seen_gacha_10en")
-							? "あの　10円で、\nかえりに　回すんだ"
-							: "10円、もらった。\nかえりに　回すんだ",
-						{ name: "男の子" },
-					);
-					await s.say("kiriko", "（あしたのぼく、\nえらいンゴ）");
 				}
 			},
 			{ dir: "left", when: (st) => st.flags.tod === "asa" },
@@ -1153,12 +1157,26 @@ export const street: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
+				// 宵に 牛乳を 買った 人（got_gyunyu）だけ、深夜は 棚の すきま → 朝は 棚が もどる → 店主（tenshuAsa）の段
 				if (t === "shinya") {
+					if (s.flag("got_gyunyu")) {
+						await s.narrate(
+							"じどうドアの　むこう、\n牛乳の　棚に　ひとつぶん　すきま。",
+						);
+						return;
+					}
 					await s.narrate("じどうドアのおくで、機械の\n音だけ、している。");
 					return;
 				}
 				if (t === "asa") {
+					if (s.flag("got_gyunyu")) {
+						await s.narrate("牛乳の　棚が、\nいっぱいに　もどっている。");
+						return;
+					}
 					await s.narrate("ドアが開いて、パンの\nにおいがした。");
+					// 夕方に あんぱんを 買った 人（got_dinner_pan）
+					if (s.flag("got_dinner_pan"))
+						await s.say("kiriko", "（……あんぱんの\nにおいンゴ）");
 					return;
 				}
 				// 宵は牛乳が買える（店員は出さない。朝の店主のツッコミ＝tenshuAsa へ。P0-11）
@@ -1608,15 +1626,13 @@ export const street: MapDef = {
 					return;
 				}
 				s.set("seen_yukata");
-				if (t === "shinya") {
+				if (t === "shinya")
 					await s.narrate("ゆかたが、風も　なく\nまっすぐ　さがっている。");
-					return;
-				}
-				if (t === "yoru") {
+				else if (t === "yoru")
 					await s.narrate("ゆかたの　すそが、\n夜風に　ゆれている。");
-					return;
-				}
-				await s.narrate("ロープに、ゆかたが\nほしっぱなしだ。");
+				else await s.narrate("ロープに、ゆかたが\nほしっぱなしだ。");
+				// 夏の 名残（natsuCount に seen_yukata）。そろったら 一度だけ
+				await natsuOwari(s);
 			},
 		},
 		{
@@ -1795,6 +1811,8 @@ export const street: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "yoru") {
+					// 筋(72) → room evening（宵に 帰った 人の「へやの　でんきが、つけっぱなしだった」）
+					s.set("seen_mywin_yoru");
 					await s.narrate("はしの窓に、あかり。");
 					await s.say("kiriko", "……でんき、\nつけっぱなしンゴ");
 					return;

@@ -34,13 +34,7 @@
 // 隠し: いけがきの　すきま (10,9)（見た目は生けがき・通れる）→ うら庭 → 細道。
 // 二度目で変わる: ガード下のポスター（下の古いポスター）・コスモスのちょうちょ（踏切を見た人は三度目も）。
 
-import type {
-	EventDef,
-	GameState,
-	MapDef,
-	Story,
-	TileDef,
-} from "../../engine/defs";
+import type { EventDef, MapDef, Story, TileDef } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import {
 	arrived,
@@ -141,35 +135,12 @@ const GRANDPA = "pub:sprites/mob_ojiichan.png";
 const COMMUTER = "pub:sprites/mob_salaryman.png";
 
 /**
- * 環境音のワンショット（夕＝ヒグラシ／朝＝スズメ）。kawara と同じ方式：
- * 直前に鳴らした帯をモジュール変数で覚え、往復の連打を防ぐ（セーブしない）。
- */
-let lastWave = "";
-const wave = (id: string, pan: number) => async (s: Story) => {
-	if (lastWave === id) return;
-	lastWave = id;
-	const t = s.flag("tod");
-	if (t === "yu") s.se("higurashi", { pan, volume: 0.8 });
-	else if (t === "asa") s.se("suzume", { pan, volume: 0.8 });
-};
-/**
  * 西のはし（to_tonarimachi）の ㉖ 回収の行を、時間帯ごとに 最初の 通過だけに しぼる
- * （lastWave と同じく モジュール変数。セーブしない。もとからある 店じまいの行は 毎回）。
+ * （モジュール変数。セーブしない。もとからある 店じまいの行は 毎回）。
  */
 let arcadeTod = "";
 /** cosmos_b の 国道の コスモスの 一言を 一度だけに する（セーブしない）。 */
 let cosmosKokudo = false;
-/** 見えない環境音の帯（線路の道 y7 に置く）。 */
-const waveBelt = (id: string, x: number, pan: number): EventDef => ({
-	id,
-	x,
-	y: 7,
-	trigger: "touch",
-	through: true,
-	when: (st: GameState) => st.flags.tod === "yu" || st.flags.tod === "asa",
-	run: wave(id, pan),
-});
-
 /** 踏切の警報（tick を「カン」に見立てて数回。pan は踏切の方向）。 */
 const kankan = async (s: Story, n: number, volume: number): Promise<void> => {
 	for (let i = 0; i < n; i++) {
@@ -201,6 +172,9 @@ const fumikiriBelt = (x: number): EventDef => ({
 		await s.wait(900);
 		await s.narrate("電車が、目のまえを\nとおりすぎていく。");
 		await s.narrate("まどが　ぜんぶ、\n夕日の色だ。");
+		// 筋(69) tonarimachi densha_deru（改札前で 見送った 電車）を 見た人だけ
+		if (s.flag("seen_densha_deru"))
+			await s.say("kiriko", "（となりまちで　出ていった\n電車ンゴ）");
 		// 2本目（反対がわから）・3本目
 		await kankan(s, 2, 0.6);
 		await s.narrate("……あがらない。\nこんどは　反対がわから。");
@@ -384,7 +358,6 @@ export const senro: MapDef = {
 	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ。宵・深夜は鳴らさない）。
 	// 深夜は、手の中の缶が地区ひとつぶん冷める（nostalgia.md P0-6。文は出さない）
 	onEnter: async (s) => {
-		lastWave = "";
 		kanTick(s);
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.8 });
@@ -519,6 +492,12 @@ export const senro: MapDef = {
 						// ㉖ tonarimachi record_wagon（白い 布を かけた ワゴン）を 見た人
 						arcadeTod = t;
 						await s.narrate("ワゴンは、もう　中に\nしまわれた。");
+					} else if (arcadeTod !== t && s.flag("seen_geesen")) {
+						// ㉖ tonarimachi のゲームセンター（seen_geesen）を のぞいた人
+						arcadeTod = t;
+						await s.narrate(
+							"シャッターの　おくで、\n電子音が　ひとつ　きれた。",
+						);
 					}
 				} else if (t === "shinya") {
 					await s.narrate("アーケードの　シャッターは、\nおりている。");
@@ -565,11 +544,6 @@ export const senro: MapDef = {
 				await s.move("player", "r");
 			},
 		},
-
-		// ── 環境音の帯（線路の道。歩くたび遠近が変わる） ──
-		waveBelt("wave_w", 10, -0.4),
-		waveBelt("wave_m", 22, 0),
-		waveBelt("wave_e", 36, 0.4),
 
 		// ── 踏切の場面（夕方＝電車がとおる） ──
 		...[29, 30, 31, 32, 33].map(fumikiriBelt),
@@ -777,7 +751,9 @@ export const senro: MapDef = {
 				if (t === "asa") {
 					// 宵の 羽虫を 見た人だけ
 					if (s.flag("seen_senro_hamushi")) {
-						await s.narrate("クモの巣に、ゆうべの\n羽虫が　ひとつ。");
+						await s.narrate("けいほうきの　上に、もう\n羽虫は　いない。");
+						await s.narrate("クモの巣に、あさつゆ。");
+						await s.say("kiriko", "（みんな、ねぐらに\nかえったンゴ）");
 						return;
 					}
 					await s.narrate(
@@ -886,10 +862,12 @@ export const senro: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					// 夕方の コスモスの じいさん（seen_senro_jii）を 見た人だけ。jii2 は cosmos_b
 					if (s.flag("seen_senro_jii")) {
 						await s.narrate(
-							"ねもとの土が、しめっている。\n……水やりの　あとだ。",
+							"ねもとの土が、しめっている。\nじょうろの　あとが　点々と。",
 						);
+						await s.say("kiriko", "（おこられない\nように、ンゴ）");
 						return;
 					}
 					await s.narrate("コスモスに、朝つゆ。\n花が　すこし　おもそうだ。");
@@ -923,7 +901,7 @@ export const senro: MapDef = {
 					return;
 				}
 				// ちょうちょの段（seen_cosmos_chou 数）。踏切の 電車を 見た人は 三度目で とんでいく
-				// 筋(67) 国道の コスモス: kokudo hanataba（seen_kosumosu_kokudo）を 見た人だけ、本文の あとに
+				// 筋(67) 国道の コスモス: kokudo kosumosu_kokudo（seen_kosumosu_kokudo）を 見た人だけ、本文の あとに
 				// （一度だけ。cosmosKokudo はモジュール変数で セーブしない）
 				const kokudo = async () => {
 					if (!cosmosKokudo && s.flag("seen_kosumosu_kokudo")) {
@@ -1507,7 +1485,14 @@ export const senro: MapDef = {
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("うえきばちの　土が、\nまだ　しめっている。");
+					// 夕方の ねこ（seen_neko_senro）を 見た人には、いなくなった あとの 毛
+					if (s.flag("seen_neko_senro")) {
+						await s.narrate(
+							"ねこの　いた　かげに、\n毛が　すこし　のこっている。",
+						);
+						return;
+					}
+					await s.narrate("行きどまり。うえきばちの\n土が、しめっている。");
 					return;
 				}
 				if (t === "asa") {

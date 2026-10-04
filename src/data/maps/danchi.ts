@@ -24,7 +24,9 @@
 //   クスノキのスズメ（seen_kusunoki_suzume → 朝 とびだす seen_kusunoki_asa・てつぼう）・
 //   ひがんばなのくき（seen_kadan_kuki → 朝 ほどけかける）・給水塔のランプ（深夜 seen_kyusui_danchi → 朝）・
 //   将棋の『まった』（seen_shogi_danchi → 宵の盤・朝のじいちゃん seen_shogi_asa）・
-//   405の輪ゴム（seen_danchi_405 → 朝のばあちゃん seen_405_wagomu → postbox_a）
+//   405の輪ゴム（seen_danchi_405 → 朝のばあちゃん seen_405_wagomu → postbox_a）・
+//   建った順（b_plate seen_bplate_atarashi・c_plate seen_cplate_shiiru → 案内図の『D棟（予定）』）・
+//   おしるこの札（夕 補充の人が かえる seen_shiruko_fuda → 宵の赤い札 → 宵の二度目は ガ seen_shiruko_yoru → 朝の つめかえ）
 //
 // 座標凍結v3: 東 touch (31,12)→sumire(1,12)・sumire からの着地 (30,12)／
 // 北 touch (16,0)→kokudo(20,10)・kokudo からの着地 (16,1)。
@@ -716,6 +718,8 @@ export const danchi: MapDef = {
 			run: async (s) => {
 				await s.narrate("『すみれ台団地　B棟』の\n表示板。");
 				await s.narrate("字が、Aのより\nすこし　あたらしい。");
+				// 建った順 A→B→C→D（予定）。annaizu の二度目で 回収
+				s.set("seen_bplate_atarashi");
 			},
 		},
 		{
@@ -876,6 +880,8 @@ export const danchi: MapDef = {
 			run: async (s) => {
 				await s.narrate("『すみれ台団地　C棟』の\n表示板。");
 				await s.narrate("『C』の字の上に、\nシールの　はがしあと。");
+				// はがしあと＝むかしの『予定』。annaizu の二度目で 回収
+				s.set("seen_cplate_shiiru");
 			},
 		},
 		{
@@ -1210,21 +1216,45 @@ export const danchi: MapDef = {
 					if (before === 0 && kanLv(s) >= 1) s.set("seen_kan_danchi");
 					return;
 				}
-				// おしるこの 札: 夕『つめた～い』→ 宵『あったか～い』→ 深夜の 一本 → 朝の つめかえ
+				// おしるこの 札: 夕 補充の人が 札を かえる（seen_shiruko_fuda）→ 二度目は 赤い札 →
+				// 宵 その札が あかるい → 宵の二度目は 札に ガ（seen_shiruko_yoru）→ 深夜の 一本 → 朝の つめかえ（補充の人）
 				if (t === "asa") {
 					await s.narrate("じはんきの　前で、缶の\nつめかえを　している。");
-					// 深夜に この じはんきで 缶を 買った人（seen_kan_danchi）だけ
+					// 深夜に この じはんきで 缶を 買った人（seen_kan_danchi）だけ。
+					// そうでなく 夕方に 札を かえる人を 見た人（seen_shiruko_fuda）は その人だと 気づく
 					if (s.flag("seen_kan_danchi"))
 						await s.say("kiriko", "（ゆうべの　一本ぶん\nンゴ）");
+					else if (s.flag("seen_shiruko_fuda"))
+						await s.say("kiriko", "（きのうの　補充の\n人ンゴ）");
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("おしるこの　段だけ、札が\n赤い『あったか～い』に。");
+					// 宵の二度目: あかるい札に ガが よってくる
+					if (s.flag("seen_shiruko_yoru")) {
+						await s.narrate(
+							"赤い札の　あかりに、\nちいさな　ガが　とまっている。",
+						);
+						return;
+					}
+					s.set("seen_shiruko_yoru");
+					// 夕方に 札を かえる手を 見た人（seen_shiruko_fuda）だけ、その札が 光る
+					await s.narrate(
+						s.flag("seen_shiruko_fuda")
+							? "さっき　かえた　赤い札だけ、\nあかるい。"
+							: "おしるこの　段だけ、札が\n赤い『あったか～い』に。",
+					);
 					return;
 				}
-				await s.narrate(
-					"じはんき。おしるこの　ボタン。\n札は　まだ『つめた～い』。",
-				);
+				// 夕方: 一度目は 補充の人が 札を かえている（宵・朝で 回収）
+				if (!s.flag("seen_shiruko_fuda")) {
+					s.set("seen_shiruko_fuda");
+					await s.narrate("補充の　人が、おしるこの\n札を　はがしている。");
+					await s.say(null, "あしたから、ひえるって\nいうからね", {
+						name: "補充の人",
+					});
+					return;
+				}
+				await s.narrate("おしるこの　段だけ、\n札が　赤い。");
 			},
 		},
 		{
@@ -1285,6 +1315,11 @@ export const danchi: MapDef = {
 				if (s.flag("seen_annaizu2")) {
 					await s.narrate("案内図のすみに、点線の\n四角。『D棟（予定）』");
 					await s.narrate("点線は、南のひろばに\nかさなっている。");
+					// 表示板（b_plate・c_plate）を 読んだ人だけ、建った順を つなぐ（どちらか一つ）
+					if (s.flag("seen_cplate_shiiru"))
+						await s.say("kiriko", "（Cも、むかしは\n『予定』だったンゴ？）");
+					else if (s.flag("seen_bplate_atarashi"))
+						await s.say("kiriko", "（Bも、あとから\nできたンゴね）");
 					await s.say("kiriko", "……ラジオ体そうの\nばしょ、なくなるンゴ？");
 					return;
 				}

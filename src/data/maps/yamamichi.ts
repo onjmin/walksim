@@ -20,6 +20,8 @@
 //           かわらの かかしの ぼうしの お礼（nouka_asa・seen_kakashi_orei）
 //   石   … かわらで 水きりに 石を かりた人（seen_mizukiri_nage）は、川(25,19)で ひらたい石を 一まい
 //           ひろえる（got_ishi_yama → kawara mizukiri_ishi で 山に かえす）
+//   公園の看板 … koen_sign（夕・宵・朝）で seen_koen_sign_yama（→ koen suwaru・筋64）。
+//           深夜は街灯の かげで 矢印の かたちだけ。朝は koen で すわった人（seen_suwari_koen）に ひとこと
 //
 // 座標（統合担当と共有）:
 //   東 (43,12)→kawara(1,8) right・kawara からの着地 (42,12) left
@@ -1011,8 +1013,25 @@ export const yamamichi: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				const t = s.flag("tod");
+				// 深夜は字を読ませない（指示による意図的な差。kuma_sign とそろえる）。
+				// lamp_koen は深夜もつくので、看板が街灯の かげ側に あることを 文で見せる
+				if (t === "shinya") {
+					await s.narrate("街灯の　かげで、矢印の\nかたちだけ　わかる。");
+					return;
+				}
+				s.set("seen_koen_sign_yama"); // → koen suwaru（筋64）
 				await s.narrate("『この上　公園』。\n矢印は、手書きだ。");
+				if (t === "yoru") {
+					await s.narrate(
+						"『ベンチ　あります』の字が、\n街灯で　やっと　よめる。",
+					);
+					return;
+				}
 				await s.narrate("板の　すみに、ちいさく\n『ベンチ　あります』。");
+				// 深夜に koen の展望台の ベンチに すわった人だけ
+				if (t === "asa" && s.flag("seen_suwari_koen"))
+					await s.say("kiriko", "（あの　ベンチ、\nつめたかったンゴ）");
 			},
 		},
 		{

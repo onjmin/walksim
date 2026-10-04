@@ -39,6 +39,9 @@
 // 石碑『もどりばし』と銘板『もどりはし』は、どちらからでも見くらべられる（seen_hashi_sekihi・seen_hashi_meiban）。
 // 両方 見た 人だけ、朝の houki_baachan が にごらない わけを 一度 言う（seen_hashi_naze）。
 // 深夜の石碑は字が見えない（読んだ人だけ、ゆびで ほった みぞを なぞる）。
+// 東の街灯: 宵の とどかない あかり（seen_lamp_e）→ 深夜の 川の音 → 朝、石碑が 見える。
+// 対岸の 行きどまり（seen_modori）→ 橋の上で 一度「もどる　ほうへ」（seen_modori_hashi）。
+// 花火の もえかす: 深夜に ふんだ（seen_natsu_kawa_shinya）→ 朝、つぶれた つつ。
 
 import type {
 	EventDef,
@@ -326,13 +329,23 @@ const jouyatou = async (s: Story): Promise<void> => {
 /**
  * 土手の街灯（西 (8,7)＝w・東 (24,7)＝e。lights は yoru,shinya で点く）。
  * 西: 深夜の 羽虫（seen_hamushi_kawa。やまみちの 蛾 seen_ga_yama を 見た 人には 一度 くらべる）→ 朝、その下の スズメ。
- * 東: 宵は あかりが 石碑まで とどかない（hashi_sekihi の 宵と 対）。
+ * 東: 宵は あかりが 石碑まで とどかない（hashi_sekihi の 宵と 対。seen_lamp_e）→
+ *     深夜、わの そとの 川の音 → 朝、とどかなかった 石碑が 見える（石碑を 読んだ 人にも）。
  */
 const gaitou =
 	(side: "w" | "e") =>
 	async (s: Story): Promise<void> => {
 		const t = s.flag("tod");
 		if (t === "shinya") {
+			if (side === "e") {
+				// 宵に あかりが 石碑まで とどかないのを 見た 人（seen_lamp_e）
+				await s.narrate(
+					s.flag("seen_lamp_e")
+						? "あかりの　わの　そとで、\n川の音が　する。"
+						: "街灯の　しただけ、\n草の　色が　ある。",
+				);
+				return;
+			}
 			await s.narrate("街灯のあかりに、羽虫が\nあつまっている。");
 			if (side === "w") {
 				// (60) yamamichi lamp_bus の 蛾を 見た 人だけ、はじめての 一度
@@ -343,14 +356,26 @@ const gaitou =
 			return;
 		}
 		if (t === "yoru") {
-			await s.narrate(
-				side === "e"
-					? "あかりの　はしが、\n石碑まで　とどかない。"
-					: "土手の街灯。まるい　あかりが\n道に　おちている。",
-			);
+			if (side === "e") {
+				s.set("seen_lamp_e");
+				await s.narrate("あかりの　はしが、\n石碑まで　とどかない。");
+				return;
+			}
+			await s.narrate("土手の街灯。まるい　あかりが\n道に　おちている。");
 			return;
 		}
 		if (t === "asa") {
+			// 東: 宵の とどかない あかりを 見た 人（seen_lamp_e）だけ あかりに ふれる。石碑を 読んだだけの 人（seen_hashi_sekihi）は 別の 文
+			if (side === "e") {
+				await s.narrate(
+					s.flag("seen_lamp_e")
+						? "あかりの　とどかなかった　石碑が、\nここから　見える。"
+						: s.flag("seen_hashi_sekihi")
+							? "よんだ　石碑が、\nここから　見える。"
+							: "街灯。もう、\nきえている。",
+				);
+				return;
+			}
 			// 深夜に 羽虫を 見た 人だけ（seen_hamushi_kawa）
 			await s.narrate(
 				side === "w" && s.flag("seen_hamushi_kawa")
@@ -634,20 +659,34 @@ export const kawara: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
+				// 対岸の 行きどまり（taigan_view の seen_modori）を 見た 人に、どの時間帯でも 一度
+				// （朝の ささぶねが 先。同じ回には 2つ 出さない）
+				const modori = async (): Promise<boolean> => {
+					if (!s.flag("seen_modori") || s.flag("seen_modori_hashi"))
+						return false;
+					s.set("seen_modori_hashi");
+					await s.narrate("もどる　ほうへ、\n橋を　わたっている。");
+					return true;
+				};
 				if (t === "shinya") {
 					await s.narrate("くらい水が、橋の下を\nくぐっていく音がする。");
+					await modori();
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("あさもやの　きれはしが、\n橋の下から　ながれ出た。");
 					// ㉓ すみれの みぞを ながれていった ささぶね（sumire mizo）
-					if (s.flag("seen_sasabune"))
+					if (s.flag("seen_sasabune")) {
 						await s.narrate(
 							"岸の　草に、ささぶねが\nひとつ　ひっかかっている。",
 						);
+						return;
+					}
+					await modori();
 					return;
 				}
 				await s.narrate("橋の上は、川かぜの\nとおり道だ。");
+				if (await modori()) return;
 				if (t === "yoru") {
 					await s.narrate("土手の上に、街灯が\nふたつ　ついている。");
 					return;
@@ -1241,18 +1280,28 @@ export const kawara: MapDef = {
 			through: true,
 			fixedDir: true,
 			// ③ 夏まつりの名残（seen_natsu_kawa → natsuOwari）。深夜は見えずに足で、朝はつゆで
+			// 深夜に 足で ふんだ（seen_natsu_kawa_shinya）→ 朝、つぶれた つつ。「夏の　わすれもの」は はじめての 一度だけ
 			run: async (s) => {
+				const mita = !!s.flag("seen_natsu_kawa");
 				s.set("seen_natsu_kawa");
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("足もとで、紙の　つつが\nかさっと　鳴った。");
 					await s.narrate("……花火の　もえかすだ。");
+					s.set("seen_natsu_kawa_shinya");
 				} else if (t === "asa") {
-					await s.narrate("花火の　もえかすが、\n朝つゆで　しめっている。");
+					await s.narrate(
+						s.flag("seen_natsu_kawa_shinya")
+							? "ゆうべ　ふんだ　つつが、\nつぶれている。"
+							: "花火の　もえかすが、\n朝つゆで　しめっている。",
+					);
+				} else if (t === "yoru") {
+					if (!mita) await s.narrate("花火の　もえかす。");
+					await s.narrate("川かぜで、つつが　ころ、と\nころがった。");
 				} else {
 					await s.narrate("花火の　もえかす。");
 				}
-				await s.narrate("夏の　わすれものだ。");
+				if (!mita) await s.narrate("夏の　わすれものだ。");
 				await natsuOwari(s);
 			},
 		},
@@ -1285,6 +1334,9 @@ export const kawara: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("川ごしの町が、あさの\n白い光の中にある。");
+					// 深夜に アパートの あたりを さがした 人（seen_taigan_shinya）。夕→深夜→朝の 三段
+					if (s.flag("seen_taigan_shinya"))
+						await s.narrate("ゆうべ　さがした　あたりの、\n屋根が　見える。");
 					return;
 				}
 				await s.narrate("川ごしに、町。\nぜんぶ、夕やけの色だ。");

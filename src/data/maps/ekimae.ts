@@ -27,6 +27,9 @@
 //   駅名の柱  seen_ekimei_minami → tonarimachi ekimei。となりまちに行った人には『つきみ』
 //   よそから  保線の車（senro seen_senro_hosen → 朝の rail_fence）・アジフライ（suupaa seen_baa_aji
 //             → 朝の chirashi）・まるい字（kokudo seen_kanban_kokudo → old_sign）
+//   うんちん表  夕 『150円』（seen_unchin_eki）→ norikomi「表で　見た　150円」・tonarimachi eki_kaisatsu
+//             宵 あかりで値段だけ・朝 ていきけん（通勤の人 seen_senro_tsuukin を見た人だけ一度 seen_unchin_teiki）
+//   タクシー  宵・深夜 本日終了の札（宵で seen_takushii_fuda → 深夜「まだ　さがっている」）→ 朝 まだ来ない（中けい＋テレビの打ち切りを知る人だけ一言）
 //
 // 座標凍結v3:
 //   東端 (31,9) → kokudo (1,10)／kokudo からの着地 (30,9)
@@ -185,7 +188,10 @@ const norikomi = async (s: Story): Promise<void> => {
 		await s.say("kiriko", "……また今度ンゴ");
 		return;
 	}
-	await s.narrate("きっぷを　買った。\nとなりまちまで、150円。");
+	// (70) 夕方の うんちん表（unchin・seen_unchin_eki）を 読んだ 人は、その 150円で 買う
+	if (s.flag("seen_unchin_eki"))
+		await s.narrate("表で　見た　150円で、\nきっぷを　買った。");
+	else await s.narrate("きっぷを　買った。\nとなりまちまで、150円。");
 	s.se("tick", { volume: 0.8 });
 	await s.narrate("かちん、と改札を　とおる。");
 	s.set("seen_tonarimachi");
@@ -789,8 +795,24 @@ export const ekimae: MapDef = {
 					);
 					return;
 				}
-				await s.narrate("うんちん表。『となりまち\n150円』。");
-				await s.narrate("そのさきは、じが小さくて\nよめない。");
+				// 朝は 下の ていきけんの あんない。senro の 通勤の人（seen_senro_tsuukin）を 見た 人だけ キリコ
+				if (s.flag("tod") === "asa") {
+					await s.narrate("うんちん表の　下に、\nていきけんの　あんない。");
+					// 一度だけ。jikoku・kaisatsu_gate の 朝と 重ねないよう「7時41分」は くり返さない
+					if (s.flag("seen_senro_tsuukin") && !s.flag("seen_unchin_teiki")) {
+						s.set("seen_unchin_teiki");
+						await s.say("kiriko", "（さっきの　ひとの、\nていきンゴね）");
+					}
+					return;
+				}
+				// 宵は 改札の あかりで 値段だけ。夕方は 全部 読んで (70) の 前振り（→ norikomi・tonarimachi）
+				if (s.flag("tod") === "yoru") {
+					await s.narrate("改札の　あかりで、\n『150円』だけ　よめる。");
+				} else {
+					await s.narrate("うんちん表。『となりまち\n150円』。");
+					await s.narrate("そのさきは、じが小さくて\nよめない。");
+					s.set("seen_unchin_eki");
+				}
 				// ④ 改札から 乗った 人（norikomi の「夕日が、ながれていく」）
 				if (s.flag("seen_tonarimachi"))
 					await s.say("kiriko", "（150円で、夕日つき\nだったンゴ）");
@@ -1186,8 +1208,14 @@ export const ekimae: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
+				// 深夜も 宵の 札が そのまま。ナイターの中けいと テレビの 打ち切り（P0-2）を 両方 知る 人だけ
 				if (t === "shinya") {
-					await s.narrate("『タクシーのりば』。\nだれも　いない。");
+					// 「まだ」は 宵に 札を 見た 人（seen_takushii_fuda）だけ
+					if (s.flag("seen_takushii_fuda"))
+						await s.narrate("『本日終了』の札が、\nまだ　さがっている。");
+					else await s.narrate("『タクシーのりば』に、\n『本日終了』の札。");
+					if (s.flag("seen_takushii_naita") && s.flag("seen_chukei_end"))
+						await s.say("kiriko", "（延長、どっちが\nかったンゴ）");
 					return;
 				}
 				if (t === "asa") {
@@ -1201,6 +1229,7 @@ export const ekimae: MapDef = {
 				// 「からっぽ」とは書かない（nostalgia.md §7）
 				if (t === "yoru") {
 					await s.narrate("『タクシーのりば』に、\n『本日終了』の札。");
+					s.set("seen_takushii_fuda");
 					if (s.flag("seen_takushii_naita"))
 						await s.say("kiriko", "……ナイター、\n見に帰ったンゴ");
 					return;

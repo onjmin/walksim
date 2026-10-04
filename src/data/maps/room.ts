@@ -38,7 +38,8 @@
 //   seen_denki_kaishu（apart door_room。⑫）＋ seen_mywin_ao（street）/ seen_danchi_ue（danchi）/
 //   seen_taigan_shinya（kawara）・seen_suwari_*（suwariNure 経由。㉟）・
 //   seen_502_yakiu / seen_503_yoru（apart。筋(53)）・seen_tanaka_inu（street。筋(52)）・got_senro_bane（senro。筋(57)）・
-//   seen_koen_kaikan（koen。筋(55)）・seen_susuki_yama（yamamichi）。
+//   seen_koen_kaikan（koen。筋(55)）・seen_susuki_yama（yamamichi）・
+//   seen_densha_deru（tonarimachi。筋(69)。布団の遠い音）・seen_mywin_yoru（street。筋(72)。evening）。
 // set するフラグ: tod（"yoru"→"shinya"）・seen_asa_thread・seen_clock_denchi・seen_hoshumura・
 //   seen_tv_yoru（数）・seen_chukei_end・seen_tenki・seen_tv_shinya・seen_yoru_sasoi・
 //   seen_pc_yoru（数）・seen_pc_chukei・seen_kettle_yoru（数）・seen_kettle_tome・seen_phono・seen_hari_kaeta（kirokuLines が読む）・
@@ -46,6 +47,7 @@
 //   seen_hari_maru・seen_phono_kurabe・seen_susuki_kabin・seen_tana_rec・seen_cal_aki・
 //   seen_nikki_yoru / seen_nikki_shinya（字）・seen_nikki_kesu・got_kan（kanDesk 経由）・
 //   seen_phono_asa（筋(53)。shelf が読む）・seen_phono_kara（数。宵の から回りの段）・seen_kitaku_yoru（宵に帰った。window が読む）・
+//   seen_tana_kara（宵に空き箱をあけた=1・朝に からのまま を見た=2。phono・shelf が読む）・seen_phono_hikari（朝のラッパ。phono の中だけ）・
 //   seen_nikki_asa・seen_receipt・seen_makura_asa・seen_bane_asa（この4つは room の中だけ。朝の日記・机・枕元を一度にする）。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
@@ -162,6 +164,17 @@ const TOOI_OTO: {
 		pan: 0.4,
 		volume: 0.2,
 		text: "夕方と　おなじ　方から、\n電車の　音。",
+	},
+	// 筋(69) tonarimachi densha_deru（改札の前で見おくった電車）。
+	// tonarimachi に居た人には かならず seen_tonarimachi が立つので、ekimae norikomi の行より上に置く
+	{
+		map: "tonarimachi",
+		flags: ["seen_densha_deru"],
+		densha: true,
+		se: "densha_far",
+		pan: -0.5,
+		volume: 0.2,
+		text: "となりまちの　ほうから、\n電車の　音。",
 	},
 	// ekimae norikomi（となりまちへ乗った）
 	{
@@ -411,6 +424,9 @@ export const room: MapDef = {
 				if (osoi) {
 					s.set("seen_kitaku_yoru");
 					await s.narrate("窓のそとは、もう\nまっくらだ。");
+					// 筋(72) street my_win（宵。はしの窓の あかり＝seen_mywin_yoru）を見てきた人
+					if (s.flag("seen_mywin_yoru"))
+						await s.narrate("へやの　でんきが、\nつけっぱなしだった。");
 					// どこかの地区に 宵で 着いていた人（yoruStep）
 					if (yoruStep(s) >= 1)
 						await s.say("kiriko", "（ずいぶん　おそく\nなったンゴ）");
@@ -546,6 +562,12 @@ export const room: MapDef = {
 						await s.say("kiriko", "（……ざらざらンゴ）");
 					} else {
 						await s.narrate("ゆうべの　レコードを、\nちいさく　かけた。");
+						// ⑭ ゆうべ 骨董屋の蓄音機と見くらべた人（seen_phono_kurabe）
+						if (s.flag("seen_phono_kurabe"))
+							await s.say(
+								"kiriko",
+								"（ゼロ　ひとつ　すくなくても、\nちゃんと　鳴るンゴ）",
+							);
 					}
 					return;
 				}
@@ -554,6 +576,18 @@ export const room: MapDef = {
 					s.set("seen_phono_kurabe");
 					await s.narrate("ラッパの　まがりを、\nゆびで　なぞった。");
 					await s.say("kiriko", "（うちのは、ゼロ　ひとつ\nすくないンゴ）");
+					return;
+				}
+				// ⑭ 朝、レコードの無い人で、ゆうべ見くらべた人（seen_phono_kurabe）。ラッパを もう一度（一度だけ）
+				if (
+					t === "asa" &&
+					!rec &&
+					!s.flag("seen_tana_rec") &&
+					s.flag("seen_phono_kurabe") &&
+					!s.flag("seen_phono_hikari")
+				) {
+					s.set("seen_phono_hikari");
+					await s.narrate("ラッパに、朝の　光が\nうつっている。");
 					return;
 				}
 				// 筋(53) 深夜、拾ったレコードは あるけれど かけない。
@@ -578,7 +612,14 @@ export const room: MapDef = {
 						await s.narrate("ターンテーブルが、から回り\nする　音。");
 					else if (n === 2)
 						await s.narrate("針を　あげた。\nかける　レコードが　ない。");
-					else await s.say("kiriko", "（本棚の　箱も、\nからっぽンゴ）");
+					// shelf の宵で 空き箱を あけた人（seen_tana_kara）は、そのにおいを
+					else
+						await s.say(
+							"kiriko",
+							s.flag("seen_tana_kara")
+								? "（あの　箱、においだけ\nだったンゴ）"
+								: "（本棚の　箱も、\nからっぽンゴ）",
+						);
 					return;
 				}
 				// 深夜、まだ レコードの無い人には、ほこりだけ（段は進めない）
@@ -1072,10 +1113,33 @@ export const room: MapDef = {
 						return;
 					}
 				}
+				const t = s.flag("tod");
+				const rec = s.has("rec_q") > 0;
+				// 宵、phono の から回りを2回見た人（seen_phono_kara>=2）は、空き箱を あけてみる（一度）。
+				// phono の3段目・深夜・朝の この箱で読む
+				if (
+					t === "yoru" &&
+					numFlag(s, "seen_phono_kara") >= 2 &&
+					!s.flag("seen_tana_kara")
+				) {
+					s.set("seen_tana_kara");
+					await s.narrate("空き箱を　あけてみた。\nジャケットの　においだけ。");
+					return;
+				}
+				// 深夜、宵に あけた箱（seen_tana_kara）。レコードを まだ 拾っていない人だけ
+				if (t === "shinya" && !rec && s.flag("seen_tana_kara")) {
+					await s.narrate("空き箱は、まだ　からっぽ。");
+					return;
+				}
 				await s.narrate("本と、レコードの空き箱が\nひとつ。");
 				// 筋(53) 深夜に拾ったレコード（rec_q）は、朝まで しまわない（朝の phono で かけてから）
-				if (s.flag("tod") === "shinya" && s.has("rec_q") > 0)
+				if (t === "shinya" && rec)
 					await s.say("kiriko", "（しまうのは、朝ンゴ）");
+				// 朝、宵に あけた箱（seen_tana_kara=1）が、レコードの無いまま 朝になった（一度。出したら 2）
+				if (t === "asa" && !rec && numFlag(s, "seen_tana_kara") === 1) {
+					s.set("seen_tana_kara", 2);
+					await s.say("kiriko", "（からの　箱は、からの\nままンゴ）");
+				}
 			},
 		},
 		// ── テレビ（夕・夜=やきう中継、朝=あさの番組。深夜は月曜の放送休止＝seen_tv_shinya）。

@@ -41,6 +41,10 @@
 // ほかの地区が読む前振り: 針（got_hari・seen_hari_mise → room phono）・中古盤のポスター（seen_record_poster
 // → room poster）・店じまい（seen_record_owari・seen_record_oyaji3・seen_arcade_lamp・seen_kissa_nioi・
 // seen_yaoya_n → senro to_tonarimachi の宵・深夜・朝）。宵・深夜・朝の差は senro・room が受ける（ここは夕方だけ）。
+// 発車した電車（densha_deru・seen_densha_deru）→ senro fumikiriBelt（夕方）・room 布団の遠い音（宵）。
+//   その回に改札へ行くと eki_kaisatsu が答える（seen_densha_kotae。一度だけ。ほかでは読まない）。
+// かえりのきっぷ（seen_unchin_kaeri）: ekimae unchin の表（seen_unchin_eki）を見た人に、改札で一度。
+// ゲーセン（seen_geesen）→ senro to_tonarimachi の宵。音は、もどって来た回数で 歓声 → ためいき → おなじ曲のループ。
 
 import type {
 	EventDef,
@@ -382,11 +386,27 @@ export const tonarimachi: MapDef = {
 			run: async (s) => {
 				// この回に発車した電車（densha_deru）を見た人には、一度だけ「つぎの」電車として
 				// （seen_densha_sakki は、ここか、町を出るとき deru で使いきる）
+				let kotae = false;
 				if (s.flag("seen_densha_sakki")) {
 					s.set("seen_densha_sakki", false);
 					await s.narrate("さっきの　つぎの　電車が、\nもう　入っている。");
+					// (69) densha_deru の「吾輩のは、まだ　あるンゴね？」への答え（一度だけ）
+					if (!s.flag("seen_densha_kotae")) {
+						s.set("seen_densha_kotae");
+						kotae = true;
+						await s.say("kiriko", "（吾輩のも、ちゃんと\nあったンゴ）");
+					}
 				} else {
 					await s.narrate("つきみ駅の改札。かえりの\n電車が、もう入っている。");
+				}
+				// (70) ekimae unchin の表（seen_unchin_eki）を見た人に一度。(69) の答えと同じ回なら次の回へ
+				if (
+					!kotae &&
+					s.flag("seen_unchin_eki") &&
+					!s.flag("seen_unchin_kaeri")
+				) {
+					s.set("seen_unchin_kaeri");
+					await s.say("kiriko", "（かえりも　150円ンゴ）");
 				}
 				const i = await s.choose(["＞＞1 のって帰る", "＞＞2 まだ歩く"], {
 					cancel: 1,
@@ -636,18 +656,28 @@ export const tonarimachi: MapDef = {
 				s.se("decide", { volume: 0.4, pan: 0.1 });
 				await s.wait(300);
 				s.se("decide", { volume: 0.3, pan: -0.1 });
-				await s.narrate("とびらのおくから、電子音と\nだれかの歓声。");
 				if (s.flag("seen_suito") && !s.flag("seen_suito_kaeshi")) {
+					await s.narrate("とびらのおくから、電子音と\nだれかの歓声。");
 					await s.say("kiriko", "（水とうの　もちぬし、\nこの中ンゴ……？）");
 					return;
 				}
 				if (s.flag("seen_suito_kaeshi") && !s.flag("seen_geesen_kaeshi")) {
 					s.set("seen_geesen_kaeshi");
+					await s.narrate("とびらのおくから、電子音と\nだれかの歓声。");
 					await s.say("kiriko", "（ゲーセンじゃ、\nなかったンゴ）");
 					return;
 				}
+				// 音の段: はじめてこの戸で音を聞いた訪問（seen_geesen_kai＝その時の seen_tonari_kita＋1）から
+				// 数えて、歓声 → ためいき → おなじ曲の三回目のループ。はじめての人は何回目の訪問でも段0。
+				const kita = numFlag(s, "seen_tonari_kita");
+				if (!s.flag("seen_geesen_kai")) s.set("seen_geesen_kai", kita + 1);
+				const kai = kita - (numFlag(s, "seen_geesen_kai") - 1);
+				if (kai <= 0)
+					await s.narrate("とびらのおくから、電子音の\n曲と　だれかの歓声。");
+				else if (kai === 1) await s.narrate("歓声が、ためいきに\nかわった。");
+				else await s.narrate("おなじ　曲が、三回目の\nループに　入った。");
 				if (s.flag("seen_geesen")) {
-					await s.say("kiriko", "……やっぱり、やめて\nおくンゴ");
+					await s.say("kiriko", "（……まだ、やめておく\nンゴ）");
 					return;
 				}
 				s.set("seen_geesen");

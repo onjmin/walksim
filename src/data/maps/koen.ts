@@ -160,6 +160,10 @@ const suwaru = async (s: Story): Promise<void> => {
 	await s.narrate("丘の下から、かぜが\nゆっくり　あがってくる。");
 	if (kanHeld(s)) await kanLine(s);
 	else await s.narrate("ベンチの板が、\nしっとり　つめたい。");
+	// 筋(64): yamamichi koen_sign（seen_koen_sign_yama）で 見た『展望台　ベンチ』の 回収
+	if (s.flag("seen_koen_sign_yama")) {
+		await s.say("kiriko", "（ほんとに　ベンチ\nあったンゴ）");
+	}
 	await s.say("kiriko", "……よし。おりるンゴ");
 };
 
@@ -589,9 +593,26 @@ export const koen: MapDef = {
 			fixedDir: true,
 			run: async (s) => {
 				const t = s.flag("tod");
+				// 朝は shisho_asa（seen_koen_shisho_asa）の 順番に あわせる: あける前は かぎの たば
 				if (t === "asa") {
-					await s.narrate("返却ポスト。うしろの\nとびらが、あいている。");
-					await s.narrate("中から、本が\nぞろぞろ　出てくる。");
+					if (!s.flag("seen_koen_shisho_asa")) {
+						await s.narrate(
+							"返却ポスト。うしろに、\nかぎの　たばが　さしてある。",
+						);
+						// 宵のしっぽ（seen_koen_post_shippo）を 見た人だけ。まだ あけていない
+						if (s.flag("seen_koen_post_shippo")) {
+							await s.narrate(
+								"ふたの　すきまから、\nまだ　しっぽが　のぞいている。",
+							);
+						}
+					} else {
+						await s.narrate("返却ポスト。うしろの\nとびらが、あいている。");
+						await s.narrate("中から、本が\nぞろぞろ　出てくる。");
+						// 宵のしっぽを 見た人だけ。shisho_asa が もう 出したあと
+						if (s.flag("seen_koen_post_shippo")) {
+							await s.narrate("しっぽは、もう\nはみ出ていない。");
+						}
+					}
 					return;
 				}
 				// ぬいぐるみ: 宵のしっぽ（seen_koen_post_shippo）→ 深夜の夜つゆ →
@@ -1088,15 +1109,20 @@ export const koen: MapDef = {
 					await s.narrate("いけがきの　おく。\nくらくて、なにも　見えない。");
 					return;
 				}
-				if (
-					s.flag("seen_koen_ball_bench") ||
-					(t === "asa" && s.flag("seen_koen_kid_asa"))
-				) {
-					await s.narrate("いけがきの　えだが、\nすこし　おれている。");
+				// 朝は のせられない。のせた人は dugout_bench の『つゆの　あと』とそろえて からっぽ、
+				// ball_kid（seen_koen_kid_asa）が とりに来たあとは おれた えだだけ
+				if (t === "asa") {
+					if (s.flag("seen_koen_ball_bench")) {
+						await s.narrate("いけがきは　からっぽ。");
+					} else if (s.flag("seen_koen_kid_asa")) {
+						await s.narrate("いけがきの　えだが、\nひとところ　おれている。");
+					} else {
+						await s.narrate("いけがきの　おくに、\nボールが　ひとつ。");
+					}
 					return;
 				}
-				if (t === "asa") {
-					await s.narrate("いけがきの　おくに、\nボールが　ひとつ。");
+				if (s.flag("seen_koen_ball_bench")) {
+					await s.narrate("いけがきの　えだが、\nすこし　おれている。");
 					return;
 				}
 				if (t === "yoru") {

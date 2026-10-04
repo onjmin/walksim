@@ -222,6 +222,7 @@ export const apart: MapDef = {
 			},
 		},
 		// ⑯ ゴミの日。夕・宵に読んだ人は seen_keiji（danchi gomi_asa・sumire gomidashi の朝が読む）。
+		// 宵は紙の かどが めくれていて、夕方にも読んだ人だけ「あしたの朝」と重ねる。
 		// 深夜は「夜に出すのは」の一枚だけ。すみれ町の深夜に、もう出してある ふくろ（sumire gomi の
 		// seen_gomi_hayai）を見た人だけ、キリコが重ねる。朝は火・金の一枚と、きょうが火ようのこと
 		// （9/14 は火よう。朝の一言は全員に出す＝フラグは読まない）
@@ -244,8 +245,20 @@ export const apart: MapDef = {
 					await s.say("kiriko", "（……きょうは、火ようンゴ）");
 					return;
 				}
+				// 宵は「夕方に読んだか」を seen_keiji_yu でとる（宵だけ2回読んだ人は数えない。
+				// 夕方の紙を おぼえている人だけ、あしたの朝へ）
+				const yonda = !!s.flag("seen_keiji_yu");
 				s.set("seen_keiji");
+				if (t === "yu") s.set("seen_keiji_yu");
 				await s.narrate("『もえるゴミは　火・金』");
+				if (t === "yoru") {
+					// 宵は蛍光灯の下で、紙の かどが めくれている（夕方と同じ紙の、物の変化）
+					await s.narrate(
+						"『夜に　出すのは……』の\n紙の　かどが、めくれている。",
+					);
+					if (yonda) await s.say("kiriko", "（……あしたの　朝ンゴ）");
+					return;
+				}
 				await s.narrate("『夜に　出すのは\nやめましょう』");
 			},
 		},
