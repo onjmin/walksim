@@ -6,14 +6,22 @@
 //           （docs/nostalgia.md P0-1・P0-2。人は出さない。部屋のテレビで中継の打ち切りを見た人
 //           ＝seen_chukei_end には、502 はチャンネルをかえている。ラジオは出さない＝続きをラジオで
 //           聞くのは kokudo・umi・danchi。数字は言わない）
-//   深夜 … せんたくきは止まっている・宵の虫がまだまわっている（人も声も出さない。灯るのは自分の部屋だけ）
+//   深夜 … せんたくきは止まっている・宵の虫がまだまわっている・牛乳箱のあき瓶・土手の街灯の列・
+//           ピザやのチラシをポケットへ（人も声も出さない。灯る部屋は自分の部屋だけ＝他人の窓の灯りは出さない）
 //   朝   … となりのドアの前にたたんだダンボール・かさが二本・牛乳・朝刊のスポーツらん・
 //           502 のみそしる・503 のめざまし（生活が続いている payoff）
 //
-// ほかの地区の前振りを読む所: door_room（深夜。kawara の seen_taigan_shinya → ドアのすきまの灯り＝⑫）・
+// ほかの地区の前振りを読む所: door_room（深夜。kawara の seen_taigan_shinya・street my_win の
+// seen_mywin_ao・danchi a_stairs の seen_danchi_ue → ドアのすきまの灯り＝⑫）・
 // kasa（朝。room tv の seen_tenki＝⑲）・d502（宵。room tv の seen_chukei_end）・
-// d503（朝。street tenshu の seen_tenshu2）・shimi（朝。umi の seen_kyori_0＝②）。
+// d503（朝。street tenshu の seen_tenshu2）・shimi（朝。umi の seen_kyori_0・seen_umi_hashikko＝②）・
+// win_st（深夜。kawara fumiato の seen_suwari_kawara・taigan_view の seen_taigan_shinya）・
+// milk（朝。street の店主の「ぎゅうにゅうは　あるかい」＝got_dinner_pan で got_gyunyu の無い人）・
+// keiji（深夜。sumire gomi の seen_gomi_hayai＝⑯）・mybox（朝。room tv の seen_tv_yoru・seen_chukei_end）。
 // keiji の seen_keiji は danchi gomi_asa・sumire gomidashi の朝が読む（⑯。keiji の朝は読まない）。
+// mybox の got_pizza_chirashi（深夜）は room desk の朝が読む（㊻）。
+// この地区の中の段: d502 の seen_502_yakiu（宵）→ mybox（朝）・d503 の seen_503_yoru（宵）→ d503（深夜）・
+// milk の seen_gyunyu_bako（宵・深夜のあき瓶）→ milk（朝）・win_st の seen_winst_shinya（深夜）→ win_st（朝）。
 // arrive_yoru の done:apart:arrive_yoru は street laundry（朝）と、この地区の arrive_shinya が読む。
 //
 // 座標凍結v2: キリコの部屋のドア (2,2)→room(5,8)／room からの戻り (2,3)／
@@ -133,20 +141,29 @@ export const apart: MapDef = {
 						return;
 					}
 				}
-				// ⑫ 深夜のかわらで「電気、けしてきたっけ」（kawara taigan_view の seen_taigan_shinya）と
-				// 思った人だけ、帰りに一度。自分の部屋の灯り（P0-5）。キリコの「やっぱり」は かわらの
-				// 問いへの答え（street my_win の深夜で先に気づいた人にも通じる）。
-				// room pc（shinya）の「モニターの　あかりだけが、ついている」とつながる
+				// ⑫ 深夜に、外から自分の部屋の灯りを気にした人だけ、帰りに一度。自分の部屋の灯り（P0-5）。
+				// 読み手は3つ: かわらの「電気、けしてきたっけ」（kawara taigan_view の seen_taigan_shinya）・
+				// 通りの「モニター、けしてきたっけ」（street my_win の seen_mywin_ao）・
+				// 団地のいちばん上から見えた『あおい窓』（danchi a_stairs ichibanUe の seen_danchi_ue）。
+				// キリコの「やっぱり」は かわら・通りの問いへの答え、団地だけの人は団地の問い
+				// （「あれ、吾輩の　へやンゴ？」＝だれの部屋か）への答えだけにする。何の灯りかは言わず、
+				// room pc（shinya）の「モニターの　あかりだけが、ついている」に残す
+				const toi = !!(s.flag("seen_taigan_shinya") || s.flag("seen_mywin_ao"));
 				if (
 					t === "shinya" &&
-					s.flag("seen_taigan_shinya") &&
+					(toi || s.flag("seen_danchi_ue")) &&
 					!s.flag("seen_denki_kaishu")
 				) {
 					s.set("seen_denki_kaishu");
 					await s.narrate(
 						"ドアの　すきまから、\nあおい　あかりが　もれている。",
 					);
-					await s.say("kiriko", "（……やっぱり、\nつけっぱなしンゴ）");
+					await s.say(
+						"kiriko",
+						toi
+							? "（……やっぱり、\nつけっぱなしンゴ）"
+							: "（……あれ、やっぱり\n吾輩の　へやだったンゴ）",
+					);
 				}
 				// げんかんマット (2,3) をまたいで入る（mat の段）。なおした tod に「_fumi」をつける
 				// ＝なおしたあとに、ほんとうに またいだときだけ よれる
@@ -201,8 +218,9 @@ export const apart: MapDef = {
 			},
 		},
 		// ⑯ ゴミの日。夕・宵に読んだ人は seen_keiji（danchi gomi_asa・sumire gomidashi の朝が読む）。
-		// 深夜は「夜に出すのは」の一枚だけ、朝は火・金の一枚と、きょうが火ようのこと（9/14 は火よう。
-		// 朝の一言は全員に出す＝フラグは読まない）
+		// 深夜は「夜に出すのは」の一枚だけ。すみれ町の深夜に、もう出してある ふくろ（sumire gomi の
+		// seen_gomi_hayai）を見た人だけ、キリコが重ねる。朝は火・金の一枚と、きょうが火ようのこと
+		// （9/14 は火よう。朝の一言は全員に出す＝フラグは読まない）
 		{
 			id: "keiji",
 			x: 6,
@@ -213,6 +231,8 @@ export const apart: MapDef = {
 				await s.narrate("かべの掲示。");
 				if (t === "shinya") {
 					await s.narrate("『夜に　出すのは\nやめましょう』");
+					if (s.flag("seen_gomi_hayai"))
+						await s.say("kiriko", "（……すみれの　あの\nふくろンゴ）");
 					return;
 				}
 				if (t === "asa") {
@@ -226,7 +246,8 @@ export const apart: MapDef = {
 			},
 		},
 		// うちの郵便受け。ピザやのチラシの段（夕: 『よる11時まで』→ 宵: 晩ごはんのあと →
-		// 深夜: あしたの晩ごはん）。朝は朝刊（ナイターの結果。P0-2）
+		// 深夜: あしたの晩ごはん。ぬいてポケットへ＝got_pizza_chirashi。room desk の朝が
+		// 「きょうの晩ごはん」で読む＝㊻）。朝は朝刊（ナイターの結果。P0-2）
 		{
 			id: "mybox",
 			x: 3,
@@ -240,18 +261,32 @@ export const apart: MapDef = {
 					return;
 				}
 				if (t === "shinya") {
+					// ㊻ 一度ぬいたら、ポケットの中（郵便受けにはもう無い）
+					if (s.flag("got_pizza_chirashi")) {
+						await s.narrate("チラシは、もう\nポケットの　中だ。");
+						return;
+					}
 					await s.narrate("チラシの『よる11時まで』。");
 					await s.say("kiriko", "（……あしたの　晩ごはん、\nこれに　するンゴ）");
+					s.set("got_pizza_chirashi");
+					await s.narrate("チラシを、ぬいて\nポケットに　しまった。");
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("うちの郵便受けに、\n朝刊が　ささっている。");
 					// ゆうべのナイターの結果（nostalgia.md P0-2。数字を言い切るのはここ1か所だけ）。
-					// スポーツらんもキリコの一言も、部屋のテレビで中継を見た人にだけ
-					// （P0-11・§5: フラグの無い人の朝は現行と同一。前ぶりの無い人に結果だけを見せない）
+					// スポーツらんは、ゆうべのナイターを見た／聞いた人にだけ
+					// （P0-11・§5: フラグの無い人の朝は現行と同一。前ぶりの無い人に結果だけを見せない）。
+					// 部屋のテレビで見た人（room tv）は「ねてて正解」、テレビは見ずに 502 のドアごしに
+					// 実況を聞いた人（d502 の seen_502_yakiu）は、となりの人の夜と重ねる
 					if (numFlag(s, "seen_tv_yoru") > 0 || s.flag("seen_chukei_end")) {
 						await s.narrate("スポーツらん。延長12回、\nひきわけ、だった。");
 						await s.say("kiriko", "……ねてて　正解ンゴ");
+						return;
+					}
+					if (s.flag("seen_502_yakiu")) {
+						await s.narrate("スポーツらん。延長12回、\nひきわけ、だった。");
+						await s.say("kiriko", "（502の　人、さいごまで\n見たンゴかね）");
 					}
 					return;
 				}
@@ -320,10 +355,13 @@ export const apart: MapDef = {
 				// 部屋のテレビで中継の打ち切りを見た人（room tv の seen_chukei_end）には、
 				// となりもチャンネルをかえている（ラジオは出さない＝続きをラジオで聞くのは
 				// kokudo・umi・danchi b_win_tv。「消えた」とは書かない）。
-				// どちらの枝も、ひざを　たたく音（502 の人のくせ）で しめる
+				// どちらの枝も、ひざを　たたく音（502 の人のくせ）で しめる。
+				// 実況を聞いた人は seen_502_yakiu（mybox の朝のスポーツらん「502の人も」が読む）
 				if (t === "yoru") {
+					const end = !!s.flag("seen_chukei_end");
+					if (!end) s.set("seen_502_yakiu");
 					await s.narrate(
-						s.flag("seen_chukei_end")
+						end
 							? "502ごう室。ドアごしに、\nチャンネルを　かえる　音が　つづく。"
 							: "502ごう室。ドアごしに、\nナイターの　実況。",
 					);
@@ -333,8 +371,9 @@ export const apart: MapDef = {
 				await s.narrate("502ごう室。テレビの音が\nもれている。");
 			},
 		},
-		// 503 は、キリコよりあとに越してきた人（夕方に一度だけ seen_503）。宵はシャワーの音、
-		// 深夜はしずか（他人の部屋の灯りは出さない）、朝はめざまし。
+		// 503 は、キリコよりあとに越してきた人（夕方に一度だけ seen_503。2回目は表札のまわりの
+		// テープのあと）。宵はシャワーの音（seen_503_yoru）、深夜はしずか（他人の部屋の灯りは出さない。
+		// 宵のシャワーを聞いた人には、ふろばの換気扇の音だけ＝不在の説明でなく機械の音の痕跡）、朝はめざまし。
 		// 夕方の店主の「カーテンが　しまったまま」（street tenshu の seen_tenshu2）を聞いた人には、
 		// きょうはキリコのほうが早い。それが無くて夕方の「あとに来た人」（seen_503）を見た人には
 		// 「しんいりさん」で返す。どちらも無い人は「おきないンゴか」
@@ -346,7 +385,11 @@ export const apart: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("503ごう室。\n――こちらも、しずかだ。");
+					await s.narrate(
+						s.flag("seen_503_yoru")
+							? "503ごう室。ふろばの　換気扇の\n音だけ、かすかに　している。"
+							: "503ごう室。\nしずかだ。",
+					);
 					return;
 				}
 				if (t === "asa") {
@@ -363,6 +406,7 @@ export const apart: MapDef = {
 					return;
 				}
 				if (t === "yoru") {
+					s.set("seen_503_yoru");
 					await s.narrate("503ごう室。ドアの　むこうで、\nシャワーの　音。");
 					return;
 				}
@@ -370,7 +414,10 @@ export const apart: MapDef = {
 				if (!s.flag("seen_503")) {
 					s.set("seen_503");
 					await s.say("kiriko", "（吾輩より、あとに\n来た人ンゴ）");
+					return;
 				}
+				// 2回目は、前の人の表札をはがしたあと（だれが住んでいたかは言わない）
+				await s.narrate("ひょうさつの　まわりに、\n四角い　テープのあと。");
 			},
 		},
 		// ⑲ かさ立ての段。夕・宵・深夜に見た人は seen_kasa → 朝は一本へっている。
@@ -408,6 +455,13 @@ export const apart: MapDef = {
 				await s.narrate("かさ立て。\nかさが　三本。");
 			},
 		},
+		// 502 の牛乳箱。あき瓶の段（人は出さない。夕: からっぽ → 宵: あらったあき瓶がふたの上に →
+		// 深夜: あき瓶に蛍光灯 → 朝: あたらしい牛乳に かわっている）。あき瓶（宵・深夜）を見た人だけ
+		// seen_gyunyu_bako（夕方のからっぽだけの人には、朝の「あき瓶が」は前振りの無い回収になる）。
+		// 見ていない人・夕方だけの人の朝は、一本入っているだけ（からっぽの箱が埋まった、で通じる）。
+		// 朝、夕方に street の店主から あんぱんを買って「ぎゅうにゅうは　あるかい」と聞かれ、宵に牛乳を
+		// 買わなかった人（got_dinner_pan で got_gyunyu の無い人＝street arrive_yoru の「なかったンゴ」）にだけ、
+		// キリコがひとこと
 		{
 			id: "milk",
 			x: 5,
@@ -417,12 +471,24 @@ export const apart: MapDef = {
 				await s.narrate("502の前に、牛乳箱。");
 				const t = s.flag("tod");
 				if (t === "asa") {
-					await s.narrate("あたらしい牛乳が、\n一本入っている。");
+					await s.narrate(
+						s.flag("seen_gyunyu_bako")
+							? "あき瓶が、あたらしい\n牛乳に　かわっている。"
+							: "あたらしい牛乳が、\n一本入っている。",
+					);
+					if (s.flag("got_dinner_pan") && !s.flag("got_gyunyu"))
+						await s.say("kiriko", "（……ゆうべ、これが\nほしかったンゴ）");
 					return;
 				}
-				// 宵の文に「からっぽ」を出さない（nostalgia.md P0-1 の受け入れ条件）
+				// 宵・深夜の文に「からっぽ」を出さない（nostalgia.md P0-1 の受け入れ条件・罠4）
 				if (t === "yoru") {
-					await s.narrate("ふたに、配達の　シール。");
+					s.set("seen_gyunyu_bako");
+					await s.narrate("ふたの上に、あらった\nあき瓶が　一本。");
+					return;
+				}
+				if (t === "shinya") {
+					s.set("seen_gyunyu_bako");
+					await s.narrate("あき瓶に、蛍光灯が\nうつっている。");
 					return;
 				}
 				await s.narrate("――からっぽだ。");
@@ -474,7 +540,8 @@ export const apart: MapDef = {
 		},
 		// ② てんじょうのしみ。夕・宵・深夜に3地区以上 歩いた人には「川みたいな　すじ」が
 		// 目に入る（形が変わったとは書かない）。朝、うみの きょり標0（umi kyori_0 の seen_kyori_0）を
-		// 見た人だけ、キリコが町を重ねる
+		// 見た人と、うみの車どめ・行きどまり・きょり標の3つで「道も、川も、線路も　おしまい」に
+		// なった人（umi の seen_umi_hashikko）だけ、キリコが町を重ねる
 		{
 			id: "shimi",
 			x: 8,
@@ -491,10 +558,18 @@ export const apart: MapDef = {
 					await s.narrate("てんじょうの　しみ。\n……川みたいな　すじが　ある。");
 				else
 					await s.narrate("てんじょうに、しみ。\nなにかの地図みたいな形だ。");
-				if (s.flag("tod") === "asa" && s.flag("seen_kyori_0"))
+				if (
+					s.flag("tod") === "asa" &&
+					(s.flag("seen_kyori_0") || s.flag("seen_umi_hashikko"))
+				)
 					await s.say("kiriko", "（ここが　かわらで……\nはしっこが、うみンゴ）");
 			},
 		},
+		// かいだんの窓。見えるものを「土手の街灯の列」にしぼった段（夕: 土手まであかね色 →
+		// 宵: 街灯もついている → 深夜: 街灯だけが ならんでいる＝seen_winst_shinya → 朝: もうついていない）。
+		// 深夜、かわらの土手のしゃめんに すわった人（kawara fumiato の seen_suwari_kawara）、
+		// それが無くて川ごしにこちらを見た人（kawara taigan_view の seen_taigan_shinya）には、
+		// キリコが あちらとこちらを重ねる。どちらも無い人は2行で終わる（窓が見えたとは言わない）
 		{
 			id: "win_st",
 			x: 11,
@@ -503,21 +578,36 @@ export const apart: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					s.set("seen_winst_shinya");
 					await s.narrate(
 						"かいだんの窓。まちの明かりが\nほとんど　きえている。",
 					);
+					await s.narrate("土手の　街灯だけが、\nならんでいる。");
+					if (s.flag("seen_suwari_kawara")) {
+						await s.say("kiriko", "（……あの　へんに、\nすわってたンゴ）");
+						return;
+					}
+					if (s.flag("seen_taigan_shinya"))
+						await s.say("kiriko", "（……さっきは、\nあっちに　いたンゴ）");
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("あさの光が、かいだんに\nさしこんでいる。");
+					// 深夜に街灯の列を見た人だけ（見ていない人は1行で終わる）
+					if (s.flag("seen_winst_shinya"))
+						await s.narrate("土手の　街灯は、\nもう　ついていない。");
 					return;
 				}
-				// 宵は灯りだけ（夕やけの文に落とさない。nostalgia.md P0-1）
+				// 宵は灯りだけ（夕やけの文に落とさない。消えた・からっぽは書かない。nostalgia.md P0-1）
 				if (t === "yoru") {
-					await s.narrate("かいだんの窓から、\nまちの灯りが　点々。");
+					await s.narrate(
+						"かいだんの窓から、まちの灯り。\n土手の　街灯も、ついている。",
+					);
 					return;
 				}
-				await s.narrate("かいだんの窓から、夕やけ。\nまちが、あかね色だ。");
+				await s.narrate(
+					"かいだんの窓から、夕やけ。\n土手の　ほうまで、あかね色だ。",
+				);
 			},
 		},
 	],

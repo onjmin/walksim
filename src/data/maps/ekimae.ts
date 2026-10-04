@@ -13,6 +13,20 @@
 //           伝言板の書き込みが1つ増えている。スーパーの前に開店前のトラック（suupaa の payoff）
 // 夕方に見たもの（10円・ゆうかん二部・ナイター・留守の交番・ちらし・穂・ねこの毛・花だんの札）を、
 // 宵・深夜・朝の同じ場所が読む。朝の回収は、前振りを見た人にだけ出す（見ていない人には別の文）。
+// 段と回収（2026-10-04 演出の強化）:
+//   じはんき  宵 はしの一列の あかい札（seen_akafuda_eki）→ 深夜 ここで缶（seen_kan_eki）
+//             → 朝 あかい札の列に うりきれランプ（缶の人だけ「ゆうべの一本で、おしまい」）
+//   ねこ      夕 コンテナの毛（seen_neko_eki）→ 宵 しっぽ・深夜 毛だけ（seen_neko_sukima）
+//             → 朝 まるくねている（夕か宵か深夜に すきまを見た人だけ）
+//   黄色いぼうし  伝言板の書きこみ ⇄ 窓口 夕・宵（seen_madoguchi_boushi。どちらを先に見ても
+//             キリコの一言は1回＝seen_boushi_dengon）→ 朝 窓口のフックがあく・男の子のあたま（yuu_asa）
+//   コンテナ  夕 つんである → 宵 モップの水 → 深夜 あしたのぶん
+//             → 朝 トラックの3回目（seen_ekimae_truck>=3「荷台が、からに」）のあと、ケースがおもてへ
+//   自転車    夕 ずらり（seen_bike_yu）→ 宵 半分 → 深夜 一台・月曜の号（street・suupaa）→ 朝
+//   男の子    朝のタカ（seen_taka_asa 数）で 仲直りが 進む
+//   駅名の柱  seen_ekimei_minami → tonarimachi ekimei。となりまちに行った人には『つきみ』
+//   よそから  保線の車（senro seen_senro_hosen → 朝の rail_fence）・アジフライ（suupaa seen_baa_aji
+//             → 朝の chirashi）・まるい字（kokudo seen_kanban_kokudo → old_sign）
 //
 // 座標凍結v3:
 //   東端 (31,9) → kokudo (1,10)／kokudo からの着地 (30,9)
@@ -30,7 +44,9 @@ import type {
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import {
+	arrived,
 	asaClock,
+	kanLv,
 	kanShinya,
 	kanTick,
 	natsuOwari,
@@ -269,7 +285,12 @@ export const ekimae: MapDef = {
 				await s.wait(500);
 				s.se("suzume", { volume: 0.8 });
 				await s.wait(600);
-				await s.narrate("ロータリーに、朝の光。");
+				// 深夜に ここへ 来た人（arrive_shinya の「じぶんの足音が、ロータリーに　ひびく」）だけ
+				await s.narrate(
+					arrived(s, "ekimae", "shinya")
+						? "ゆうべ　足音の　ひびいた\nロータリーに、朝の光。"
+						: "ロータリーに、朝の光。",
+				);
 				await s.narrate("スーパーの前に、トラックが\nとまっている。");
 			},
 		},
@@ -498,16 +519,33 @@ export const ekimae: MapDef = {
 			11,
 			CHILD,
 			async (s) => {
-				await s.say(null, "ごめんって、ちゃんと\n黒板に書いたのに", {
-					name: "タカ",
-				});
-				await s.say(null, "じが　へたで　よめない", { name: "男の子" });
-				await s.say(null, "へたって　言うな", { name: "タカ" });
-				// 夕方に「もうちょっとだけ いる」子と 話した 人だけ
-				if (s.flag("seen_ekimae_yuu") && !s.flag("seen_ekimae_taka")) {
-					s.set("seen_ekimae_taka");
-					await s.say("kiriko", "（……まってて、\nよかったンゴね）");
+				// seen_taka_asa は数（話すたび +1・3で止める）。仲直りが 段で すすむ
+				const n = numFlag(s, "seen_taka_asa");
+				s.set("seen_taka_asa", Math.min(3, n + 1));
+				if (n === 0) {
+					await s.say(null, "ごめんって、ちゃんと\n黒板に書いたのに", {
+						name: "タカ",
+					});
+					await s.say(null, "じが　へたで　よめない", { name: "男の子" });
+					await s.say(null, "へたって　言うな", { name: "タカ" });
+					// 夕方に「もうちょっとだけ いる」子と 話した 人だけ
+					if (s.flag("seen_ekimae_yuu") && !s.flag("seen_ekimae_taka")) {
+						s.set("seen_ekimae_taka");
+						await s.say("kiriko", "（……まってて、\nよかったンゴね）");
+					}
+					return;
 				}
+				// 二段目。きのうの「先に　行った」を、男の子が かえす
+				if (n === 1) {
+					await s.say(null, "……はやく　しろよ。\nまってて　やるから", {
+						name: "タカ",
+					});
+					await s.say(null, "きのう　まってたの、\nこっちだし", {
+						name: "男の子",
+					});
+					return;
+				}
+				await s.say(null, "……いくぞ", { name: "タカ" });
 			},
 			{ dir: "right", when: (st) => st.flags.tod === "asa" },
 		),
@@ -517,6 +555,15 @@ export const ekimae: MapDef = {
 			11,
 			CHILD,
 			async (s) => {
+				// 黄色い ぼうし（伝言板・窓口の 夕／宵）を 見た 人だけ、一度。持ちぬしは 説明しない
+				// （窓口の 朝は「フックが、ひとつ　あいている」）
+				if (
+					(s.flag("seen_madoguchi_boushi") || numFlag(s, "seen_dengon") & 3) &&
+					!s.flag("seen_boushi_asa")
+				) {
+					s.set("seen_boushi_asa");
+					await s.narrate("男の子の　あたまに、\n黄色い　ぼうし。");
+				}
 				// 夕方に「もうちょっとだけ　いる」と言った子が、一度だけ 言いわけする
 				if (s.flag("seen_ekimae_yuu") && !s.flag("seen_ekimae_yuu_asa")) {
 					s.set("seen_ekimae_yuu_asa");
@@ -623,6 +670,12 @@ export const ekimae: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					// 夕・宵に 窓口の よこの 黄色い ぼうし（伝言板の わすれもの）を 見た 人だけ。
+					// 持ちぬしは 説明しない（ロータリーの 男の子の あたま＝yuu_asa）
+					if (s.flag("seen_madoguchi_boushi")) {
+						await s.narrate("窓口の　よこの　フックが、\nひとつ　あいている。");
+						return;
+					}
 					await s.narrate("窓口のおくで、ほうきの\n音がする。");
 					return;
 				}
@@ -630,9 +683,23 @@ export const ekimae: MapDef = {
 				// 駅員の姿は書かない（宵は音と灯りだけ）
 				if (t === "yoru") {
 					await s.narrate("窓口に、あかり。おくで\nペンの　はしる音が　する。");
+					// 夕方に 見た 人には「まだ」。見ていない 人には はじめての 1行
+					await s.narrate(
+						s.flag("seen_madoguchi_boushi")
+							? "黄色い　ぼうしが、\nまだ　かかっている。"
+							: "窓口の　よこに、黄色い\nぼうしが　かかっている。",
+					);
+					s.set("seen_madoguchi_boushi");
+					if (numFlag(s, "seen_dengon") & 3)
+						await boushiTsunagu(s, "（伝言板の　ぼうしンゴね）");
 					return;
 				}
 				await s.narrate("窓口のおく、ちいさな\nラジオが　鳴っている。");
+				// 伝言板の『わすれものの　黄色い　ぼうし』（dengonban）。朝に フックが あく
+				s.set("seen_madoguchi_boushi");
+				await s.narrate("窓口の　よこに、黄色い\nぼうしが　かかっている。");
+				if (numFlag(s, "seen_dengon") & 3)
+					await boushiTsunagu(s, "（伝言板の　ぼうしンゴね）");
 			},
 		},
 		{
@@ -674,8 +741,21 @@ export const ekimae: MapDef = {
 			y: 8,
 			trigger: "talk",
 			run: async (s) => {
+				// 深夜は となりの 公衆電話（denwa）の みどりの ランプが ガラスに うつる
+				if (s.flag("tod") === "shinya") {
+					await s.narrate(
+						"うんちん表の　ガラスに、\nみどりの　ランプが　うつる。",
+					);
+					return;
+				}
 				await s.narrate("うんちん表。『となりまち\n150円』。");
 				await s.narrate("そのさきは、じが小さくて\nよめない。");
+				// ④ 改札から 乗った 人（norikomi の「夕日が、ながれていく」）
+				if (s.flag("seen_tonarimachi"))
+					await s.say("kiriko", "（150円で、夕日つき\nだったンゴ）");
+				// ベンチの じいちゃんの「見てるだけで　いい」（jiichan）
+				else if (numFlag(s, "seen_ekimae_jii") >= 1)
+					await s.say("kiriko", "（見るだけなら、\nタダンゴね）");
 			},
 		},
 		{
@@ -743,7 +823,26 @@ export const ekimae: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				const t = s.flag("tod");
+				// ㊳ tonarimachi ekimei が 読む（むこうの柱で「うちの柱にも」）
+				s.set("seen_ekimei_minami");
+				// 深夜は 入口の 街灯（arrive_shinya）で、駅の 名前だけ 見える
+				if (t === "shinya") {
+					await s.narrate(
+						"入口の　街灯で、『みなみ』の\n字だけ　うかんでいる。",
+					);
+					return;
+				}
 				await s.narrate("駅の名前の柱だ。\n――『みなみ』。");
+				// となりまちに 着いた（歩いても 電車でも）人だけ、となりの名前が 町に なる
+				if (s.flag("done:tonarimachi:arrive") || s.flag("seen_tonarimachi")) {
+					await s.narrate(
+						t === "asa"
+							? "となりの駅は　『つきみ』。\n……きのう　行った　町だ。"
+							: "となりの駅は　『つきみ』。\n……さっき　行った　町だ。",
+					);
+					return;
+				}
 				await s.narrate("となりの駅の名前も、\nちゃんと　書いてある。");
 			},
 		},
@@ -850,15 +949,31 @@ export const ekimae: MapDef = {
 				// 深夜は温かい缶が一本買える（買ったあとは再調べで いまの温度。nostalgia.md P0-6）
 				if (t === "shinya") {
 					await s.narrate("あかりだけ、ついている。\nひくい　うなり。");
+					// ここで 缶を 買った人（朝の うりきれランプで回収。senro jihanki_a と同じ形）
+					const before = kanLv(s);
 					await kanShinya(s);
+					if (before === 0 && kanLv(s) === 1) s.set("seen_kan_eki");
 					return;
 				}
+				// 朝。宵の あかい札（seen_akafuda_eki）か 深夜の 缶（seen_kan_eki）を 知っている 人だけ、札の列を 見る
 				if (t === "asa") {
-					await s.narrate("うりきれランプが、\nひとつ　ふえている。");
+					if (s.flag("seen_kan_eki") || s.flag("seen_akafuda_eki")) {
+						await s.narrate(
+							"あかい札の　列に、うりきれランプが\nひとつ　ついている。",
+						);
+						if (s.flag("seen_kan_eki"))
+							await s.say(
+								"kiriko",
+								"（ゆうべの　一本で、\nおしまいだったンゴ）",
+							);
+						return;
+					}
+					await s.narrate("じはんき。うりきれランプが\nひとつ　ついている。");
 					return;
 				}
 				// 宵は、はしの一列が赤い札（深夜の缶の前ぶり。street vending_ev と同じ仕込み）
 				if (t === "yoru") {
+					s.set("seen_akafuda_eki");
 					await s.narrate("じはんき。はしの一列だけ、\n札が　あかい。");
 					return;
 				}
@@ -1005,6 +1120,9 @@ export const ekimae: MapDef = {
 					s.set("seen_bike_shinya");
 					await s.narrate("自転車おきば。一台だけ、\nのこっている。");
 					await s.narrate("かごに、ぬれた　ざっしが\n入ったままだ。");
+					// ㉞ 通りの ベンチ（street bench_ev）か スーパーの ラック（suupaa zasshi）で 見た 号
+					if (s.flag("seen_zasshi") || s.flag("seen_suupaa_zasshi"))
+						await s.say("kiriko", "（月曜の　号ンゴ）");
 					return;
 				}
 				if (t === "asa") {
@@ -1016,11 +1134,17 @@ export const ekimae: MapDef = {
 					await s.narrate("自転車が、ぽつぽつ\nとまりはじめている。");
 					return;
 				}
-				// 宵は 半分（夕方の「ずらり」→ 宵 → 深夜の 一台 → 朝、と へっていく）
+				// 宵は 半分（夕方の「ずらり」→ 宵 → 深夜の 一台 → 朝、と へっていく）。
+				// 夕方の ずらりを 見た 人だけ「へっている」と くらべられる
 				if (t === "yoru") {
-					await s.narrate("まえカゴの　自転車が、\n半分くらいに　へっている。");
+					await s.narrate(
+						s.flag("seen_bike_yu")
+							? "まえカゴの　自転車が、\n半分くらいに　へっている。"
+							: "まえカゴの　自転車が、\nまばらに　とまっている。",
+					);
 					return;
 				}
+				s.set("seen_bike_yu");
 				await s.narrate("自転車おきば。まえカゴの\nついたのが、ずらり。");
 			},
 		},
@@ -1143,7 +1267,13 @@ export const ekimae: MapDef = {
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("朝の　レールが、\nまだ　つめたそうだ。");
+					// ㉜ 深夜の せんろぞいで 保線の 黄色い ランプ（senro arrive_shinya）を 見た 人だけ。
+					// 7時台の 本線には 電車が 走るので、車は ひきこみ線（senro の コメントの「側線」）
+					await s.narrate(
+						s.flag("seen_senro_hosen")
+							? "ホームの　はしの　ひきこみ線に、\n黄色い　ランプの　車が　とまっている。"
+							: "朝の　レールが、\nまだ　つめたそうだ。",
+					);
 					return;
 				}
 				if (t === "yoru") {
@@ -1189,6 +1319,30 @@ export const ekimae: MapDef = {
 			y: 2,
 			trigger: "talk",
 			run: async (s) => {
+				const t = s.flag("tod");
+				// 店うらの 一晩（宵 モップの水 → 深夜 あしたの ぶん → 朝 トラック）
+				if (t === "yoru") {
+					await s.narrate(
+						"うらぐちの　戸から、\nモップの　水が　ながれてくる。",
+					);
+					return;
+				}
+				if (t === "shinya") {
+					await s.narrate(
+						"からの　コンテナが、\nあしたの　ぶん　そろえてある。",
+					);
+					return;
+				}
+				// 朝は 搬入の トラック（truck_asa の seen_ekimae_truck 数）。3回目の「荷台が、からに　なった」の
+				// あとだけ、ケースが おもてへ 出る（トラックは 朝のあいだ (12,5) に とまったまま）
+				if (t === "asa") {
+					await s.narrate(
+						numFlag(s, "seen_ekimae_truck") >= 3
+							? "からの　ケースは、もう　ない。\nおもてへ　はこばれた。"
+							: "からの　ケースが、\nトラックを　まっている。",
+					);
+					return;
+				}
 				await s.narrate("ビールケースと、青い\nコンテナが　つんである。");
 				await s.narrate("スーパーの、うらぐちだ。");
 			},
@@ -1200,18 +1354,38 @@ export const ekimae: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
-				// ⑤ 夕方に 毛を 見て、深夜の 団地で ねこの あつまり（danchi neko_ura）を 見た 人だけ、朝に もどっている
-				if (
-					t === "asa" &&
-					s.flag("seen_neko_eki") &&
-					s.flag("seen_neko_shukai")
-				) {
-					await s.narrate("コンテナのすきまで、ねこが\nまるく　ねている。");
-					await s.say("kiriko", "（あつまりの　かえりンゴ）");
+				// ⑤ ねこの 一晩（夕 毛 → 宵 しっぽ → 深夜 毛だけ → 朝 まるく ねている）
+				if (t === "asa") {
+					// 夕方に 毛を 見て、深夜の 団地で ねこの あつまり（danchi neko_ura）を 見た 人
+					if (s.flag("seen_neko_eki") && s.flag("seen_neko_shukai")) {
+						await s.narrate("コンテナのすきまで、ねこが\nまるく　ねている。");
+						await s.say("kiriko", "（あつまりの　かえりンゴ）");
+						return;
+					}
+					// 夕方の 毛か、宵の しっぽ・深夜の 毛だけ（seen_neko_sukima）を 見た 人
+					if (s.flag("seen_neko_eki") || s.flag("seen_neko_sukima")) {
+						await s.narrate("すきまで、ねこが\nまるく　ねている。");
+						return;
+					}
+					await s.narrate("コンテナのすきまに、\nねこの毛が　ついている。");
+					return;
+				}
+				// 宵・深夜は seen_neko_sukima（seen_neko_eki は danchi neko_ura が「コンテナの　毛」と 読むので 別）
+				if (t === "yoru") {
+					s.set("seen_neko_sukima");
+					await s.narrate("すきまの　おくから、\nしっぽの　さきが　でている。");
+					return;
+				}
+				if (t === "shinya") {
+					s.set("seen_neko_sukima");
+					await s.narrate("すきまに、ねこの　毛だけ\nのこっている。");
+					// 深夜の 団地の あつまり（danchi neko_ura）を 先に 見た 人だけ
+					if (s.flag("seen_neko_shukai"))
+						await s.say("kiriko", "（団地の　あつまりンゴね）");
 					return;
 				}
 				// 夕方の毛（nekoSeen には入れない。深夜の あつまりの 条件は 変えない）
-				if (t === "yu") s.set("seen_neko_eki");
+				s.set("seen_neko_eki");
 				await s.narrate("コンテナのすきまに、\nねこの毛が　ついている。");
 			},
 		},
@@ -1230,6 +1404,11 @@ export const ekimae: MapDef = {
 					await s.narrate(
 						"完成予想図の　駅ビルにも、\nこの　まるい字が　あった。",
 					);
+					return;
+				}
+				// ㊾ 国道の ファミレス看板の 朝の まるい字（kokudo famiresu_kanban）を 見た 人
+				if (s.flag("seen_kanban_kokudo")) {
+					await s.say("kiriko", "（国道の　看板と、\nおなじ　まるい字ンゴ）");
 					return;
 				}
 				// ⑱ スーパーの ばあちゃんに「店は　駅より　あと」と 聞いた 人
@@ -1251,15 +1430,17 @@ export const ekimae: MapDef = {
 				const t = s.flag("tod");
 				if (t === "asa") {
 					// きのうの『たまご・ティッシュ』を 読んだ 人だけ、はりかわった 中身に 気づく
-					if (s.flag("seen_chirashi")) {
+					if (s.flag("seen_chirashi"))
 						await s.narrate(
 							"『たまご・ティッシュ』が、\n『ぎゅうにゅう』に　かわった。",
 						);
-						return;
-					}
-					await s.narrate(
-						"とくばいの　ちらし。けさ、\nはりかえられた　ばかりだ。",
-					);
+					else
+						await s.narrate(
+							"とくばいの　ちらし。けさ、\nはりかえられた　ばかりだ。",
+						);
+					// ㊹ スーパーの ばあちゃんの「あしたは　アジフライが　半額」（suupaa baachan_ev）を 聞いた 人だけ
+					if (s.flag("seen_baa_aji"))
+						await s.narrate("すみに、小さく\n『アジフライ　半額』。");
 					return;
 				}
 				if (t === "shinya") {
@@ -1315,6 +1496,13 @@ export const ekimae: MapDef = {
 			y: 4,
 			trigger: "talk",
 			run: async (s) => {
+				// 深夜は 音だけ（となりの ちらしの「かぜで　めくれている」と 見る物を かえる）
+				if (s.flag("tod") === "shinya") {
+					await s.narrate(
+						"札が　シャッターに　あたって、\nかた、かた、と　鳴る。",
+					);
+					return;
+				}
 				await s.narrate("『えいぎょう時間』の札。\n10:00〜19:00。");
 				await s.say("kiriko", "……あさは、おそいンゴ");
 			},
@@ -1327,6 +1515,16 @@ export const ekimae: MapDef = {
  * 朝の「ふえている」は、夕か宵に読んだ人だけ。同じ時間帯の2回目は タカの1行だけ（朝は けさの1行）。
  */
 const DENGON_BIT: Record<string, number> = { yu: 1, yoru: 2, asa: 4 };
+
+/**
+ * 黄色い ぼうし（伝言板の書きこみ ⇄ 窓口の よこ）を、キリコが つなげる 一言。
+ * どちらを先に見ても、夕・宵を通して 一度だけ（seen_boushi_dengon）。
+ */
+async function boushiTsunagu(s: Story, text: string): Promise<void> {
+	if (s.flag("seen_boushi_dengon")) return;
+	s.set("seen_boushi_dengon");
+	await s.say("kiriko", text);
+}
 
 /** 伝言板（黒板）。書き込み3つ・宵に『ゆうかん』が消され・朝に1つ増えている。 */
 async function dengonban(s: Story): Promise<void> {
@@ -1356,7 +1554,13 @@ async function dengonban(s: Story): Promise<void> {
 	if (t === "yu")
 		await s.narrate("『ゆうかん　とりにきて\nください　――キオスク』");
 	else await s.narrate("『ゆうかん』の　ところだけ、\nけされている。");
-	await s.narrate("『わすれものの　かさは\n駅員さんに　あずけました』");
+	// 窓口の よこの 黄色い ぼうし（madoguchi・seen_madoguchi_boushi）と つながる
+	await s.narrate(
+		"『わすれものの　黄色い　ぼうしは\n駅員さんに　あずけました』",
+	);
+	// 窓口を 先に 見た 人（senro・tonarimachi から 着くと 窓口が 近い）。朝は もう フックが あいている
+	if (t !== "asa" && s.flag("seen_madoguchi_boushi"))
+		await boushiTsunagu(s, "（窓口の　よこの　ぼうしンゴ）");
 	if (t === "asa") {
 		if (yube) await s.narrate("――書き込みが、ひとつ\nふえている。");
 		await s.narrate("『きのうは　ごめん。\nここで　まってる　タカ』");

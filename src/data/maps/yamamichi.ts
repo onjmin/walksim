@@ -6,12 +6,20 @@
 //   夕方 … ヒグラシ（道を歩くたびに遠のき、森の入口の帯 x16 で やむ＝seen_higurashi_yama 数）。わらを やく けむり。
 //           NPC 4体（田んぼの人=3層会話・バス待ちのばあちゃん・自転車の子=周回・
 //           ランニングの人=会釈と こしの鈴）。無人販売所は売れのこりが ふたふくろ→ひとふくろ→から
+//           はざかけの すずめ（seen_hazakake 数。一羽→二羽）・用水路の アメンボ（seen_amenbo 数。
+//           ながされる→もどって ふんばる→また ながされる）・南の田の わらの山と 水バケツ（seen_wara_yama）・
+//           かかしの 黄色い ヘルメット（seen_kakashi_yama。かわらの むぎわらと くらべる）
 //   宵   … NPC 0体（docs/nostalgia.md P0-1）。文は「におい・音・点いた灯り」だけ。
-//           夕方の けむりの におい・ざぶとん・ぬのの下の ナス（夕方を見た人にだけ）
+//           夕方の けむりの におい・ざぶとん・ぬのの下の ナス・黒く ひくくなった わらの山（夕方を見た人にだけ）
 //   深夜 … NPC 0体必達。峠のベンチに すわれる（seen_suwari_yamamichi）。月は沈んでいる（影・白い穂は書かない）。
 //           9月中旬なので、田は虫の声（カエルは書かない）
 //   朝   … スズメ。NPC 3体（田んぼの人・自転車の子・販売所のおばちゃん）。
-//           『つけ』のメモ・水門・道祖神の花・灰のまる・クマの看板の書きたし・杉のテープの日付など、夕方の payoff
+//           『つけ』のメモ・水門・道祖神の花・灰のまる・クマの看板の書きたし・杉のテープの日付など、夕方の payoff。
+//           はざかけに すずめが ずらり・水門の よどみの アメンボ・灰のまるの やきいも（seen_wara_imo →
+//           販売所の人「うちの　人よ」seen_imo_kiku）・かかしの あごひも（かわらの 宵の風）・
+//           かわらの かかしの ぼうしの お礼（nouka_asa・seen_kakashi_orei）
+//   石   … かわらで 水きりに 石を かりた人（seen_mizukiri_nage）は、川(25,19)で ひらたい石を 一まい
+//           ひろえる（got_ishi_yama → kawara mizukiri_ishi で 山に かえす）
 //
 // 座標（統合担当と共有）:
 //   東 (43,12)→kawara(1,8) right・kawara からの着地 (42,12) left
@@ -115,6 +123,10 @@ const HIGURASHI_VOL = [0.8, 0.5, 0.3];
  * 見てすぐ見なおしても、ナスは へらない（道の帯を ふむか、入りなおすと もどる）。
  */
 let tanaMita = false;
+/** はざかけを夕方に見たあと、その場をはなれたか（tanaMita と同じ形。すずめは はなれて もどると 二羽に）。 */
+let hazaMita = false;
+/** 用水路を夕方に見たあと、その場をはなれたか（tanaMita と同じ形。アメンボは もどるたびに 一段 すすむ）。 */
+let amenboMita = false;
 
 /**
  * 環境音のワンショット（夕＝ヒグラシだけ。朝のスズメは onEnter と arrive_asa にまかせる）。kawara と同じ方式：
@@ -127,6 +139,8 @@ let lastWave = "";
 const YAMU_AT = "wave_w";
 const wave = (id: string, pan: number) => async (s: Story) => {
 	tanaMita = false;
+	hazaMita = false;
+	amenboMita = false;
 	if (lastWave === id) return;
 	lastWave = id;
 	if (s.flag("tod") !== "yu") return;
@@ -176,14 +190,16 @@ const tsuukoudome = async (s: Story): Promise<void> => {
 		await s.narrate("通行止めの　さく。\nくらくて、字は　よめない。");
 		return;
 	}
+	if (t === "yoru") {
+		// 宵は うすぐらい。大きい字だけ よめて、あとは 耳で（深夜は 字も よめない）
+		await s.narrate("さくの　はり紙。大きい\n『通行止め』だけ　よめる。");
+		await s.narrate("さくの　むこうから、\n沢の音。");
+		return;
+	}
 	await s.narrate("『この先　土砂くずれのため\n通行止め』");
 	await s.narrate(
 		"『9月3日から　当分のあいだ』\nはり紙の　角が　めくれている。",
 	);
-	if (t === "yoru") {
-		await s.narrate("さくの　むこうから、\n沢の音。");
-		return;
-	}
 	if (t === "asa") {
 		await s.narrate("さくの　ロープに、\n朝つゆが　ならんでいる。");
 		return;
@@ -204,6 +220,9 @@ const miharashi = async (s: Story): Promise<void> => {
 	if (t === "yoru") {
 		await s.narrate("町の灯りが、まばらに\nちらばっている。");
 		await s.narrate("国道のあたりだけ、\n灯りが　ながれていく。");
+		// ㊶ 国道のライト: kokudo の歩道橋で ライトが 下を とおりぬけるのを 見た人（seen_hodo_yoru）
+		if (s.flag("seen_hodo_yoru"))
+			await s.say("kiriko", "（あの　ながれの　上を、\nさっき　わたったンゴ）");
 		return;
 	}
 	if (t === "asa") {
@@ -236,6 +255,13 @@ const suwaru = async (s: Story): Promise<void> => {
 	await s.wait(900);
 	await s.fadeIn(900);
 	await s.narrate("下の　田んぼから、\n虫の声が　のぼってくる。");
+	// ㉔ 駅の灯りを 見た人（seen_miharashi_eki。みはらし・こうえんの 双眼鏡）は、峠から 町の 灯りを ふたつ かぞえる。
+	// 日記の ポエム ue『町の灯りを　かぞえた』の もとになる
+	await s.narrate(
+		s.flag("seen_miharashi_eki")
+			? "目を　あけて、町の\n灯りを　かぞえた。……ふたつ。"
+			: "目を　あけると、下に\n町の灯りが　ぽつぽつ。",
+	);
 	if (kanHeld(s)) await kanLine(s);
 	else await s.narrate("ベンチの板が、\n夜つゆで　つめたい。");
 	await s.say("kiriko", "……よし。もうすこし\nあるくンゴ");
@@ -317,6 +343,8 @@ export const yamamichi: MapDef = {
 	onEnter: async (s) => {
 		lastWave = "";
 		tanaMita = false;
+		hazaMita = false;
+		amenboMita = false;
 		kanTick(s);
 		const t = s.flag("tod");
 		if (t === "yu") {
@@ -541,11 +569,14 @@ export const yamamichi: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
-				if (s.flag("tod") === "shinya") {
+				// 宵も うすぐらくて、大きい字だけ（tsuukoudome の宵と そろえる）
+				const t = s.flag("tod");
+				if (t === "shinya" || t === "yoru") {
 					await s.narrate("林道の　標識。\n『峠まで』の　字だけ　よめる。");
 					return;
 				}
-				await s.narrate("『林道　さわのうえ線\n峠まで　2.4km』");
+				// ここから峠まで。koen michishirube の 2.4km は 公園からの 道のり（べつの数）
+				await s.narrate("『林道　さわのうえ線\n峠まで　1.2km』");
 				await s.narrate(
 					"その下に　『落石注意』。\n石の絵が、ちょっと　まるい。",
 				);
@@ -739,11 +770,41 @@ export const yamamichi: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					// 夕方の 一羽（→二羽）を見た人にだけ、朝は ずらり
+					if (numFlag(s, "seen_hazakake") >= 1) {
+						await s.narrate("はざかけに、すずめが\nずらりと　ならんでいる。");
+						await s.say(
+							"kiriko",
+							"（ゆうべの　一羽が、\nなかまを　よんだンゴ）",
+						);
+						return;
+					}
 					await s.narrate("稲たばに、朝つゆが\nびっしり　ついている。");
 					return;
 				}
-				await s.narrate("はざかけ。かった　稲が、\nさかさまに　ほしてある。");
-				await s.narrate("すずめが　一羽、\nこっそり　つまんでいる。");
+				// 夕方の段（seen_hazakake 数 1〜2）＝ すずめ一羽 → 二羽。
+				// 見てすぐ見なおしても ふえない（その場を はなれて もどると、ひとつ すすむ。mujin_tana と同じ）
+				const n = numFlag(s, "seen_hazakake");
+				const m = n === 0 || (n === 1 && !hazaMita) ? n + 1 : n;
+				if (m !== n) s.set("seen_hazakake", m);
+				if (m === n) {
+					// 数が すすまない 見なおしは、1行目だけ
+					await s.narrate("はざかけ。かった　稲が、\nさかさまに　ほしてある。");
+				} else if (m === 1) {
+					await s.narrate("はざかけ。かった　稲が、\nさかさまに　ほしてある。");
+					await s.narrate("すずめが　一羽、\nこっそり　つまんでいる。");
+					// ㊼ しんまい: スーパーの『新米　入りました』を見た人／田んぼの人の「となりの田は、もう」を聞いた人
+					if (s.flag("seen_suupaa_kome"))
+						await s.say(
+							"kiriko",
+							"（スーパーの　新米の、\nまだ　ほしてる　ほうンゴ）",
+						);
+					else if (s.flag("seen_nouka"))
+						await s.say("kiriko", "（となりの　田の\nぶんンゴね）");
+				} else {
+					await s.narrate("すずめが、二羽に\nふえている。");
+				}
+				hazaMita = true;
 			},
 		},
 		{
@@ -766,12 +827,39 @@ export const yamamichi: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					// 夕方に この かかしを 見た人だけ。上から 一つ（キリコは 一つまで）
+					if (!s.flag("seen_kakashi_yama")) {
+						await s.narrate("かかしが、朝もやに\nぼんやり　立っている。");
+						return;
+					}
+					// ㊱ かわらの 宵の風（seen_kakashi_kaze）で むぎわらの つばが ばたつくのを 聞いた人
+					if (s.flag("seen_kakashi_kaze")) {
+						await s.narrate(
+							"ヘルメットは、あごひもで\nしっかり　とまっている。",
+						);
+						await s.say("kiriko", "（こっちは、とばされ\nないンゴね）");
+						return;
+					}
 					await s.narrate("かかしの　ヘルメットに、\nカラスが　のっている。");
-					await s.say("kiriko", "（なめられてるンゴ）");
+					// 夕方の はざかけの すずめ（seen_hazakake）を見た人
+					await s.say(
+						"kiriko",
+						numFlag(s, "seen_hazakake") >= 1
+							? "（はざかけの　みはりは、\nしてないンゴ）"
+							: "（なめられてるンゴ）",
+					);
 					return;
 				}
+				// ㊱ ふたつのかかし: seen_kakashi_yama → kawara kakashi（yu）・この かかしの 朝
+				s.set("seen_kakashi_yama");
 				await s.narrate("かかし。黄色い\nヘルメットを　かぶっている。");
 				await s.narrate("工事げんばの　おさがり\nらしい。");
+				// かわらの かかしの むぎわら（seen_kakashi_boushi）を 先に見た人
+				if (s.flag("seen_kakashi_boushi"))
+					await s.say(
+						"kiriko",
+						"（かわらのは　むぎわら、\nこっちは　ヘルメットンゴ）",
+					);
 			},
 		},
 		{
@@ -847,6 +935,13 @@ export const yamamichi: MapDef = {
 				if (t === "asa") {
 					await s.narrate("水門が、すこしだけ\nあけてある。");
 					await s.narrate("ハンドルに、軍手が\nひっかけてある。");
+					// 夕方、用水路（yousuiro）で アメンボが ながされるのを 見た人（水門は その 下手）
+					if (numFlag(s, "seen_amenbo") >= 1) {
+						await s.narrate(
+							"水門の　てまえの　よどみに、\nアメンボが　たまっている。",
+						);
+						await s.say("kiriko", "（ここまで　ながされて\nきたンゴ）");
+					}
 					return;
 				}
 				await s.narrate("用水路の　水門。\nハンドルに　赤いペンキ。");
@@ -872,8 +967,25 @@ export const yamamichi: MapDef = {
 					await s.narrate("用水路に、青い空が\nうつって　ながれていく。");
 					return;
 				}
+				// 夕方の段（seen_amenbo 数 1〜3）＝ ながされる → もどって ふんばる → また ながされる。
+				// はなれて もどるたびに ひとつ すすむ（amenboMita。mujin_tana と同じ）。朝は suimon の よどみで回収
+				const n = numFlag(s, "seen_amenbo");
+				const m = n >= 3 || (n >= 1 && amenboMita) ? n : n + 1;
+				amenboMita = true;
+				if (m !== n) s.set("seen_amenbo", m);
+				if (m === 2) {
+					await s.narrate(
+						"さっきの　アメンボが、\nまた　上で　ふんばっている。",
+					);
+					if (m !== n) await s.say("kiriko", "（もどってきたンゴ……）");
+					return;
+				}
+				if (m === 3 && m !== n) {
+					await s.narrate("……また　ながされた。");
+					return;
+				}
 				await s.narrate("用水路。水が　はやい。\nアメンボが　ながされていく。");
-				await s.say("kiriko", "（さからう気が\nないンゴ）");
+				if (m !== n) await s.say("kiriko", "（さからう気が\nないンゴ）");
 			},
 		},
 		{
@@ -887,15 +999,39 @@ export const yamamichi: MapDef = {
 					await s.narrate("虫の声が、田んぼ\nいっぱいに　ひろがっている。");
 					return;
 				}
+				// ㊲ わらのけむり: 夕方の わらの山（seen_wara_yama）→ 宵、黒く ひくく → 朝、灰の まるの やきいも
+				// （seen_wara_imo → mujin_asa の 2回目「うちの　人よ」seen_imo_kiku）。やいている 人は 出さない
 				if (t === "yoru") {
-					await s.narrate("あぜの　草むらで、\n虫が　鳴きかわしている。");
+					// 火の色は 書かない
+					await s.narrate(
+						s.flag("seen_wara_yama")
+							? "わらの　山が、黒く\nひくく　なっている。"
+							: "あぜの　草むらで、\n虫が　鳴きかわしている。",
+					);
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("あぜに、しらさぎの\n足あとが　ならんでいる。");
+					if (s.flag("seen_wara_yama")) {
+						await s.narrate(
+							"灰の　まるの　まんなかに、\nアルミホイルの　つつみ。",
+						);
+						if (!s.flag("seen_wara_imo")) {
+							s.set("seen_wara_imo");
+							await s.say("kiriko", "（やきいも、\nわすれてるンゴ）");
+						}
+						return;
+					}
+					await s.narrate("あぜの　草が、朝つゆで\nおもたそうだ。");
 					return;
 				}
-				await s.narrate("こっちの田は、まだ\n青いところが　のこっている。");
+				s.set("seen_wara_yama");
+				// 着いたときの けむり（arrive_yu の seen_wara_kemuri）の 出どころ
+				await s.narrate(
+					s.flag("seen_wara_kemuri")
+						? "あぜの　はしに、わらの　山。\nけむりは、ここから　だった。"
+						: "あぜの　はしに、わらの　山。\nてっぺんが、まだ　くすぶっている。",
+				);
+				await s.narrate("そばに、水の　入った\nバケツが　おいてある。");
 			},
 		},
 		{
@@ -915,10 +1051,28 @@ export const yamamichi: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("川から、白い　もやが\nたちのぼっている。");
-					return;
+				} else {
+					await s.narrate(
+						"川はばが、せまくなった。\n石が　ごろごろ　している。",
+					);
+					await s.narrate("夕日が、石のあいだで\nこまかく　われている。");
 				}
-				await s.narrate("川はばが、せまくなった。\n石が　ごろごろ　している。");
-				await s.narrate("夕日が、石のあいだで\nこまかく　われている。");
+				// ⑥ 水きり: かわらの とっておきの 石を なげてしまった人（seen_mizukiri_nage）が、
+				// ここで 一まい ひろって（got_ishi_yama）、kawara mizukiri_ishi の 山に かえす（seen_ishi_kaeshi）
+				if (
+					!s.flag("seen_mizukiri_nage") ||
+					s.flag("got_ishi_yama") ||
+					s.flag("seen_ishi_kaeshi")
+				)
+					return;
+				await s.narrate("足もとに、ひらたい　石が\nいくらでも　ある。");
+				const i = await s.choose(["＞＞1 一まい　ひろう", "＞＞2 やめておく"], {
+					cancel: 1,
+				});
+				if (i !== 0) return;
+				s.se("item", { volume: 0.4 });
+				s.set("got_ishi_yama");
+				await s.say("kiriko", "（かわらの　石の山に、\nかえすンゴ）");
 			},
 		},
 		{
@@ -1108,6 +1262,20 @@ export const yamamichi: MapDef = {
 					});
 					return;
 				}
+				// ㊱ ふたつのかかし: かわらの 西はしの 田（kawara kakashi）も、この人の 田。
+				// 朝、とばされた むぎわらを くいに かけた人（seen_kakashi_naoshi）に、一度だけ
+				if (s.flag("seen_kakashi_naoshi") && !s.flag("seen_kakashi_orei")) {
+					s.set("seen_kakashi_orei");
+					await s.say(
+						null,
+						"かかしの　ぼうし、くいに\nかけといたの、あんたか",
+						{
+							name: "田んぼの人",
+						},
+					);
+					await s.say(null, "……ありがとさん", { name: "田んぼの人" });
+					return;
+				}
 				await s.narrate("田んぼの　水口を、\nじっと　見ている。");
 			},
 			{ dir: "down", when: (st) => st.flags.tod === "asa" },
@@ -1160,6 +1328,15 @@ export const yamamichi: MapDef = {
 						return;
 					}
 					await s.say(null, "ひとふくろ　百円。\nおつりは　出ないのよ", {
+						name: "販売所の人",
+					});
+					return;
+				}
+				// ㊲ わらのけむり: 南の田の 灰の まるで やきいもの つつみを 見た人（seen_wara_imo）に、一度だけ
+				if (s.flag("seen_wara_imo") && !s.flag("seen_imo_kiku")) {
+					s.set("seen_imo_kiku");
+					await s.say("kiriko", "灰の　中の　いも、\nだれのンゴ？");
+					await s.say(null, "うちの　人よ。\nまいとし　わすれるの", {
 						name: "販売所の人",
 					});
 					return;

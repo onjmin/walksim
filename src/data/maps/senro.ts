@@ -11,13 +11,18 @@
 //   宵   … NPC 0体（docs/nostalgia.md P0-1）。文は におい・音・点いた灯り だけ。
 //           信号所の ランプが みどりに → 踏切で 灯りの まどが ながれる（seen_fumikiri_yoru）。
 //           アーケードは店じまいの音（シャッター）で、入れない
-//   深夜 … NPC 0体必達（人の声も無し）。踏切はくらい。西の線路で 保線の 黄色い ランプだけが
-//           まわり、深夜の地区を回るほど ガードへ 近づく（seen_senro_hosen・shinyaStep）。
+//   深夜 … NPC 0体必達（人の声も無し）。踏切はくらい。西の線路に 保線の 黄色い ランプの 車
+//           （人は書かない。車と 灯りと 機械の音だけ）。深夜の地区を回るほど ガードへ 近づき
+//           （seen_senro_hosen・shinyaStep）、rail・michi_owari・ガード下・ブロックべいの文が かわる。
+//           ガード下で 声を だせる（seen_guard_koe）。いけがきの すきまで えだが 鳴る（seen_sukima_shinya）。
 //           ふみきりまちのブロックべいに すわれる（seen_suwari_senro）。
 //           じはんきで缶が買える（kanShinya）・地区を移るたびに冷める（kanTick）
 //   朝   … NPC 3体（鉄道ずきの人・高校生・通勤の人）。夕方の setup の payoff
 //           （始発の写真・小テストのはんい・コスモスの水やりのあと）。ゆうべの ランプは
-//           つぎめの 新しい ボルト、ゆうべの 缶は『売切』の ランプ になって のこる
+//           つぎめの 新しい ボルトと、かすみの さきの からっぽ（michi_owari）。ゆうべの 缶は『売切』の
+//           ランプ になって のこる。ゆうべの 声は ガードの スズメ（guard_asa）、パキッと いった えだは
+//           ビニールひも（sukima_ikegaki・monohoshi）、夕方の 3本は しゃだんきの 朝の 1本（shadanki）
+//   夕方の あかずの踏切は、となりまちの 模型屋の ジオラマ（seen_mokei_b）とも 響く
 //
 // 出入口（地続き）:
 //   東 (43,7) → ekimae (1,9) right／ekimae からの着地 (42,7) left
@@ -174,7 +179,8 @@ const kankan = async (s: Story, n: number, volume: number): Promise<void> => {
 /**
  * 踏切の前の帯（y7 の x29〜33）。夕方は一度だけ「あかずの踏切」: 電車が3本つづけて とおる
  * （koukou_b の「つづけて　3本　くるから」の回収。聞いた人にだけキリコの一言）。
- * 踏切の3段: 夕＝夕日の まど（ここ）／宵＝灯りの まど（fumikiriYoru）／深夜＝shadanki「終電は、もう　行った」。
+ * 踏切の4段: 夕＝夕日の まど（ここ）／宵＝灯りの まど（fumikiriYoru）／深夜＝shadanki「終電は、もう　行った」／
+ * 朝＝shadanki の1本（すぐ あがる。一度だけ）。
  */
 const fumikiriBelt = (x: number): EventDef => ({
 	id: `fumikiri_belt_${x}`,
@@ -202,8 +208,11 @@ const fumikiriBelt = (x: number): EventDef => ({
 		s.se("train", { pan: 0.2, volume: 0.8 });
 		await s.wait(900);
 		await s.narrate("……3本目。");
+		// 高校生の「つづけて　3本」＞ となりまちの 模型屋の ジオラマ（mokei_b）
 		if (s.flag("seen_senro_koukou_b"))
 			await s.say("kiriko", "（ほんとに　3本ンゴ）");
+		else if (numFlag(s, "seen_mokei_b") > 0)
+			await s.say("kiriko", "（ジオラマの　ふみきりと、\nおなじ　形ンゴ）");
 		await kankan(s, 1, 0.4);
 		await s.narrate("しゃだんきが、やっと\nあがった。");
 	},
@@ -254,12 +263,22 @@ const gaitou = async (s: Story): Promise<void> => {
  * 深夜、ふみきりまちの　ブロックべいに すわる（seen_suwari_senro。docs/nostalgia.md P0-7 の型）。
  * なにも起きない。目をとじる → 暗転して、目をあける → 虫の声がふえる → ブロックのつめたさ
  * （缶があれば缶の1行に替える）。暗転中は文を出さない。電車の音は鳴らさない。
- * 2回目からは選ばずに短い1行だけ。
+ * 2回目からは選ばずに短い1行だけ（缶 ＞ 保線の ランプの 車 ＞ ながめる）。
+ * 朝の blockBei が「朝つゆで　ほかと　おなじ　色」で回収する。
  */
 const suwaru = async (s: Story): Promise<void> => {
 	if (s.flag("seen_suwari_senro")) {
 		if (kanHeld(s)) await kanLine(s);
-		else
+		// ㉜ 保線の 車（arrive_shinya）。深夜の地区を回るほど ガードへ 近づく（rail と おなじ段）
+		else if (s.flag("seen_senro_hosen")) {
+			// ブロックべい（x33）は ガードから 遠い。見え方と 音で 段を 出す
+			if (shinyaStep(s) < 5)
+				await s.narrate("レールの　はるか　さきに、\n黄色い　点が　ひとつ。");
+			else {
+				s.se("hum", { pan: -0.6, volume: 0.15 });
+				await s.narrate("西の　ほうから、ひくい　機械の\nうなりが　とどく。");
+			}
+		} else
 			await s.narrate("ブロックべいに　すわって、\nすこし　線路を　ながめた。");
 		return;
 	}
@@ -291,6 +310,14 @@ const blockBei = async (s: Story): Promise<void> => {
 		return;
 	}
 	if (t === "asa") {
+		// ㉟ ゆうべ 深夜に すわった人（suwaru の seen_suwari_senro）
+		if (s.flag("seen_suwari_senro")) {
+			await s.narrate(
+				"ゆうべ　すわった　ところも、\n朝つゆで　ほかと　おなじ　色。",
+			);
+			await s.say("kiriko", "（おしりの　あと、\nきえたンゴ）");
+			return;
+		}
 		await s.narrate("ブロックに、朝つゆ。\nすわるのは　やめておく。");
 		return;
 	}
@@ -375,7 +402,8 @@ export const senro: MapDef = {
 				await yoruAkubi(s);
 			},
 		},
-		// 深夜: 西の線路で 保線の 黄色い ランプ（人は書かない）。rail が段で近づけ、朝の arrive_asa が回収
+		// 深夜: 西の線路で 保線の 黄色い ランプ（正体は 車。人は書かない）。rail・michi_owari・guard_shinya・
+		// ブロックべいの2回目が 段で近づけ、朝の arrive_asa（ボルト）・michi_owari・ekimae rail_fence が回収
 		{
 			id: "arrive_shinya",
 			x: 1,
@@ -453,10 +481,12 @@ export const senro: MapDef = {
 					);
 					await s.narrate("おくで、ガラガラと\nシャッターを　おろす音。");
 					await s.say("kiriko", "……店じまいンゴ");
-					// tonarimachi record_owari／record_oyaji 3回目（宵の 最初の 通過だけ）
+					// tonarimachi record_owari／record_oyaji 3回目／record_naka（宵の 最初の 通過だけ）
 					if (
 						arcadeTod !== t &&
-						(s.flag("seen_record_owari") || s.flag("seen_record_oyaji3"))
+						(s.flag("seen_record_owari") ||
+							s.flag("seen_record_oyaji3") ||
+							s.flag("seen_record_naka"))
 					) {
 						arcadeTod = t;
 						s.se("record", { pan: -0.7, volume: 0.2 });
@@ -484,10 +514,13 @@ export const senro: MapDef = {
 							);
 							await s.say("kiriko", "（モーニング、\nはじまったンゴ）");
 						} else if (numFlag(s, "seen_yaoya_n") > 0) {
+							// 八百屋と 話した 回数（3回で『つがる』が 売りきれ → 朝、つぎの 箱が くる）
 							arcadeTod = "asa";
-							await s.narrate(
-								"トラックから、だいこんの\n箱が　おろされていく。",
-							);
+							if (numFlag(s, "seen_yaoya_n") >= 3)
+								await s.narrate(
+									"トラックから、『つがる』の\n箱が　おろされていく。",
+								);
+							else await s.narrate("りんごの　箱が、\nおろされていく。");
 						}
 					}
 				}
@@ -524,7 +557,10 @@ export const senro: MapDef = {
 				},
 			}),
 		),
-		// 深夜のガード下（一度だけ。じぶんの 声が かえってくる。夕方の 電車を 聞いた人は くらべる）
+		// 深夜のガード下（一度だけ。じぶんの 声が かえってくる。夕方の 電車を 聞いた人は くらべる）。
+		// ㉜ 保線の 車が ガードの てまえまで 来ていれば（shinyaStep 5〜）、かべに 黄色い 光と 機械の うなり。
+		// 声を だした人（seen_guard_koe）は、朝の guard_asa で スズメの 声に 回収
+		// （1＝ひびいた／2＝うなりに まぎれた。2の人には「かえって　こなかった」）
 		...[4, 5].map(
 			(y): EventDef => ({
 				id: `guard_shinya_${y}`,
@@ -535,18 +571,54 @@ export const senro: MapDef = {
 				when: (st) => st.flags.tod === "shinya" && !st.flags.seen_guard_shinya,
 				run: async (s) => {
 					s.set("seen_guard_shinya");
-					await s.narrate("ガードの　中は、じぶんの\n足音だけ。");
+					const kuruma = !!s.flag("seen_senro_hosen") && shinyaStep(s) >= 5;
+					if (kuruma)
+						await s.narrate(
+							"ガードの　かべを、黄色い　ひかりが\nゆっくり　なでていく。",
+						);
+					else await s.narrate("ガードの　中は、じぶんの\n足音だけ。");
 					const i = await s.choose(["＞＞1 こえを　だす", "＞＞2 やめておく"], {
 						cancel: 1,
 					});
 					if (i === 0) {
+						s.set("seen_guard_koe", kuruma ? 2 : 1);
 						await s.say("kiriko", "……ンゴ");
-						await s.narrate(
-							"じぶんの　声が、ガードに\nひびいて　もどってきた。",
-						);
+						if (kuruma) {
+							s.se("hum", { pan: -0.4, volume: 0.3 });
+							await s.narrate("声は、機械の　うなりに\nまぎれて　しまった。");
+						} else
+							await s.narrate(
+								"じぶんの　声が、ガードに\nひびいて　もどってきた。",
+							);
 					}
 					if (s.flag("seen_guard_densha"))
 						await s.say("kiriko", "（夕方は、電車の音で\nいっぱいだったンゴ）");
+				},
+			}),
+		),
+		// 朝のガード下（一度だけ。ゆうべ ここで 声を だした人に、スズメの 声が はねかえる）
+		...[4, 5].map(
+			(y): EventDef => ({
+				id: `guard_asa_${y}`,
+				x: 9,
+				y,
+				trigger: "touch",
+				through: true,
+				when: (st) =>
+					st.flags.tod === "asa" &&
+					!!st.flags.seen_guard_koe &&
+					!st.flags.seen_guard_asa,
+				run: async (s) => {
+					s.set("seen_guard_asa");
+					s.se("suzume", { volume: 0.6 });
+					await s.narrate("ガードの　中で、スズメの　声が\nはねかえっている。");
+					if (numFlag(s, "seen_guard_koe") === 2)
+						await s.say(
+							"kiriko",
+							"（ゆうべは、吾輩の　声、\nかえって　こなかったンゴ）",
+						);
+					else
+						await s.say("kiriko", "（ゆうべは、吾輩の　声が\nこうだったンゴ）");
 				},
 			}),
 		),
@@ -572,6 +644,8 @@ export const senro: MapDef = {
 		),
 
 		// ── 隠し: いけがきの　すきま（見た目は生けがき。はじめて抜けたときと、深夜にはじめて抜けたとき） ──
+		// 深夜に パキッと 鳴らした えだは、朝 ビニールひもで まかれている（seen_sukima_asa。
+		// うら庭の monohoshi の朝と 共用で、先に 見たほうで 一度だけ）
 		{
 			id: "sukima_ikegaki",
 			x: 10,
@@ -580,8 +654,23 @@ export const senro: MapDef = {
 			through: true,
 			when: (st) =>
 				!st.flags.seen_senro_sukima ||
-				(st.flags.tod === "shinya" && !st.flags.seen_sukima_shinya),
+				(st.flags.tod === "shinya" && !st.flags.seen_sukima_shinya) ||
+				(st.flags.tod === "asa" &&
+					!!st.flags.seen_sukima_shinya &&
+					!st.flags.seen_sukima_asa),
 			run: async (s) => {
+				if (
+					s.flag("tod") === "asa" &&
+					s.flag("seen_sukima_shinya") &&
+					!s.flag("seen_sukima_asa")
+				) {
+					s.set("seen_sukima_asa");
+					await s.narrate(
+						"ゆうべ　パキッと　いった　えだに、\nビニールひもが　まいてある。",
+					);
+					await s.say("kiriko", "（……こんどは、そっとンゴ）");
+					return;
+				}
 				const first = !s.flag("seen_senro_sukima");
 				if (first) {
 					s.set("seen_senro_sukima");
@@ -658,8 +747,10 @@ export const senro: MapDef = {
 			x: 30,
 			y: 6,
 			trigger: "talk",
+			// 踏切の 段: 夕＝あかずの 3本（fumikiriBelt）→ 深夜＝あがったまま → 朝＝1本で すぐ あがる
 			run: async (s) => {
-				if (s.flag("tod") === "shinya") {
+				const t = s.flag("tod");
+				if (t === "shinya") {
 					await s.narrate(
 						"しゃだんきは、あがったまま。\n終電は、もう　行った。",
 					);
@@ -668,6 +759,36 @@ export const senro: MapDef = {
 							"kiriko",
 							"（夕方は、あんなに\nカンカン　いってたンゴ）",
 						);
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate(
+						"黄色と　黒の　しましまが、\nふみきりの　灯りに　うかぶ。",
+					);
+					return;
+				}
+				if (t === "asa") {
+					// 朝の 1本は 一度だけ（seen_shadanki_asa）。2回目からは 音なし
+					if (s.flag("seen_shadanki_asa")) {
+						await s.narrate("しましまに、朝つゆが\nならんでいる。");
+						return;
+					}
+					s.set("seen_shadanki_asa");
+					await kankan(s, 1, 0.4);
+					s.se("train", { pan: 0.2, volume: 0.7 });
+					await s.wait(700);
+					await s.narrate("1本　とおって、しゃだんきが\nすぐに　あがった。");
+					// 夕方の あかずの踏切（fumikiriBelt の 3本）を 待った人
+					if (s.flag("seen_fumikiri_yu"))
+						await s.say("kiriko", "（夕方は、3本　だったンゴ）");
+					return;
+				}
+				// 夕方: あかずの踏切の すぐ あと（fumikiriBelt）。ふるえは 一度だけ（seen_shadanki_yu）
+				if (s.flag("seen_fumikiri_yu") && !s.flag("seen_shadanki_yu")) {
+					s.set("seen_shadanki_yu");
+					await s.narrate(
+						"しゃだんきの　ビニールテープが、\nまだ　ふるえている。",
+					);
 					return;
 				}
 				await s.narrate("しゃだんき。黄色と　黒の\nしましま。");
@@ -827,7 +948,17 @@ export const senro: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("あぜ道は、ここで　おわり。");
-					await s.narrate("レールだけが、くらやみの\nほうへ　のびている。");
+					// ㉜ 保線の 車（arrive_shinya）。深夜の地区を回るほど 東の ガード（x9）へ
+					if (!s.flag("seen_senro_hosen"))
+						await s.narrate("レールだけが、くらやみの\nほうへ　のびている。");
+					else if (shinyaStep(s) < 5)
+						await s.narrate(
+							"くらやみの　さきで、黄色い\nランプが　まわっている。",
+						);
+					else
+						await s.narrate(
+							"西は　まっくら。黄色い　ランプは、\nうしろの　ガードの　ほう。",
+						);
 					return;
 				}
 				if (t === "yoru") {
@@ -836,6 +967,9 @@ export const senro: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("レールの　さきが、\nあさの　かすみに　とける。");
+					// ゆうべの 保線の 車は、もう いない（ekimae rail_fence の 側線へ）
+					if (s.flag("seen_senro_hosen"))
+						await s.narrate("かすみの　さきに、もう\n黄色い　ランプは　ない。");
 					return;
 				}
 				await s.narrate(
@@ -855,15 +989,19 @@ export const senro: MapDef = {
 					await s.narrate(
 						"ロープの　むこうに、レール。\nつめたそうに　しずかだ。",
 					);
-					// 保線の ランプ（arrive_shinya）が、深夜の地区を回るほど ガードへ 近づく
+					// ㉜ 保線の ランプ（arrive_shinya）の 正体は 小さな 車（人は書かない）。
+					// 深夜の地区を回るほど ガードへ 近づき、朝は ekimae rail_fence の 側線に とまっている
 					if (s.flag("seen_senro_hosen")) {
 						if (shinyaStep(s) < 5)
-							await s.narrate("黄色い　ランプは、\nまだ　とおい。");
-						// arrive_shinya と おなじ 回転灯（保線の 機械）。場所だけ 近づく
-						else
 							await s.narrate(
-								"黄色い　ランプが、ガードの\nてまえで　まわっている。",
+								"西の　線路の上に、黄色い\nランプの　小さな　車。",
 							);
+						else {
+							s.se("hum", { pan: -0.5, volume: 0.2 });
+							await s.narrate(
+								"ランプの　車が、ガードの\nてまえで　とまっている。",
+							);
+						}
 					}
 					return;
 				}
@@ -1055,6 +1193,13 @@ export const senro: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					// ゆうべ すきま（sukima_ikegaki）で えだを 鳴らした人。南の細道から 先に 来たとき
+					if (s.flag("seen_sukima_shinya") && !s.flag("seen_sukima_asa")) {
+						s.set("seen_sukima_asa");
+						await s.narrate(
+							"ゆうべ　パキッと　いった　えだに、\nビニールひもが　まいてある。",
+						);
+					}
 					await s.narrate("あさいちばんの　シーツが、\nもう　ほしてある。");
 					return;
 				}

@@ -17,7 +17,9 @@
 //
 // すみれの筋（2026-10-04。どれも前振りを s.flag で確かめ、見ていない人には別の文）:
 //   グローブ   bench（seen_glove_sumire）→ 朝、こんどう家の　びんケースのよこ（kondo_door）
-//   子犬       koinu_poster（seen_koinu）→ 深夜の kennel（seen_koinu_mitsuke）→ 朝の貼り紙・miura_win・kirokuLines
+//   子犬       koinu_poster（seen_koinu）→ 深夜の kennel（seen_koinu_mitsuke）→ 朝の貼り紙・kirokuLines。
+//              貼り紙を見ずに深夜の犬小屋で会った人は seen_koinu_dare → 朝の貼り紙で mitsuke になる。
+//              宵・深夜に miura_win の水のおさらを見た人（seen_koinu_sara）→ 朝『ひっこめてある』
 //   自転車     alley_bike（seen_jitensha_sumire）→ 朝の takahashi_door（しかられる声）
 //   『70』     gate_plate 2回目（seen_gate_70）→ fence_sakura のくい（seen_sakura_70）
 //   トンネル   sandbox（seen_suna_tunnel）→ 深夜にほる（seen_suna_nuke）→ 朝『だれ？』
@@ -26,7 +28,14 @@
 //   缶と石     kichi_crate_a 深夜（seen_kan_kichi。缶はもちかえる → 朝は room desk の机の缶・木箱で一言）・
 //              kichi_crate_b（seen_kichi_ishi → kawara の水きり）
 //   一軒の夜   takahashi_door: 夕方のおふろ → 宵のドライヤー → 朝のせんたくき（＋自転車の声）
-//   ほかの地区から: たまご⑰（seen_obachan）・ゴミの日⑯・秋まつり③・ささぶね㉓・牛乳（got_gyunyu）
+//   しらさぎ㉒ saka_rail 夕方『中州に白い点』（seen_sagi_saka）→ 朝の saka_rail・kawara sagiBelt
+//   ねこ⑤     alley_box 夕方か宵（seen_neko_sumire）→ 深夜は毛だけ → 朝『もどっている』
+//   ピアノ     yamada_door か arrive_yu（夕方に着いた人）→ 朝『……こえた』
+//   ひみつきち kichi_board 宵『夜は、るす』→ 深夜にしゃがむ（seen_kichi_shinya）→ 朝の板
+//   ほかの地区から: たまご⑰（seen_obachan）・ゴミの日⑯・秋まつり③・ささぶね㉓・牛乳（got_gyunyu）・
+//              中継の打ち切り（room tv の seen_chukei_end → kondo_win 宵）・
+//              ふとんのばあちゃん㉚（danchi の seen_futon_tori → monohoshi 宵）・
+//              体操のじいさん㊽（danchi の seen_taiso_danchi → jii_asa 2回目）
 //
 // 座標凍結v3: 東 touch (38,3)→street(3,19)（street からの着地は (37,3)）／
 //   南 touch (5,23)→kawara(5,2)（着地 (5,22)）／西 touch (0,12)→danchi(30,12)（着地 (1,12)）
@@ -45,6 +54,7 @@ import type {
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import {
+	arrived,
 	kanHeld,
 	kanLine,
 	kanLv,
@@ -245,6 +255,8 @@ export const sumire: MapDef = {
 	events: [
 		// ── 着いたとき（時間帯ごとに一度だけ） ──
 		{
+			// やまだ家のピアノのつっかえを、着いたときにも一度（P0-11）。
+			// 夕方に着いた人は、朝の yamada_door で『……こえた』を聞ける（arrived で読む）
 			id: "arrive_yu",
 			x: 0,
 			y: 0,
@@ -253,7 +265,9 @@ export const sumire: MapDef = {
 			when: (st) => st.flags.tod === "yu",
 			run: async (s) => {
 				await s.wait(500);
-				await s.narrate("どこかの家から、\nピアノの音がする。");
+				await s.narrate(
+					"どこかの家から、ピアノ。\n……おなじところで、とまった。",
+				);
 			},
 		},
 		{
@@ -419,6 +433,9 @@ export const sumire: MapDef = {
 
 		// ── 裏の路地（東で street へ。生活のうらがわ） ──
 		{
+			// ⑤ ねこ: 夕方か宵に見た人（seen_neko_sumire）だけ、深夜にタオルが　ねこの形によれ、朝『もどっている』。
+			// （深夜の『毛だけ』は　ekimae crates_b の役なので、ここは　タオルのよれ）
+			// 深夜は『からっぽ』と書かない（いないことを言わず、物ののこりで見せる）
 			id: "alley_box",
 			x: 29,
 			y: 3,
@@ -426,10 +443,20 @@ export const sumire: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("だんボールは、\nからっぽだ。");
+					await s.narrate(
+						s.flag("seen_neko_sumire")
+							? "だんボールの　なかの　タオルが、\nねこの　かたちに　よれている。"
+							: "路地の　だんボールが、\n夜つゆで　くたっとしている。",
+					);
 					return;
 				}
 				if (t === "asa") {
+					if (!s.flag("seen_neko_sumire")) {
+						await s.narrate(
+							"だんボールのなかで、ねこが\n毛づくろいを　している。",
+						);
+						return;
+					}
 					await s.narrate("だんボールに、ねこが\nもどっている。");
 					// ⑤ 夜の あつまりを 見た 人だけ
 					if (s.flag("seen_neko_shukai"))
@@ -437,6 +464,10 @@ export const sumire: MapDef = {
 					return;
 				}
 				s.set("seen_neko_sumire");
+				if (t === "yoru") {
+					await s.narrate("だんボールの　ふちに、ねこが\nあごを　のせている。");
+					return;
+				}
 				await s.narrate("だんボールのなかで、\nねこが　まるくなっている。");
 			},
 		},
@@ -512,17 +543,31 @@ export const sumire: MapDef = {
 				const t = s.flag("tod");
 				if (t === "asa") {
 					await s.narrate("うえに、あたらしい紙。\n――『みつかりました』");
-					if (s.flag("seen_koinu_mitsuke"))
+					if (s.flag("seen_koinu_mitsuke")) {
 						await s.say("kiriko", "（犬小屋の、あの\nしっぽンゴ）");
+					} else if (s.flag("seen_koinu_dare")) {
+						// 貼り紙を見ずに、深夜の犬小屋で会った人（kennel・seen_koinu_dare）。
+						// ここで貼り紙とつながる（まとめ kirokuLines の子犬の行がのる）
+						s.set("seen_koinu_mitsuke");
+						await s.say("kiriko", "（……犬小屋の、\nあの　ちいさいのンゴ）");
+					}
 					return;
 				}
 				s.set("seen_koinu");
+				// 深夜、さきに犬小屋の子犬（kennel・seen_koinu_dare）を見てから　ここを読んだ人は、
+				// その場でつながる（dare は深夜にしか立たない）
+				if (s.flag("seen_koinu_dare") && !s.flag("seen_koinu_mitsuke")) {
+					s.set("seen_koinu_mitsuke");
+					await s.say("kiriko", "（……犬小屋の、\nあの　ちいさいのンゴ）");
+					return;
+				}
 				if (t === "yoru")
 					await s.narrate("でんちゅうにも、\nおなじ紙が　はってある。");
 			},
 		},
 		{
-			// 子犬を待つ家。宵に出した水のおさらは、子犬が見つかった朝には　ひっこめてある
+			// 子犬を待つ家。宵に出した水のおさら（宵・深夜に見た人は seen_koinu_sara）は、
+			// 子犬が見つかった朝には　ひっこめてある（見ていない人には、においだけ）
 			id: "miura_win",
 			x: 36,
 			y: 2,
@@ -530,18 +575,20 @@ export const sumire: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					s.set("seen_koinu_sara");
 					await s.narrate("くらい。れいぞうこの音が\nかすかに　している。");
 					// 子犬は　犬小屋（kennel）にいて、ここへは　もどっていない
 					await s.narrate("おさらの　水は、\nへっていない。");
 					return;
 				}
 				if (t === "asa") {
-					if (s.flag("seen_koinu"))
+					if (s.flag("seen_koinu_sara"))
 						await s.narrate("まどの下の　おさらは、\nもう　ひっこめてある。");
 					await s.narrate("みそしるの　においがする。");
 					return;
 				}
 				if (t === "yoru") {
+					s.set("seen_koinu_sara");
 					await s.narrate("まどの下に、水の　おさらが\n出してある。");
 					return;
 				}
@@ -803,6 +850,9 @@ export const sumire: MapDef = {
 				y: 11,
 				trigger: "talk",
 				run: async (s) => {
+					// 朝より前（夕方〜深夜）に読んだ人（mae）にだけ、朝の一回目で『ふえている』。朝の二回目からと、
+					// はじめて読む朝の人には、ただ『はってある』（朝の紙を見たら seen_taiso_kami）
+					const mae = !!s.flag("seen_aki_sumire") && !s.flag("seen_taiso_kami");
 					s.set("seen_aki_sumire");
 					await s.narrate("町内の掲示板。\n『つきみ秋まつり　らいげつ』");
 					if (s.flag("seen_aki_tonari") && !s.flag("seen_aki_kurabe")) {
@@ -812,7 +862,12 @@ export const sumire: MapDef = {
 					await s.narrate("『犬のふんは\nもちかえりましょう』の紙。");
 					// 時刻は jii_asa（たいそうの　かえり）・団地の 6時半の会とそろえる
 					if (s.flag("tod") === "asa") {
-						await s.narrate("『ラジオたいそう　6時半』の\n紙が、ふえている。");
+						s.set("seen_taiso_kami");
+						await s.narrate(
+							mae
+								? "『ラジオたいそう　6時半』の\n紙が、ふえている。"
+								: "『ラジオたいそう　6時半』の\n紙も　はってある。",
+						);
 					}
 				},
 			}),
@@ -834,6 +889,20 @@ export const sumire: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("『あたたか～い』の札が\nひとつだけ　ある。");
+					return;
+				}
+				// 夕方は　ぜんぶコーヒー → 宵に赤い札がひとつ → 深夜はそれが一本買える → 朝もひとつだけ
+				if (t === "yoru") {
+					await s.narrate(
+						"あかりの　なかに、ひとつだけ\n『あたたか～い』の　赤い札。",
+					);
+					// 通りの自販機の　はしの一列（street vending_ev・seen_akafuda_st）を見てきた人は、くらべる
+					await s.say(
+						"kiriko",
+						s.flag("seen_akafuda_st")
+							? "（こっちは、まだ\nひとつだけンゴ）"
+							: "（……まだ　九月ンゴ）",
+					);
 					return;
 				}
 				await s.narrate("じはんき。ならびが、\nぜんぶ　コーヒーだ。");
@@ -1017,7 +1086,8 @@ export const sumire: MapDef = {
 					return;
 				}
 				if (t === "asa") {
-					if (s.flag("seen_piano_yu")) {
+					// つっかえを聞いた人（ここで聞いたか、夕方に着いたときの arrive_yu）だけ
+					if (s.flag("seen_piano_yu") || arrived(s, "sumire", "yu")) {
 						await s.narrate("ピアノの音。きのう\nつっかえたところ――");
 						await s.narrate("……こえた。");
 						return;
@@ -1097,6 +1167,12 @@ export const sumire: MapDef = {
 					await s.narrate(
 						"ふとんは、まだ　ほしたまま。\n夜風で、すこし　ゆれている。",
 					);
+					// ㉚ 団地のふとんのばあちゃん（danchi futon_tori・seen_futon_tori）に会った人だけ
+					if (s.flag("seen_futon_tori"))
+						await s.say(
+							"kiriko",
+							"（団地の　ばあちゃんなら、\nたたきに　くるンゴ）",
+						);
 					return;
 				}
 				await s.narrate("ふとんが、とりこまれずに\nのこっている。");
@@ -1104,7 +1180,8 @@ export const sumire: MapDef = {
 		},
 		{
 			// 深夜、ぽちの犬小屋に　しっぽの先だけ白い子犬（貼り紙 koinu_poster を見た人は
-			// seen_koinu_mitsuke → 朝の貼り紙・まとめ）。ぽちは夜、家の中
+			// seen_koinu_mitsuke → 朝の貼り紙・まとめ）。貼り紙を見ていない人も、しっぽの白は見る
+			// （seen_koinu_dare → 朝の貼り紙で『あの　ちいさいの』とつながる）。ぽちは夜、家の中
 			id: "kennel",
 			x: 15,
 			y: 19,
@@ -1112,17 +1189,18 @@ export const sumire: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					if (s.flag("seen_koinu_mitsuke")) {
+					if (s.flag("seen_koinu_mitsuke") || s.flag("seen_koinu_dare")) {
 						await s.narrate("しっぽの白いのが、\nねいきを　たてている。");
 						return;
 					}
 					await s.narrate("犬小屋の　おくで、ちいさいのが\nまるまっている。");
+					await s.narrate("しっぽの先だけ、白い。");
 					if (s.flag("seen_koinu")) {
 						s.set("seen_koinu_mitsuke");
-						await s.narrate("しっぽの先だけ、白い。");
 						await s.say("kiriko", "（……ここに　いたンゴ）");
 						return;
 					}
+					s.set("seen_koinu_dare");
 					await s.say("kiriko", "（……だれンゴ？）");
 					return;
 				}
@@ -1133,7 +1211,8 @@ export const sumire: MapDef = {
 							? "ぽちが、あくびをした。"
 							: "犬小屋の　犬が、\nあくびをした。",
 					);
-					if (s.flag("seen_koinu_mitsuke"))
+					// 深夜に子犬を見た人だけ（貼り紙を見ていてもいなくても）
+					if (s.flag("seen_koinu_mitsuke") || s.flag("seen_koinu_dare"))
 						await s.narrate("犬小屋の　しきわらに、\nちいさな　くぼみ。");
 					return;
 				}
@@ -1166,6 +1245,18 @@ export const sumire: MapDef = {
 				if (t === "yoru") {
 					// 部屋のテレビと同じナイター（nostalgia.md P0-2）。延長の段には関係なく「実況」だけ。
 					// 回・点数・チーム名は言わない（数字を言い切るのは apart の朝刊の1か所だけ）
+					// 部屋で中継の打ち切りを見た人（room tv・seen_chukei_end）には、この家のテレビも消える。
+					// 『ぷつん』は一度だけ（seen_kondo_tv）。そのあとは、足される音（せんを　ぬく音。
+					// kondo_door の　ふえる空きびんと　そろえる）
+					if (s.flag("seen_chukei_end")) {
+						if (!s.flag("seen_kondo_tv")) {
+							s.set("seen_kondo_tv");
+							await s.narrate("窓のおくの　テレビが、\nぷつん、と　きえた。");
+							return;
+						}
+						await s.narrate("窓のおくで、ぽん、と\nせんを　ぬく音。");
+						return;
+					}
 					await s.narrate("窓のおくから、ナイターの\n実況が　きこえる。");
 					await s.narrate(
 						"『打った、大きい――』\nのあと、家じゅうで　ためいき。",
@@ -1211,7 +1302,8 @@ export const sumire: MapDef = {
 		// ── 空き地（柵の一枚（26,13）だけ、見た目のまま通れる＝隠し） ──
 		// 深夜は、ひみつきちに しゃがめる（nostalgia.md P0-7。座れる3か所のひとつ）。
 		// 数秒なにも起きず、音がひとつ増えて、ボケで閉じる。何も起きない・ノートにも書かない。
-		// 2回目からは短い1行だけ（seen_kichi_shinya。左右の板で共用）
+		// 2回目からは短い1行だけ（seen_kichi_shinya。左右の板で共用）。
+		// 宵は『るす』（前振り）→ 深夜にしゃがむ → 朝、しゃがんだ人だけ『かってに入った』
 		...[24, 25].map(
 			(x): EventDef => ({
 				id: `kichi_board_${x}`,
@@ -1241,6 +1333,28 @@ export const sumire: MapDef = {
 							await s.narrate("とおくで、じはんきが\nひくく　うなっている。");
 						}
 						await s.say("kiriko", "（メンバーに、\nなった気がするンゴ）");
+						return;
+					}
+					const t = s.flag("tod");
+					// 宵は、るす（深夜にしゃがむ前振り）
+					if (t === "yoru") {
+						await s.narrate(
+							"『ひみつきち　だいほんぶ』。\n板のすきまが、まっくらだ。",
+						);
+						await s.say("kiriko", "……夜は、るすンゴ");
+						return;
+					}
+					// 朝は、深夜にしゃがんだ人（seen_kichi_shinya）だけ　ぼしゅうの字を読みかえす
+					if (t === "asa") {
+						if (s.flag("seen_kichi_shinya")) {
+							await s.narrate("板の　『メンバーぼしゅう中』。");
+							await s.say("kiriko", "（……ゆうべ、かってに\n入ったンゴ）");
+							return;
+						}
+						await s.narrate(
+							"朝の光で、『ひみつきち』の\nマジックの字が　よく見える。",
+						);
+						await s.say("kiriko", "……入りたいンゴ");
 						return;
 					}
 					await s.narrate("板に、マジックで\n『ひみつきち　だいほんぶ』。");
@@ -1307,6 +1421,8 @@ export const sumire: MapDef = {
 
 		// ── 坂道（川へ下りる。手すりの向こうに川） ──
 		{
+			// ㉒ しらさぎを坂の上から: 夕方の中州の白い点（seen_sagi_saka）→ kawara sagiBelt（asa）。
+			// 朝は、かわらで飛ぶのを見た人（seen_sagi_asa）には　からっぽ、坂の上だけの人には　まだ一つ
 			id: "saka_rail",
 			x: 4,
 			y: 18,
@@ -1318,6 +1434,14 @@ export const sumire: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					if (s.flag("seen_sagi_asa")) {
+						await s.narrate("中州は、もう　からっぽだ。");
+						return;
+					}
+					if (s.flag("seen_sagi_saka")) {
+						await s.narrate("中州に、白い点が\nまだ　ひとつ。");
+						return;
+					}
 					await s.narrate("手すりのむこう、川が\nあさの色で　ひかっている。");
 					return;
 				}
@@ -1325,7 +1449,9 @@ export const sumire: MapDef = {
 					await s.narrate("手すりのむこう、川に\n街灯が　ゆれている。");
 					return;
 				}
+				s.set("seen_sagi_saka");
 				await s.narrate("手すりのむこう、川が\nひかっている。");
+				await s.narrate("中州に、白い点が\nひとつ　うごかない。");
 			},
 		},
 		{
@@ -1574,6 +1700,14 @@ export const sumire: MapDef = {
 							: "第二はな、夕方に\nとってあるんだ",
 						{ name: "じいさん" },
 					);
+					return;
+				}
+				// ㊽ 団地の体操のじいちゃん（danchi taiso_jichan・seen_taiso_danchi）と話した人だけ
+				if (s.flag("seen_taiso_danchi")) {
+					await s.say(null, "団地の　じいさん、\nまだ　のばしてたろ", {
+						name: "じいさん",
+					});
+					await s.say("kiriko", "（……よっ、とンゴ）");
 					return;
 				}
 				await s.say(null, "つづけるのが\nコツだよ。……たぶん", {

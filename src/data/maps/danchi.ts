@@ -19,7 +19,11 @@
 //   ミニトマト（seen_tomato_danchi）・
 //   すなばのスコップ（seen_baketsu → 深夜 ぬく seen_scoop_motsu → バケツへ seen_scoop_shimau）・
 //   夕刊の自転車（seen_yukan_jitensha）・
-//   なわとびの子（seen_nawatobi 数 → 深夜の『10』seen_nawatobi_10 → 朝の階段）・上のかいの窓の声（seen_gohan_*）
+//   なわとびの子（seen_nawatobi 数 → 深夜の『10』seen_nawatobi_10 → 朝の階段）・上のかいの窓の声（seen_gohan_*）・
+//   クスノキのスズメ（seen_kusunoki_suzume → 朝 とびだす seen_kusunoki_asa・てつぼう）・
+//   ひがんばなのくき（seen_kadan_kuki → 朝 ほどけかける）・給水塔のランプ（深夜 seen_kyusui_danchi → 朝）・
+//   将棋の『まった』（seen_shogi_danchi → 宵の盤・朝のじいちゃん seen_shogi_asa）・
+//   405の輪ゴム（seen_danchi_405 → 朝のばあちゃん seen_405_wagomu → postbox_a）
 //
 // 座標凍結v3: 東 touch (31,12)→sumire(1,12)・sumire からの着地 (30,12)／
 // 北 touch (16,0)→kokudo(20,10)・kokudo からの着地 (16,1)。
@@ -37,6 +41,8 @@ import type {
 } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import {
+	akiMatsuri,
+	arrived,
 	kanHeld,
 	kanLine,
 	kanShinya,
@@ -200,7 +206,6 @@ const gohanBelt = (x: number, y: number): EventDef => ({
  * 足音を三つ → 暗転（のぼりきるまで）→ 見わたし → とおくに自分の窓（P0-5）。何も起きない。
  * 文は暗転が明けてから出す（暗転 .fade は吹き出しより上に重なるので、暗いあいだの文は見えない）。
  * 缶を持っていれば、かぞえる1行のかわりに缶の1行（吹き出しは既存文を入れて5まで）。
- * 給水塔の水音（kyusuito）には触れない。
  */
 const ichibanUe = async (s: Story): Promise<void> => {
 	s.set("seen_danchi_ue");
@@ -314,7 +319,12 @@ export const danchi: MapDef = {
 			when: (st) => st.flags.tod === "shinya",
 			run: async (s) => {
 				await s.wait(700);
-				await s.narrate("窓のあかりが、\nひとつも　ない。");
+				// 夕方の arrive_yu（「ひとつ、またひとつ」）を 見た人には、おなじ ことばで 裏がえす
+				await s.narrate(
+					arrived(s, "danchi", "yu")
+						? "ひとつ、またひとつ　ついた\n窓が、ひとつも　ない。"
+						: "窓のあかりが、\nひとつも　ない。",
+				);
 				await s.narrate("A棟も、B棟も、\nC棟も。");
 				await s.narrate("棟のあいだを、風が\nとおりぬけていく。");
 			},
@@ -330,8 +340,13 @@ export const danchi: MapDef = {
 				await s.wait(500);
 				s.se("suzume", { pan: -0.3, volume: 0.8 });
 				await s.wait(500);
-				// 「ぱん、ぱん」は すみれだけ（団地の ふとんは、朝 b_futon で とりこまれている＝㉚）
-				await s.narrate("カーテンの　あく音が、\n棟から　棟へ　うつっていく。");
+				// 「ぱん、ぱん」は すみれだけ（団地の ふとんは、朝 b_futon で とりこまれている＝㉚）。
+				// 深夜の arrive_shinya（窓が ひとつも ない）を 見た人には、おなじ棟が あく
+				await s.narrate(
+					arrived(s, "danchi", "shinya")
+						? "ゆうべ　まっくらだった　棟で、\nカーテンが　つぎつぎ　あく。"
+						: "カーテンの　あく音が、\n棟から　棟へ　うつっていく。",
+				);
 			},
 		},
 
@@ -359,24 +374,42 @@ export const danchi: MapDef = {
 			sprite: JP.waterTower,
 			trigger: "talk",
 			fixedDir: true,
+			// ㉝ ふたつの給水塔のランプ: 宵に 赤いランプが 見えはじめ → 深夜 点滅（seen_kyusui_danchi。
+			// koen kyusuito の深夜が読む）。公園の ランプ（seen_kyusui_koen）を 見た人には かわりばんこ →
+			// 朝、ランプは きえている（深夜に 見た人にだけ）
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					s.set("seen_kyusui_danchi");
 					await s.narrate(
 						"給水塔。てっぺんの　赤い\nランプが、ゆっくり　点滅している。",
 					);
-					await s.narrate("どの窓も、くらい。\nみんな　ねている。");
+					if (s.flag("seen_kyusui_koen")) {
+						await s.narrate(
+							"丘の上の　給水塔の　ランプと、\nかわりばんこに　ひかる。",
+						);
+						return;
+					}
+					await s.say("kiriko", "（いち、に……さん。\nゆっくりンゴ）");
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("給水塔のタンクに、\nあさの空が　うつっている。");
+					await s.narrate(
+						s.flag("seen_kyusui_danchi")
+							? "ランプは　きえて、タンクに\nあさの空が　うつっている。"
+							: "給水塔のタンクに、\nあさの空が　うつっている。",
+					);
 					return;
 				}
-				// 宵は夕日のかわりに、棟の窓あかりをせおう
+				// 宵は夕日のかわりに、棟の窓あかりの 上の ランプ（深夜の 点滅の 前ぶれ）
+				if (t === "yoru") {
+					await s.narrate(
+						"給水塔。棟の窓あかりより\n上に、赤い　ランプが　ひとつ。",
+					);
+					return;
+				}
 				await s.narrate(
-					t === "yoru"
-						? "給水塔。棟の窓あかりを\nせおって、まっくろな　かげになっている。"
-						: "給水塔。夕日をせおって、\nまっくろな　かげになっている。",
+					"給水塔。夕日をせおって、\nまっくろな　かげになっている。",
 				);
 				await s.narrate("見上げると、くびが\nいたくなる高さだ。");
 			},
@@ -421,6 +454,8 @@ export const danchi: MapDef = {
 			x: 20,
 			y: 17,
 			trigger: "talk",
+			// 夕方の こども将棋の『まった！』（seen_shogi_danchi）→ 宵は ならべたままの 盤（物だけ）→
+			// 朝の 体そうの じいちゃん（taiso_jichan の2回目・seen_shogi_asa）
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
@@ -435,10 +470,13 @@ export const danchi: MapDef = {
 				if (t === "yoru") {
 					// しょうぎの会は夕方まで（灯りも yu だけ）。宵は におい だけ置く
 					await s.narrate("窓のすきまから、お茶の\nにおいが　すこしする。");
+					if (s.flag("seen_shogi_danchi"))
+						await s.narrate("くらい　おくに、ならべた\nままの　盤の　かげ。");
 					return;
 				}
+				s.set("seen_shogi_danchi");
 				await s.narrate("窓のなか、しょうぎの駒の\n音がしている。");
-				await s.narrate("ときどき、お茶わんの\nふれあう音。");
+				await s.narrate("ときどき、こどもの　声で\n『まった！』");
 			},
 		},
 
@@ -475,8 +513,11 @@ export const danchi: MapDef = {
 					await s.narrate("朝刊が、ならんで\nささっている。");
 					if (!mita) return;
 					await s.narrate("405の　チラシが、輪ゴムで\nたばねてある。");
-					// ㉚ るすの家の ふとんを たたいた ばあちゃん（seen_futon_tori）を 見た人だけ
-					if (s.flag("seen_futon_tori"))
+					// ㉚ 朝の ばあちゃん（futon_tori）から 聞いた人（seen_405_wagomu）は こたえあわせ。
+					// 聞いていなくて、るすの家の ふとんを たたいた ばあちゃん（seen_futon_tori）を 見た人は 推測
+					if (s.flag("seen_405_wagomu"))
+						await s.say("kiriko", "（ばあちゃんの　輪ゴム\nンゴ）");
+					else if (s.flag("seen_futon_tori"))
 						await s.say("kiriko", "（ふとんの　ばあちゃん\nンゴ……？）");
 					return;
 				}
@@ -968,6 +1009,9 @@ export const danchi: MapDef = {
 				}
 				if (t === "asa") {
 					await s.narrate("てつぼうに、\nスズメが　ならんでいる。");
+					// 夕方の クスノキの ねぐら（kusunoki の seen_kusunoki_suzume）を 見た人だけ
+					if (s.flag("seen_kusunoki_suzume"))
+						await s.say("kiriko", "（クスノキの　とまり客\nンゴ）");
 					return;
 				}
 				await s.narrate("てつぼう。にぎると\nひんやりする。");
@@ -976,15 +1020,40 @@ export const danchi: MapDef = {
 		},
 		...[10, 11].map(
 			(x): EventDef => ({
+				// ひがんばなの くき（彼岸の前）。夕・宵・深夜に 見た人（seen_kadan_kuki）は、
+				// 深夜に 先が ふくらみ → 朝、あかく ほどけかける（ひと晩の のび）
 				id: `kadan_${x}`,
 				x,
 				y: 11,
 				trigger: "talk",
 				run: async (s) => {
-					await s.narrate("花だん。『みどりの会』の\n札が　立っている。");
-					if (s.flag("tod") === "asa") {
+					const t = s.flag("tod");
+					const mita = !!s.flag("seen_kadan_kuki");
+					if (t === "asa") {
+						if (mita) {
+							await s.narrate("くきの　先が、あかく\nほどけかけていた。");
+							await s.say("kiriko", "（ひと晩ぶん、\nのびたンゴ）");
+							return;
+						}
+						await s.narrate("花だん。『みどりの会』の\n札が　立っている。");
 						await s.narrate("土が、しめっている。\n水やりの　あとだ。");
+						return;
 					}
+					if (t === "shinya") {
+						s.set("seen_kadan_kuki");
+						await s.narrate(
+							mita
+								? "くきの　先が、\nふくらんでいる。"
+								: "ひがんばなの　くきの　先が、\nふくらんでいる。",
+						);
+						return;
+					}
+					s.set("seen_kadan_kuki");
+					await s.narrate(
+						t === "yoru"
+							? "外灯で、ひがんばなの\nくきの　かげが　ながい。"
+							: "花だんに、ひがんばなの\nくきが　一本　のびている。",
+					);
 				},
 			}),
 		),
@@ -993,8 +1062,12 @@ export const danchi: MapDef = {
 			x: 14,
 			y: 7,
 			trigger: "talk",
+			// なわとびの子（nawatobi_kid・seen_nawatobi）を 見た人だけ、宵は 下の土に すれたあと。
+			// 夕は「外灯が　つくまでに」（2段目＝seen_nawatobi 2 以上）を 聞いた人だけ、まだ つかない外灯を
+			// 見上げる（その先の『10』は tetsubo・c_stairs）
 			run: async (s) => {
 				const t = s.flag("tod");
+				const nawa = numFlag(s, "seen_nawatobi") >= 1;
 				if (t === "shinya") {
 					await s.narrate("この明かりの下だけ、\n地面が　白い。");
 					return;
@@ -1004,10 +1077,16 @@ export const danchi: MapDef = {
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("中庭の外灯に、\n羽虫が　あつまりはじめた。");
+					await s.narrate(
+						nawa
+							? "外灯の　下の　土に、\nなわとびの　すれた　あと。"
+							: "中庭の外灯に、\n羽虫が　あつまりはじめた。",
+					);
 					return;
 				}
 				await s.narrate("中庭の外灯。\nまだ、ついていない。");
+				if (numFlag(s, "seen_nawatobi") >= 2)
+					await s.say("kiriko", "（これが　つくまで、\nンゴね）");
 			},
 		},
 
@@ -1068,22 +1147,43 @@ export const danchi: MapDef = {
 			x: 28,
 			y: 10,
 			trigger: "talk",
+			// スズメの ねぐら: 夕方 すいこまれていく（seen_kusunoki_suzume）→ 宵は しずか →
+			// 深夜は はばたき → 朝、いっせいに とびだす（一度だけ seen_kusunoki_asa）・てつぼうの スズメ
 			run: async (s) => {
 				const t = s.flag("tod");
+				const mita = !!s.flag("seen_kusunoki_suzume");
 				if (t === "shinya") {
-					await s.narrate("クスノキ。こずえの鳴る音が\n上をとおっていく。");
+					await s.narrate(
+						mita
+							? "はっぱの　おくで、ときどき\nちいさな　はばたき。"
+							: "クスノキ。こずえの鳴る音が\n上をとおっていく。",
+					);
 					return;
 				}
 				if (t === "asa") {
+					if (mita && !s.flag("seen_kusunoki_asa")) {
+						s.set("seen_kusunoki_asa");
+						s.se("suzume", { pan: 0.4, volume: 0.8 });
+						await s.narrate("クスノキから、スズメが\nいっせいに　とびだした。");
+						await s.say("kiriko", "（満員の　ぶんンゴ）");
+						return;
+					}
 					await s.narrate("すずめの声が、\n上から　ふってくる。");
 					return;
 				}
-				// 宵は夕日のかわりに、外灯(29,7)のあかり
-				await s.narrate(
-					t === "yoru"
-						? "大きなクスノキ。はっぱの\nすきまから、外灯のあかり。"
-						: "大きなクスノキ。はっぱの\nすきまから、夕日。",
-				);
+				if (t === "yoru") {
+					// 宵は夕日のかわりに、外灯(29,7)のあかり
+					await s.narrate(
+						mita
+							? "クスノキは、しずかだ。\nなかに、あれだけ　いるのに。"
+							: "大きなクスノキ。はっぱの\nすきまから、外灯のあかり。",
+					);
+					return;
+				}
+				s.set("seen_kusunoki_suzume");
+				s.se("suzume", { pan: 0.4, volume: 0.6 });
+				await s.narrate("クスノキに、スズメが\nつぎつぎ　すいこまれていく。");
+				await s.say("kiriko", "（なかは、満員ンゴ）");
 			},
 		},
 
@@ -1137,8 +1237,19 @@ export const danchi: MapDef = {
 			x: 19,
 			y: 19,
 			trigger: "talk",
+			// 夕・宵に よんだ人（seen_taiso_kanban）→ 深夜は おぼえている → 朝の じいちゃん（taiso_jichan）。
+			// ⑲ 宵は 部屋の天気よほう（room tv の seen_tenki）を 見た人だけ キリコ
 			run: async (s) => {
 				const t = s.flag("tod");
+				if (t === "yoru") {
+					s.set("seen_taiso_kanban");
+					await s.narrate(
+						"くらがりで、『6時半』の　字だけ\n白く　うかんでいる。",
+					);
+					if (s.flag("seen_tenki"))
+						await s.say("kiriko", "（あしたは　はれ。\n6時半、あるンゴ）");
+					return;
+				}
 				if (t === "shinya") {
 					await s.narrate("看板は、くらくて\nよみにくい。");
 					// 夕・宵に よんだ人（seen_taiso_kanban）だけ
@@ -1195,6 +1306,9 @@ export const danchi: MapDef = {
 			run: async (s) => {
 				await s.narrate("『じちかい』と書かれた\n木箱。");
 				await s.narrate("つなひきの　つなが\nはみ出している。");
+				// ③ つきみ秋まつりの おしらせ（回覧板・はり紙・ほかの町。nostalgia akiMatsuri）を 見た人だけ
+				if (akiMatsuri(s))
+					await s.say("kiriko", "（秋まつりの　つなひき\nンゴ？）");
 			},
 		},
 		{
@@ -1275,6 +1389,11 @@ export const danchi: MapDef = {
 					await s.narrate("……先客が、いっぱい\nいた。");
 					await s.narrate("ねこが　四ひき、\nまるく　すわっている。");
 					await s.narrate("夕方に　見た　かおが、\nまざっている。");
+					// ⑤ 駅前の コンテナの 毛（ekimae crates_b の seen_neko_eki）を 見た人だけ
+					if (s.flag("seen_neko_eki"))
+						await s.narrate(
+							"コンテナに　ついていた　毛と\nおなじ　いろの　子も　いる。",
+						);
 					await s.say("kiriko", "（夜は、ここに\nあつまるンゴね）");
 					return;
 				}
@@ -1348,7 +1467,7 @@ export const danchi: MapDef = {
 			12,
 			10,
 			KID,
-			// 段（seen_nawatobi 数・話すたび +1）: 3回 → 6回 → 9回。
+			// 段（seen_nawatobi 数・話すたび +1）: 3回 → 6回（「外灯が　つくまでに」→ gaito_niwa）→ 9回。
 			// 深夜の てつぼうの『10』（seen_nawatobi_10）・朝の C棟の階段へ
 			async (s) => {
 				const n = numFlag(s, "seen_nawatobi");
@@ -1362,7 +1481,7 @@ export const danchi: MapDef = {
 					return;
 				}
 				if (n === 1) {
-					await s.say(null, "……六回まで　いった。\nきろく　こうしん中", {
+					await s.say(null, "……六回。外灯が　つくまでに、\n十回　いくから", {
 						name: "なわとびの子",
 					});
 					return;
@@ -1425,12 +1544,20 @@ export const danchi: MapDef = {
 			GRANDMA,
 			async (s) => {
 				// ㉚ 朝も おなじ場所に。夕方に るすの家の ふとんを たたいた（seen_futon_tori）人には、
-				// その家から 梨（宵は b_futon・布団は room bed が 読む）
+				// その家から 梨（宵は b_futon・布団は room bed が 読む）。
+				// 405の あふれた チラシ（postbox_a の seen_danchi_405）を 見た人には、輪ゴムの ぬし
+				// （seen_405_wagomu → postbox_a の朝）
 				if (s.flag("tod") === "asa") {
 					if (s.flag("seen_futon_tori")) {
 						await s.say(null, "けさ、るすの　うちから\nなしを　もらってね", {
 							name: "ばあちゃん",
 						});
+						if (s.flag("seen_danchi_405")) {
+							s.set("seen_405_wagomu");
+							await s.say(null, "405さんの　チラシも、\nたばねといたよ", {
+								name: "ばあちゃん",
+							});
+						}
 						await s.say("kiriko", "（たたいた　かいが\nあったンゴ）");
 						return;
 					}
@@ -1502,7 +1629,13 @@ export const danchi: MapDef = {
 					await s.say(null, "体そうかい？　きょうの分は\nもう　おわったよ", {
 						name: "じいちゃん",
 					});
-					await s.say("kiriko", "ね、ねぼうでは\nないンゴ");
+					// 看板の『6時半』（taiso_kanban の seen_taiso_kanban）を よんだ人は、おぼえていた側の いいわけ
+					await s.say(
+						"kiriko",
+						s.flag("seen_taiso_kanban")
+							? "ろ、6時半は　おぼえて\nいたンゴ……"
+							: "ね、ねぼうでは\nないンゴ",
+					);
 					await s.say(
 						null,
 						"おわったあとの　のばしが\nだいじでな。……よっ、と",
@@ -1522,6 +1655,15 @@ export const danchi: MapDef = {
 							name: "じいちゃん",
 						});
 					}
+					return;
+				}
+				// 2回目: 夕方の 集会所の『まった！』（shuukaijo_win の seen_shogi_danchi）を 聞いた人に 一度
+				if (s.flag("seen_shogi_danchi") && !s.flag("seen_shogi_asa")) {
+					s.set("seen_shogi_asa");
+					await s.say(null, "ゆうべは、こどもに\n三回　まけてな", {
+						name: "じいちゃん",
+					});
+					await s.say("kiriko", "（『まった』の　子ンゴ）");
 					return;
 				}
 				await s.say(null, "六時半だよ、あした。\n……来る気が　あるなら", {

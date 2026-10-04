@@ -18,7 +18,15 @@
 // ⑱ 一晩: hako・milk_a・reitou・pan・housou_first→baachan_ev（seen_suupaa_koe）・okusan（数）→ ekimae・street・danchi
 // ③ 秋まつり: nodojiman 2回目（seen_aki_suupaa）→ akiMatsuri（room calendar・yamamichi susuki）
 // ㉘ コロッケ: korokke（got_korokke）→ room evening・kokudo・tonarimachi
-// 店の中だけの段（数）: okusan・korokke（seen_korokke_n）・wagon は、話す／調べるたびに 進む。
+// ㉞ 月曜の号: zasshi（seen_suupaa_zasshi。street ベンチの seen_zasshi を読む）→ ekimae bikes（shinya）
+// ㊹ あしたのアジフライ: baachan_ev（seen_baa_aji。okusan 数3 の人にキリコ）→ ekimae chirashi・umi sakanabako（asa）
+// ㊺ 棚と部屋: rejiyoko（seen_suupaa_denchi）→ room clock（shinya）／nichiyou（seen_suupaa_senzai）
+//    → room tv（yoru）／cupmen（seen_suupaa_cupmen）→ room evening
+// ㊼ しんまい: kome（seen_suupaa_kome。『新米　入りました』）→ yamamichi hazakake（yu）
+// ㊿ 駅前の受け: okashi が ekimae kiosk_lady（seen_kiosk）を、gacha が denwa（seen_ekimae_10en）を読む
+// 店の中だけの回収: pop（seen_suupaa_pop）の「いちおし」は baachan_ev が答える（seen_suupaa_pop2）。
+// 店の中だけの段（数）: okusan・korokke（seen_korokke_n）・wagon・speaker_ev（たまご→タイムサービス）・
+// zasshi（2回目で入口のベル、一冊へる）は、話す／調べるたびに 進む。kago は かごの行方（コロッケ・会計・おくさん）で かわる。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
 import { npc } from "../helpers";
@@ -28,20 +36,20 @@ import { SHOP } from "../tiles";
 // 絵は自作チップ（data/tiles.ts の SHOP）。床は木（'.'）——ふるいスーパーの、あぶらのしみた木の床。
 const tiles: Record<string, TileDef> = SHOP;
 
-// 北壁ぞい＝ひえた棚（牛乳・とうふ・れいとう）と米の樽・搬入の箱。
-// 中央＝棚の列2本（おかし・かんづめ・パン・にちようひん…）。南＝惣菜・特売ワゴン・
+// 北壁ぞい＝ひえた棚（牛乳・れいとう）と米の樽・搬入の箱。
+// 中央＝棚の列2本（おかし・カップめん・雑誌・パン・にちようひん）。南＝惣菜・特売ワゴン・
 // レジ・かご・ガチャガチャ。出口は南の中央 (10,13)。
 const rows = [
 	"####################", // y0
 	"#HHHHHHHHHHHHHHHHHH#", // y1
-	"#hhhhhhhhhhhhhhhhhh#", // y2  営業時間 (4,2)・ポップ (8,2)・おとどけ (12,2)・のど自慢 (18,2)
-	"#LSs.Ss..Ss..xx..U.#", // y3  スピーカー (1,3)・牛乳 (2,3)(3,3)・とうふ (5,3)・れいとう (9,3)・搬入の箱 (13,3)・米 (17,3)
+	"#hhhhhhhhhhhhhhhhhh#", // y2  ポップ (8,2)・おとどけ (12,2)・のど自慢 (18,2)
+	"#LSs.Ss..Ss..xx..U.#", // y3  スピーカー (1,3)・牛乳 (2,3)・れいとう (9,3)・搬入の箱 (13,3)・米 (17,3)
 	"#..................#", // y4
-	"#..BBBB..BBBB..BB..#", // y5  おかし (3,5)・カップめん (6,5)・かんづめ (9,5)・のみもの (12,5)・雑誌 (15,5)
+	"#..BBBB..BBBB..BB..#", // y5  おかし (3,5)・カップめん (6,5)・雑誌 (15,5)
 	"#..................#", // y6
-	"#..BBBB..BBBB..BB..#", // y7  パン (3,7)・ちょうみりょう (6,7)・にちようひん (9,7)・文ぼうぐ (12,7)・おもちゃ (15,7)
+	"#..BBBB..BBBB..BB..#", // y7  パン (3,7)・にちようひん (9,7)
 	"#..................#", // y8  おくさん (4,8)
-	"#..tttt....www.....#", // y9  惣菜 (3,9)(5,9)(6,9)・特売ワゴン (12,9)
+	"#..tttt....www.....#", // y9  惣菜のコロッケ (3,9)・特売ワゴン (12,9)
 	"#..................#", // y10 レジのばあちゃん (7,10)
 	"#.....[=]..........#", // y11 レジ (6,11)-(8,11)・レジよこ (8,11)
 	"#............k.g...#", // y12 着地 (10,12)・かご (13,12)・ガチャガチャ (15,12)・男の子 (14,12)
@@ -50,7 +58,7 @@ const rows = [
 
 /**
  * レジのばあちゃん。会計 ＞ 初回（seen_baa）＞ 駅の話（seen_baa2）＞ 放送の声（seen_suupaa_koe）
- * ＞ アジフライ（seen_baa_aji）＞ 待機。会計はいつでも割り込む。
+ * ＞ アジフライ（seen_baa_aji）＞ いちおし（seen_suupaa_pop2）＞ 待機。会計はいつでも割り込む。
  */
 const baachan = async (s: Story): Promise<void> => {
 	// 会計（かごにコロッケが入っていれば、まずレジを打つ）
@@ -72,16 +80,26 @@ const baachan = async (s: Story): Promise<void> => {
 	}
 	if (!s.flag("seen_baa")) {
 		s.set("seen_baa");
-		await s.say(null, "いらっしゃい。……ああ、\n三丁目の。おおきくなって", {
-			name: "レジのばあちゃん",
-		});
+		// 会計を先にすませた人には、もう「いらっしゃい」でも「半額」でもない（吹き出しの数は同じ）
+		const katta = s.flag("seen_kaikei");
+		await s.say(
+			null,
+			katta
+				? "……ああ、\n三丁目の。おおきくなって"
+				: "いらっしゃい。……ああ、\n三丁目の。おおきくなって",
+			{ name: "レジのばあちゃん" },
+		);
 		await s.say("kiriko", "……たぶん、\nひとちがいンゴ");
 		await s.say(null, "そうかい。じゃあ、\nはじめまして", {
 			name: "レジのばあちゃん",
 		});
-		await s.say(null, "ゆっくり見ておいで。\nきょうはコロッケが半額", {
-			name: "レジのばあちゃん",
-		});
+		await s.say(
+			null,
+			katta
+				? "コロッケ、あったかい\nうちに　おたべ"
+				: "ゆっくり見ておいで。\nきょうはコロッケが半額",
+			{ name: "レジのばあちゃん" },
+		);
 		return;
 	}
 	if (!s.flag("seen_baa2")) {
@@ -118,10 +136,25 @@ const baachan = async (s: Story): Promise<void> => {
 		});
 		return;
 	}
-	// 会計のあとの一度だけ（okusan の「アジフライ」と同じ棚の話。初回の「きょうはコロッケが半額」と対）
+	// 会計のあとの一度だけ（okusan の「アジフライ」と同じ棚の話。初回の「きょうはコロッケが半額」と対）。
+	// ㊹ ekimae chirashi・umi sakanabako の朝が seen_baa_aji を読む
 	if (s.flag("seen_kaikei") && !s.flag("seen_baa_aji")) {
 		s.set("seen_baa_aji");
 		await s.say(null, "またおいで。あしたは\nアジフライが　半額", {
+			name: "レジのばあちゃん",
+		});
+		// okusan の3段目（かごにアジフライ ふたつ）を見た人だけ
+		if (numFlag(s, "seen_suupaa_okusan") >= 3) {
+			await s.say("kiriko", "（おくさん、一日\nはやかったンゴ）");
+		}
+		return;
+	}
+	// pop の「なにを　おしているのかは、書いていない」の答え（seen_suupaa_pop2）。
+	// ㊹ のアジフライ（seen_baa_aji）を遠くしないよう、そのあとに置く（会計前の人には koe の次に出る）
+	if (s.flag("seen_suupaa_pop") && !s.flag("seen_suupaa_pop2")) {
+		s.set("seen_suupaa_pop2");
+		await s.say("kiriko", "いちおしって、なにンゴ？");
+		await s.say(null, "コロッケ。てんちょうが\nあげてるの", {
 			name: "レジのばあちゃん",
 		});
 		return;
@@ -244,8 +277,9 @@ export const suupaa: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
-				// ⑰ たまご（数）: 一パックまで → うりきれ → ほたるの光 → まだ ながれている。
-				// danchi kaimono_yu が 2 以上を読む（「さいごの　一パック」）
+				// ⑰ たまご（数）: 一パックまで → うりきれ → おそうざいのタイムサービス → くりかえし。
+				// danchi kaimono_yu が 2 以上を読む（「さいごの　一パック」）。17時台なので閉店の曲は流れない。
+				// タイムサービスは、会計のあとの korokke「のこりのコロッケにも、シールが」と対
 				const n = numFlag(s, "seen_suupaa_tamago");
 				if (n < 3) s.set("seen_suupaa_tamago", n + 1);
 				if (n === 0) {
@@ -263,10 +297,10 @@ export const suupaa: MapDef = {
 					return;
 				}
 				if (n === 2) {
-					await s.narrate("『ほたるの光』が、\nしずかに　ながれだした。");
+					await s.narrate("『ただいまより　おそうざい\nタイムサービス――』");
 					return;
 				}
-				await s.narrate("『ほたるの光』が、\nまだ　ながれている。");
+				await s.narrate("『タイムサービス』が、\nもう一度　くりかえされた。");
 			},
 		},
 		{
@@ -275,29 +309,18 @@ export const suupaa: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
-				// ⑱ おくから取るくせ → ekimae truck_asa（asa）
+				// ⑱ おくから取るくせ → ekimae truck_asa（asa。運転手の『おくに』）。
+				// 2回目は コーヒーぎゅうにゅうでも くせが出る（朝の『おくに』がもう一度 きく）。
+				// 取りはしない（会計はコロッケだけ。手が　のびるところまで）
+				if (s.flag("seen_suupaa_milk")) {
+					await s.narrate(
+						"コーヒーぎゅうにゅうも、\nつい　おくのに　手が　のびる。",
+					);
+					return;
+				}
 				s.set("seen_suupaa_milk");
 				await s.narrate("ぎゅうにゅうの　ケース。\nよく　ひえている。");
 				await s.narrate("……おくのから取るくせは、\nなおらない。");
-			},
-		},
-		{
-			id: "milk_b",
-			x: 3,
-			y: 3,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("コーヒーぎゅうにゅうも\nある。");
-				await s.narrate("おふろの　あとのやつだ。");
-			},
-		},
-		{
-			id: "tofu",
-			x: 5,
-			y: 3,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("とうふが、水のなかで\nしずんでいる。");
 			},
 		},
 		{
@@ -337,27 +360,22 @@ export const suupaa: MapDef = {
 			y: 3,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("こめの　はかり売り。\n『こしひかり』の札。");
+				// ㊼ しんまい → yamamichi hazakake（yu。「まだ　ほしてるほう」）
+				s.set("seen_suupaa_kome");
+				await s.narrate("こめの　はかり売り。\n『新米　入りました』の札。");
 				await s.narrate("ますが、ふちまで\nみがかれている。");
 			},
 		},
 
-		// ── 北壁の紙もの（ぜんぶに背景を持たせる） ──
-		{
-			id: "eigyo_fuda",
-			x: 4,
-			y: 2,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("『えいぎょう時間』の札。\n10:00〜19:00。");
-			},
-		},
+		// ── 北壁の紙もの（営業時間は ekimae eigyo が受けもつ） ──
 		{
 			id: "pop",
 			x: 8,
 			y: 2,
 			trigger: "talk",
 			run: async (s) => {
+				// 答えは baachan_ev（seen_suupaa_pop2「コロッケ。てんちょうが　あげてるの」）
+				s.set("seen_suupaa_pop");
 				await s.narrate("手がきのポップ。\n『てんちょう　いちおし』");
 				await s.narrate("なにを　おしているのかは、\n書いていない。");
 			},
@@ -392,7 +410,7 @@ export const suupaa: MapDef = {
 			},
 		},
 
-		// ── 棚の列1（おかし・カップめん・かんづめ・のみもの・雑誌） ──
+		// ── 棚の列1（おかし・カップめん・雑誌） ──
 		{
 			id: "okashi",
 			x: 3,
@@ -400,6 +418,10 @@ export const suupaa: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("おかしの棚。あたりつきの\nガムが、まだ　うっている。");
+				// ㊿ ekimae kiosk_lady の「おまけは　つかないよ」を聞いた人だけ
+				if (s.flag("seen_kiosk")) {
+					await s.say("kiriko", "（こっちは、あたりが\nおまけンゴ）");
+				}
 			},
 		},
 		{
@@ -408,25 +430,9 @@ export const suupaa: MapDef = {
 			y: 5,
 			trigger: "talk",
 			run: async (s) => {
+				// ㊺ → room evening（戸だなの カップめん「しんはつばいじゃない、いつものやつ」）
+				s.set("seen_suupaa_cupmen");
 				await s.narrate("カップめんの棚。\n『しんはつばい』の札つき。");
-			},
-		},
-		{
-			id: "kanzume",
-			x: 9,
-			y: 5,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("かんづめの棚。ももの缶が、\nたかいところにある。");
-			},
-		},
-		{
-			id: "nomimono",
-			x: 12,
-			y: 5,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("ラムネと、ジュースの\nびんが　ならんでいる。");
 			},
 		},
 		{
@@ -435,12 +441,33 @@ export const suupaa: MapDef = {
 			y: 5,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("まんが雑誌のラック。\nひもで　しばられていない。");
-				await s.say("kiriko", "……立ちよみは、また\nこんどンゴ");
+				// ㉞ 月曜の号 → ekimae bikes（shinya。かごの ぬれた ざっし）。2回目は 一冊へっている
+				if (s.flag("seen_suupaa_zasshi")) {
+					// 入口のベル＝だれかが　一冊　買って　出ていった（目の前で　だまって　消えたのでは　ない）。
+					// ベルは最初の一度だけ（seen_suupaa_zasshi2）
+					if (!s.flag("seen_suupaa_zasshi2")) {
+						s.set("seen_suupaa_zasshi2");
+						s.se("doorbell", { volume: 0.4 });
+						await s.wait(500);
+					}
+					await s.narrate("いちばん　うえの　一冊が、\nなくなっている。");
+					return;
+				}
+				s.set("seen_suupaa_zasshi");
+				await s.narrate(
+					"まんが雑誌の　ラック。\nきょう　出た　号が　山づみだ。",
+				);
+				// street bench_ev の ベンチの ざっし（seen_zasshi）を見た人だけ
+				await s.say(
+					"kiriko",
+					s.flag("seen_zasshi")
+						? "（ベンチの　ざっしと、\nおなじ　号ンゴ）"
+						: "……立ちよみは、また\nこんどンゴ",
+				);
 			},
 		},
 
-		// ── 棚の列2（パン・ちょうみりょう・にちようひん・文ぼうぐ・おもちゃ） ──
+		// ── 棚の列2（パン・にちようひん） ──
 		{
 			id: "pan",
 			x: 3,
@@ -454,39 +481,14 @@ export const suupaa: MapDef = {
 			},
 		},
 		{
-			id: "choumiryou",
-			x: 6,
-			y: 7,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("しょうゆの一升びんが、\nどんとある。");
-			},
-		},
-		{
 			id: "nichiyou",
 			x: 9,
 			y: 7,
 			trigger: "talk",
 			run: async (s) => {
+				// ㊺ → room tv（yoru。「CMに、あのせんざいの箱が」seen_tv_senzai）
+				s.set("seen_suupaa_senzai");
 				await s.narrate("せんざいの箱。テレビで\n見たやつだ。");
-			},
-		},
-		{
-			id: "bunbougu",
-			x: 12,
-			y: 7,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("はしっこに、文ぼうぐ。\nけしゴムと、じゆうちょう。");
-			},
-		},
-		{
-			id: "omocha",
-			x: 15,
-			y: 7,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("ちいさな　おもちゃの棚。\nくじつきだ。");
 			},
 		},
 
@@ -528,24 +530,6 @@ export const suupaa: MapDef = {
 			},
 		},
 		{
-			id: "menchi",
-			x: 5,
-			y: 9,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("メンチカツは、うりきれ。\nふだだけ、のこっている。");
-			},
-		},
-		{
-			id: "yakisoba",
-			x: 6,
-			y: 9,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("やきそばのパック。\nゆげで、ふたが　くもる。");
-			},
-		},
-		{
 			id: "wagon",
 			x: 12,
 			y: 9,
@@ -573,7 +557,9 @@ export const suupaa: MapDef = {
 			y: 11,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("レジよこの、ガムと\nかん電池。");
+				// ㊺ → room clock（shinya。「レジよこの電池、手にとればよかった」）
+				s.set("seen_suupaa_denchi");
+				await s.narrate("レジよこに、かん電池。");
 				await s.narrate("つい、手にとりそうになる\nならびだ。");
 			},
 		},
@@ -584,7 +570,16 @@ export const suupaa: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("買いものかごが、\nかさねて　つんである。");
-				await s.narrate("青いのと、ときどき\n赤いの。");
+				// かごの行方で かわる: コロッケを入れた → 会計で かえした → おくさんの赤いの（okusan 数）
+				if (s.flag("got_korokke") && !s.flag("seen_kaikei")) {
+					await s.narrate("かごを　ひとつ　かりている。\n青いの。");
+				} else if (s.flag("seen_kaikei")) {
+					await s.narrate("かごを　かえした。\nかさねると、ことん。");
+				} else if (numFlag(s, "seen_suupaa_okusan") >= 1) {
+					await s.narrate("赤いのは、おくさんの\nうでに　ある。");
+				} else {
+					await s.narrate("青いのと、ときどき\n赤いの。");
+				}
 			},
 		},
 		{
@@ -606,6 +601,13 @@ export const suupaa: MapDef = {
 				// 1回目から）。その場では回さない。street kodomo_asa_b の朝が seen_gacha_10en を読む
 				if (s.flag("seen_gacha_kid") && !s.flag("seen_gacha_10en")) {
 					await s.narrate("ポケットに、10円玉が\nひとつ　ある。");
+					// ㊿ ekimae denwa で おつりの10円を のこしてきた人だけ
+					if (s.flag("seen_ekimae_10en")) {
+						await s.say(
+							"kiriko",
+							"（駅の　電話の　10円は、\nのこしてきたンゴ）",
+						);
+					}
 					const i = await s.choose(
 						["＞＞1 10円を　のせる", "＞＞2 やめておく"],
 						{

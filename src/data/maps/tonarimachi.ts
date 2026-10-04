@@ -5,17 +5,17 @@
 // かいいノート（s.note）は一つも呼ばない。
 //
 // 座標凍結v3: ekimae の乗車演出 → (3,10) 着地／駅の talk (2,9) → 乗車演出 → ekimae(5,9)。
-// たいやきを買っている（got_taiyaki）と、帰りの車窓の一言が変わる。
+// たいやきを買っている（got_taiyaki）と、帰りの車窓の一言が変わる（しっぽから／頭からの答えも）。
 // ポケットの紙もの（nostalgia.md P0-9）: たいやきのおつりに福引券が一まい（got_fukubikiken）。
 // 福引きの係は留守のままで、券は朝の枕元で見つかる（room bed）。回せなくても罰も催促も無い。
-// 貼り紙の下の貼り紙（P0-8）: テナント募集は、二度目に看板の跡が見える（seen_tenant）。
+// 貼り紙の下の貼り紙（P0-8）: テナント募集は、二度目に看板の跡が見える（seen_tenant 数。三度目は穴だけ）。
 //
 // 経路: 一本目のアーケード(y10-12)と二本目(y16-18)を、東の路地(x30-33)と西の路地(x0)で
 // つないだ回遊ループ。純喫茶と金物屋のあいだ (7,13)-(7,15) は、黒く見えるが通れる
 // 隠しのすきま（無印。換気扇・ねこ）＝ループの近道にもなる。
 //
 // 一本目（光にぎやか。lights は "yu" 多数）: 駅・レコード店（中に入れる・店主3層と針）・
-// 本屋（立ち読みの子）・ゲーセン（音だけ・入れない）・模型屋（ジオラマ・二度目に犬）・
+// 本屋（立ち読みの子）・ゲーセン（音だけ・入れない）・模型屋（ジオラマ・二度目に犬・三度目にふみきり）・
 // たいやき屋（choice・got_taiyaki）。くぼみ (10,9)(16,9)(22,9) にも見るもの。
 // 二本目（すこし静か）: 純喫茶・金物屋・骨董屋（店さきに蓄音機——値札を見るキリコ）・
 // 八百屋・テナント募集。
@@ -26,7 +26,18 @@
 // この数は、入るときではなく町を出るとき（deru: 帰りの電車・せんろへの東はし）に +1 する
 // （エンジンは「つづきから」でも onEnter を呼ぶので、入るときに数えると、町を出ていないのに数がふえる）。
 // 店の人・立ち読みの子・すきまのねこ・八百屋・骨董屋のラジオ・中古の棚は、話すたび／見るたびに進む（numFlag）。
-// 帰りの車窓は、きれめの夕日（seen_yuhi_kireme）と会釈の人（seen_eshaku_tonari。その回に会った人だけ）を拾う。
+// 着いたときの空（arrive_2。seen_tonari_tsuita 数）は、回ごとに一度、灯り → むらさき → 灯りのほうがあかるい。
+// レコード店の中（record_naka。seen_record_naka 数）も回ごとに一度、曲 → B面 → さいごのみぞ
+// （入った回は seen_record_naka_kai に残す）。きれめの夕日（yuhi_kireme）は2回目の訪問まで。
+// 骨董屋のガラスびん（kotto_oku）は、3回目の訪問からは夕日ではなく灯り。
+// ジオラマ（mokei_b。seen_mokei_b 数）は見るたび、人 → 犬 → ふみきり（senro の踏切を見た人。seen_mokei_fumikiri）。
+// 置き看板（oki_kanban）は、りんごの箱（seen_ringo_box）の字と見くらべられ、八百屋の売りきれでたたまれる。
+// はいたつの自転車（nishi_jitensha）は、もどって来た回数で 出かける → もどる。
+// 帰りの車窓は、もどって来た回（夕日はしずんだ）・あかずの踏切（seen_fumikiri_yu）・きれめの夕日
+// （seen_yuhi_kireme）の順に一つ。たいやきは、しっぽから（seen_taiyaki_shippo）／頭から（seen_taiyaki_atama）の
+// 答えでかじり方が変わり、一度かじると（seen_taiyaki_densha）つぎからは紙ぶくろだけ。会釈の人（seen_eshaku_tonari。
+// その回に会った人だけ）も拾う。車窓は seen_tonarimachi も立てる（歩いて来て電車で帰った人にも、
+// ekimae jiichan・kaisatsu_gate の宵・room の布団の遠い音が届く）。
 // ほかの地区が読む前振り: 針（got_hari・seen_hari_mise → room phono）・中古盤のポスター（seen_record_poster
 // → room poster）・店じまい（seen_record_owari・seen_record_oyaji3・seen_arcade_lamp・seen_kissa_nioi・
 // seen_yaoya_n → senro to_tonarimachi の宵・深夜・朝）。宵・深夜・朝の差は senro・room が受ける（ここは夕方だけ）。
@@ -164,22 +175,31 @@ const modori = (s: Story, who: string): boolean => {
 /** 針（record_oyaji）を　ことわった　すぐ　つぎは、すすめない（つぎの　つぎに　また　きく）。セーブしない。 */
 let hariMata = false;
 
+/** when 用の数の読み（numFlag と同じく、true は 1）。 */
+const kazu = (v: unknown): number => (typeof v === "number" ? v : v ? 1 : 0);
+
 /**
  * 町を出る（帰りの電車 rideHome・せんろへの東はし to_senro）。もどって来た回数を +1 して、
  * その回だけの前振り（会釈の人・発車した電車）を使いきる（つぎの回に「さっきの」と言わない）。
+ * 着いたときの空（arrive_2）の once も消して、つぎの回にまた鳴らす。
  */
 const deru = (s: Story): void => {
 	s.set("seen_tonari_kita", numFlag(s, "seen_tonari_kita") + 1);
 	s.set("seen_eshaku_tonari", false);
 	s.set("seen_densha_sakki", false);
+	s.set("done:tonarimachi:arrive_2", false);
 };
 
-/** 一度だけ鳴る「場面」の帯（見えない touch を数マスに敷く）。 */
+/**
+ * 一度だけ鳴る「場面」の帯（見えない touch を数マスに敷く）。
+ * extra は、鳴ってよい条件を足すとき（省略すれば、フラグだけを見る）。
+ */
 const sceneBelt = (
 	id: string,
 	cells: [number, number][],
 	flag: string,
 	run: (s: Story) => Promise<void>,
+	extra?: (st: GameState) => boolean,
 ): EventDef[] =>
 	cells.map(([x, y], i) => ({
 		id: `${id}_${i}`,
@@ -187,7 +207,7 @@ const sceneBelt = (
 		y,
 		trigger: "touch" as const,
 		through: true,
-		when: (st: GameState) => !st.flags[flag],
+		when: (st: GameState) => !st.flags[flag] && (!extra || extra(st)),
 		run: async (s: Story) => {
 			s.set(flag);
 			await run(s);
@@ -196,25 +216,48 @@ const sceneBelt = (
 
 /**
  * 帰りの乗車演出（夕日の車窓）。座標凍結v3。
- * 夕日の行は、アーケードのきれめの夕日（seen_yuhi_kireme）を見た人だけ差しかえ（行は増やさない）。
+ * 夕日の行は1行のまま、上から一つ: もどって来た回（夕日はもうしずんだ。きれめの夕日を見た人は、その夕日が）／senro のあかずの踏切
+ * （seen_fumikiri_yu）／アーケードのきれめの夕日（seen_yuhi_kireme）／それ以外。
  * 足す行は、たいやき（got_taiyaki）と会釈の人（seen_eshaku_tonari。その回に会った人だけ）の2つまで。
  */
 const rideHome = async (s: Story): Promise<void> => {
+	// ㊳ 歩いて来て電車で帰った人にも（ekimae jiichan・kaisatsu_gate の宵・room の布団の遠い音）
+	s.set("seen_tonarimachi");
+	// この回までに町を出た回数（deru より前に読む）
+	const kai = numFlag(s, "seen_tonari_kita");
 	await s.fadeOut(600);
 	s.se("train", { volume: 0.7 });
 	await s.wait(900);
 	await s.narrate("――ガタン、ゴトン。");
 	await s.narrate("アーケードの灯りが、\nうしろへ　ながれていく。");
+	// ㊵ senro の あかずの踏切（seen_fumikiri_yu）を、こんどは電車の側から
 	await s.narrate(
-		s.flag("seen_yuhi_kireme")
-			? "路地の　きれめの　夕日が、\n川の　うえまで　ついてきた。"
-			: "夕日が、川をわたるあいだ\nずっと　ついてきた。",
+		kai >= 1
+			? s.flag("seen_yuhi_kireme")
+				? "路地の　きれめの　夕日は、\nもう　しずんでいた。"
+				: "夕日は、もう\nしずんでいた。"
+			: s.flag("seen_fumikiri_yu")
+				? "あかずの　ふみきりを、\nこんどは　こっちが　とおる。"
+				: s.flag("seen_yuhi_kireme")
+					? "路地の　きれめの　夕日が、\nガードの　上まで　ついてきた。"
+					: "夕日が、ふみきりを　こえる\nあいだ　ずっと　ついてきた。",
 	);
-	if (s.flag("got_taiyaki"))
-		await s.narrate("ふくろの中の　たいやきが、\nまだ　あたたかい。");
+	// たいやきは、店の「しっぽから？　頭から？」の答えどおりにかじる（一度だけ。つぎからは紙ぶくろ）
+	if (s.flag("got_taiyaki")) {
+		if (!s.flag("seen_taiyaki_densha")) {
+			s.set("seen_taiyaki_densha");
+			await s.narrate(
+				s.flag("seen_taiyaki_shippo")
+					? "たいやきを、しっぽから\nかじった。まだ　あたたかい。"
+					: s.flag("seen_taiyaki_atama")
+						? "たいやきを、頭から\nかじった。まだ　あたたかい。"
+						: "ふくろの中の　たいやきが、\nまだ　あたたかい。",
+			);
+		} else await s.narrate("紙ぶくろは、もう\nたたんで　ある。");
+	}
 	// 会釈だけの通行人（eshaku）が、おなじ電車の　むかいの席にいる（deru で使いきる）
 	if (s.flag("seen_eshaku_tonari"))
-		await s.narrate("むかいの　席で、さっきの\n人が　会釈を　した。");
+		await s.narrate("むかいの　席で、さっきの\nネクタイの　人が　会釈した。");
 	s.se("train", { volume: 0.4, pan: -0.3 });
 	await s.wait(400);
 	deru(s);
@@ -292,7 +335,9 @@ export const tonarimachi: MapDef = {
 				await s.say("kiriko", "……にぎやかンゴ");
 			},
 		},
-		// 一度出て、もどって来たとき（一度だけ。灯りは lights のまま、見え方だけ）
+		// 一度出て、もどって来たとき（回ごとに一度。seen_tonari_tsuita に、着いた回の数を入れる）。
+		// once の done は、町を出るとき deru で消す（auto は once つきで。つぎの回にまた鳴る）。
+		// 灯りは lights のまま、空の見え方だけ進む: 灯り → すきまの空がむらさき → 灯りのほうが空よりあかるい
 		{
 			id: "arrive_2",
 			x: 1,
@@ -300,13 +345,19 @@ export const tonarimachi: MapDef = {
 			trigger: "auto",
 			once: true,
 			when: (st) => {
-				const n = st.flags.seen_tonari_kita;
-				return typeof n === "number" && n >= 1;
+				const kita = kazu(st.flags.seen_tonari_kita);
+				return kita >= 1 && kazu(st.flags.seen_tonari_tsuita) !== kita;
 			},
 			run: async (s) => {
+				const kita = numFlag(s, "seen_tonari_kita");
+				s.set("seen_tonari_tsuita", kita);
 				await s.wait(500);
 				await s.narrate(
-					"アーケードの　灯りが、\nさっきより　あかるく　見える。",
+					kita === 1
+						? "アーケードの　灯りが、\nさっきより　あかるく　見える。"
+						: kita === 2
+							? "アーケードの　すきまの　空が、\nもう　むらさきだ。"
+							: "灯りの　ほうが、もう\n空より　あかるい。",
 				);
 			},
 		},
@@ -336,6 +387,7 @@ export const tonarimachi: MapDef = {
 				await s.say("kiriko", "もうすこしだけ、\n見ていくンゴ");
 			},
 		},
+		// ㊳ ふたつの駅名: ekimae の駅名の柱（seen_ekimei_minami）を見た人には、キリコの一言
 		{
 			id: "ekimei",
 			x: 1,
@@ -344,6 +396,11 @@ export const tonarimachi: MapDef = {
 			run: async (s) => {
 				await s.narrate("駅名標。『つきみ』。");
 				await s.narrate("となりの駅は『みなみ』と\n書いてある。……うちの駅だ。");
+				if (s.flag("seen_ekimei_minami"))
+					await s.say(
+						"kiriko",
+						"（うちの　柱にも、\nこの町の　名前が　あったンゴ）",
+					);
 			},
 		},
 		// 改札の前をとおると、一本先の電車が出ていく（一度だけ。この回のうちなら eki_kaisatsu が「つぎの」電車で拾う）
@@ -388,23 +445,46 @@ export const tonarimachi: MapDef = {
 				s.se("doorbell", { volume: 0.7 });
 			},
 		},
-		// 中に入ったとき（一度だけ）。店の前で曲のおわり（record_owari）を聞いた人は、そのつぎの曲の中へ
+		// 中に入ったとき（町に来た回ごとに一度。seen_record_naka 数＝入った回数）。
+		// 1回目: 店の前で曲のおわり（record_owari）を聞いた人は、そのつぎの曲の中へ。
+		// 2回目: B面（店主の「B面の　ほうが　いいよ」seen_record_bmen を聞いた人はキリコが拾う）。
+		// 3回目から: さいごのみぞ。senro to_tonarimachi の宵も、この数を読む
 		{
 			id: "record_naka",
 			x: 8,
 			y: 8,
 			trigger: "touch",
 			through: true,
-			when: (st) => !st.flags.seen_record_naka,
+			when: (st) => {
+				const kita = kazu(st.flags.seen_tonari_kita);
+				return (
+					kazu(st.flags.seen_record_naka) <= kita &&
+					kazu(st.flags.seen_record_naka_kai) !== kita + 1
+				);
+			},
 			run: async (s) => {
-				s.set("seen_record_naka");
+				// 入った回（seen_tonari_kita +1）をセーブに残す。「つづきから」でも、一つの回に二度は鳴らさない
+				s.set("seen_record_naka_kai", numFlag(s, "seen_tonari_kita") + 1);
+				const n = numFlag(s, "seen_record_naka") + 1;
+				s.set("seen_record_naka", n);
 				s.se("record", { volume: 0.6 });
+				if (n === 2) {
+					await s.narrate("曲が、B面に　かわっていた。");
+					if (s.flag("seen_record_bmen"))
+						await s.say("kiriko", "（店主の　いう　B面ンゴ）");
+					return;
+				}
+				if (n >= 3) {
+					await s.narrate("針が、さいごの　みぞを\nまわっている。");
+					return;
+				}
 				if (s.flag("seen_record_owari")) {
 					await s.narrate(
 						"さっき　はじまった　曲が、\n店じゅうに　ひろがっている。",
 					);
 					return;
 				}
+				await s.narrate("かべ一面、天井まで\nレコードだ。");
 				await s.narrate("店のなかは、レコードの\n音で　みたされている。");
 				await s.narrate("ざらざらした、いい音だ。");
 			},
@@ -443,16 +523,6 @@ export const tonarimachi: MapDef = {
 					return;
 				}
 				await s.narrate("『つきみ音頭』は、まだ\n棚の　はしに　ある。");
-			},
-		},
-		{
-			id: "record_kabe",
-			x: 7,
-			y: 7,
-			trigger: "talk",
-			run: async (s) => {
-				await s.narrate("かべ一面、天井まで\nレコードだ。");
-				await s.narrate("いちばん上は、はしごが\nないと　とどかない。");
 			},
 		},
 		// 窓 (6,9) と戸 (8,9) のあいだ（どちらの前もあけておく）
@@ -510,6 +580,8 @@ export const tonarimachi: MapDef = {
 		},
 
 		// ── ゲーセン（音だけ・入れない） ──
+		// ベンチの水とう（bench_1 の「もちぬしは、たぶん　ゲーセン」seen_suito）を見た人は、もちぬしをさがす。
+		// 立ち読みの子にかえした（seen_suito_kaeshi）あとは一度だけ、見当ちがいを拾う（seen_geesen_kaeshi）
 		{
 			id: "geesen_door",
 			x: 18,
@@ -520,6 +592,20 @@ export const tonarimachi: MapDef = {
 				await s.wait(300);
 				s.se("decide", { volume: 0.3, pan: -0.1 });
 				await s.narrate("とびらのおくから、電子音と\nだれかの歓声。");
+				if (s.flag("seen_suito") && !s.flag("seen_suito_kaeshi")) {
+					await s.say("kiriko", "（水とうの　もちぬし、\nこの中ンゴ……？）");
+					return;
+				}
+				if (s.flag("seen_suito_kaeshi") && !s.flag("seen_geesen_kaeshi")) {
+					s.set("seen_geesen_kaeshi");
+					await s.say("kiriko", "（ゲーセンじゃ、\nなかったンゴ）");
+					return;
+				}
+				if (s.flag("seen_geesen")) {
+					await s.say("kiriko", "……やっぱり、やめて\nおくンゴ");
+					return;
+				}
+				s.set("seen_geesen");
 				await s.say("kiriko", "……きょうは、やめて\nおくンゴ");
 			},
 		},
@@ -548,26 +634,42 @@ export const tonarimachi: MapDef = {
 				await s.say("kiriko", "箱の絵だけで　ごはん\n三ばい　いけるンゴ");
 			},
 		},
+		// ジオラマ（seen_mokei_b 数。見るたび +1）: 人 → 犬 → ふみきり。
+		// ㊵ senro のあかずの踏切（seen_fumikiri_yu）を見た人は、三度目にしゃだんきに気づく（seen_mokei_fumikiri）。
+		// senro fumikiriBelt も seen_mokei_b を読む（「ジオラマの　ふみきりと、おなじ形」）
 		{
 			id: "mokei_b",
 			x: 26,
 			y: 9,
 			trigger: "talk",
 			run: async (s) => {
-				if (!s.flag("seen_mokei_b")) {
-					s.set("seen_mokei_b");
+				const n = numFlag(s, "seen_mokei_b") + 1;
+				s.set("seen_mokei_b", n);
+				if (n === 1) {
 					await s.narrate("ジオラマ。ちいさな駅と、\nちいさな　ふみきり。");
 					await s.narrate("ちいさな人が、ちいさな\nかばんを　もっている。");
 					return;
 				}
-				await s.narrate("……ふみきりの前に、\nちいさな犬も　いた。");
-				await s.narrate("さっきは、気づかなかった。");
+				if (n === 2) {
+					await s.narrate("……ふみきりの前に、\nちいさな犬も　いた。");
+					await s.narrate("さっきは、気づかなかった。");
+					return;
+				}
+				if (s.flag("seen_fumikiri_yu") && !s.flag("seen_mokei_fumikiri")) {
+					s.set("seen_mokei_fumikiri");
+					await s.narrate("ちいさな　しゃだんきは、\nおりたまま　うごかない。");
+					await s.say("kiriko", "（あかずの　ふみきりンゴ）");
+					return;
+				}
+				await s.narrate("ちいさな犬は、まだ\nふみきりの　前に　いる。");
 			},
 		},
 
 		// ── くぼみ（店のあいだの見るもの） ──
 		// 秋まつり（seen_aki_tonari → akiMatsuri: room calendar・yamamichi susuki。record_tana の二度目も読む）。
-		// 夏まつりの名残を3つ見た人（seen_natsu_owari）には、一度だけキリコの一言を差しかえ
+		// 夏まつりの名残を3つ見た人（seen_natsu_owari）には、一度だけキリコの一言を差しかえ。
+		// ③ うちの町の秋まつり（sumire keijiban・danchi・suupaa の seen_aki_*）を見た人にも一度（seen_aki_kurabe。
+		// sumire keijiban と共用）。『まるい　月の絵』は、中古の棚（record_tana）のドーナツ盤の前振り
 		{
 			id: "matsuri_poster",
 			x: 10,
@@ -577,11 +679,21 @@ export const tonarimachi: MapDef = {
 			fixedDir: true,
 			run: async (s) => {
 				s.set("seen_aki_tonari");
-				await s.narrate("『つきみ秋まつり』の\nポスター。");
+				await s.narrate("『つきみ秋まつり』の\nポスター。まるい　月の絵。");
 				await s.narrate("しらない　おまつりだ。\n日づけは、らいげつ。");
 				if (s.flag("seen_natsu_owari") && !s.flag("seen_matsuri_aki_kiri")) {
 					s.set("seen_matsuri_aki_kiri");
 					await s.say("kiriko", "（つぎは、秋ンゴ）");
+					return;
+				}
+				if (
+					(s.flag("seen_aki_sumire") ||
+						s.flag("seen_aki_danchi") ||
+						s.flag("seen_aki_suupaa")) &&
+					!s.flag("seen_aki_kurabe")
+				) {
+					s.set("seen_aki_kurabe");
+					await s.say("kiriko", "（うちの　町でも、\n見たンゴ）");
 					return;
 				}
 				await s.say("kiriko", "……来られたら、\n来るンゴ");
@@ -599,6 +711,8 @@ export const tonarimachi: MapDef = {
 				await s.narrate("じはんき。しらない\nメーカーの　ジュースだ。");
 			},
 		},
+		// 置き看板（どの店のものかは書いていない）。りんごの箱（ringo_box の seen_ringo_box）を見た人は
+		// 字のくせで八百屋のものと気づく。八百屋が売りきれ（seen_yaoya_n 3）になると、たたまれる
 		{
 			id: "oki_kanban",
 			x: 22,
@@ -607,8 +721,16 @@ export const tonarimachi: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				if (numFlag(s, "seen_yaoya_n") >= 3) {
+					await s.narrate("置き看板は、もう\nたたまれている。");
+					return;
+				}
 				await s.narrate("『本日　大やす売り』の\n置き看板。");
-				await s.narrate("……どの店のものかは、\n書いていない。");
+				await s.narrate(
+					s.flag("seen_ringo_box")
+						? "字の　くせが、りんごの\n箱の　字と　おなじだ。"
+						: "……どの店のものかは、\n書いていない。",
+				);
 			},
 		},
 
@@ -668,7 +790,9 @@ export const tonarimachi: MapDef = {
 				await s.narrate("……もちぬしは、たぶん\nゲーセンだ。");
 			},
 		},
-		// アーケードのきれめ（東の路地の口）に、夕日がさしこむ（一度だけ。帰りの車窓 rideHome が拾う）
+		// アーケードのきれめ（東の路地の口）に、夕日がさしこむ（一度だけ。帰りの車窓 rideHome が拾う）。
+		// 日が暮れていく段（arrive_2）とくいちがわないよう、鳴るのは2回目の訪問（seen_tonari_kita 1）まで。
+		// 2回目に見た人は、その帰りの車窓で「きれめの　夕日は、もう　しずんでいた」と順番どおりに拾う
 		...sceneBelt(
 			"yuhi_kireme",
 			[
@@ -680,6 +804,7 @@ export const tonarimachi: MapDef = {
 				await s.narrate("アーケードのきれめから、\n夕日が　よこに　さしこむ。");
 				await s.narrate("とおりのかげが、みんな\nながい。");
 			},
+			(st) => kazu(st.flags.seen_tonari_kita) <= 1,
 		),
 
 		// ── 二本目の通り（純喫茶・金物屋・骨董屋・八百屋・テナント） ──
@@ -696,6 +821,7 @@ export const tonarimachi: MapDef = {
 				await s.narrate("コーヒーのにおいが、\n戸のすきまから　もれている。");
 			},
 		},
+		// すきまのねこの小皿（sukima_neko の3回目。seen_sukima_neko 3）を見た人には、その小皿をあらう手
 		{
 			id: "kissa_win",
 			x: 5,
@@ -703,7 +829,11 @@ export const tonarimachi: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("レースのカーテンごし、\nシャンデリアの灯り。");
-				await s.narrate("……よるの色の店だ。");
+				await s.narrate(
+					numFlag(s, "seen_sukima_neko") >= 3
+						? "カーテンの　おくで、\n小皿を　あらう　手が　見えた。"
+						: "……よるの色の店だ。",
+				);
 			},
 		},
 		{
@@ -739,7 +869,8 @@ export const tonarimachi: MapDef = {
 				await s.narrate("ねだんの札は、ぜんぶ\nうらがえしだ。");
 			},
 		},
-		// 店のおくのラジオ（seen_kotto_radio 数）。17時台なので、まだ試合前 → はじまる → 夕日が上だけに
+		// 店のおくのラジオ（seen_kotto_radio 数）。17時台なので、まだ試合前 → はじまる → 夕日が上だけに。
+		// 3回目の訪問から（seen_tonari_kita 2 以上）は日がしずんでいるので、夕日の2行だけ灯りに差しかえる
 		{
 			id: "kotto_oku",
 			x: 17,
@@ -748,8 +879,14 @@ export const tonarimachi: MapDef = {
 			run: async (s) => {
 				const n = numFlag(s, "seen_kotto_radio") + 1;
 				s.set("seen_kotto_radio", n);
+				// 3回目の訪問から（seen_tonari_kita 2 以上）は、日がしずんでいる（arrive_2 の　むらさきの空）
+				const kureta = numFlag(s, "seen_tonari_kita") >= 2;
 				if (n === 1) {
-					await s.narrate("窓のおく、ガラスびんの\n列に、夕日がとおる。");
+					await s.narrate(
+						kureta
+							? "窓のおく、ガラスびんの\n列に、店の　灯りが　うつる。"
+							: "窓のおく、ガラスびんの\n列に、夕日がとおる。",
+					);
 					await s.narrate("店のおくの　ラジオ。\n『――まもなく　プレイボール』");
 					return;
 				}
@@ -758,7 +895,11 @@ export const tonarimachi: MapDef = {
 					await s.say(null, "……よしっ", { name: "骨董屋" });
 					return;
 				}
-				await s.narrate("ガラスびんの　列の、\nいちばん　上だけ　ひかる。");
+				await s.narrate(
+					kureta
+						? "ガラスびんの　列は、もう\nひかっていない。"
+						: "ガラスびんの　列の、\nいちばん　上だけ　ひかる。",
+				);
 			},
 		},
 		// 骨董屋の店さきの蓄音機（値札を見るキリコ）。⑭ seen_kotto_phono は、レコード店主の
@@ -793,24 +934,33 @@ export const tonarimachi: MapDef = {
 				await s.narrate("八百屋の店さき。だいこんが\nそろって　白い。");
 			},
 		},
-		// 二度目で、前の店の看板の跡に気づく（P0-8。変わるのではなく、気づく）
+		// 二度目で、前の店の看板の跡に気づく（P0-8。変わるのではなく、気づく）。
+		// seen_tenant 数（見るたび +1）。三度目からは、ねじの穴だけが目に入る
 		{
 			id: "tenant",
 			x: 27,
 			y: 15,
 			trigger: "talk",
 			run: async (s) => {
-				if (!s.flag("seen_tenant")) {
-					s.set("seen_tenant");
+				const n = numFlag(s, "seen_tenant") + 1;
+				s.set("seen_tenant", n);
+				if (n === 1) {
 					await s.narrate("シャッターに『テナント\n募集』の紙。");
-					await s.narrate("……ここだけ、通りの音が\nとおくなる。");
+					await s.narrate("その　前だけ、\n灯りが　とどいていない。");
 					return;
 				}
-				await s.narrate("シャッターの上の　かべに、\n看板のかたちの　こい色。");
-				await s.narrate("字は、ない。\nねじの穴が、四つ。");
+				if (n === 2) {
+					await s.narrate(
+						"シャッターの上の　かべに、\n看板のかたちの　こい色。",
+					);
+					await s.narrate("字は、ない。\nねじの穴が、四つ。");
+					return;
+				}
+				await s.narrate("ねじの穴が、四つ。");
 			},
 		},
-		// 八百屋の呼びこみ（yaoya_oyaji の seen_yaoya_n）が3回目に「売りきれ」まで進むと、箱がからになる
+		// 八百屋の呼びこみ（yaoya_oyaji の seen_yaoya_n）が、2回目の「三つで　百円」で箱に札がさされ、
+		// 3回目に「売りきれ」まで進むと、箱がからになる。seen_ringo_box は置き看板（oki_kanban）の字が読む
 		{
 			id: "ringo_box",
 			x: 20,
@@ -819,11 +969,15 @@ export const tonarimachi: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
-				if (numFlag(s, "seen_yaoya_n") >= 3) {
+				s.set("seen_ringo_box");
+				const n = numFlag(s, "seen_yaoya_n");
+				if (n >= 3) {
 					await s.narrate("『つがる』の　箱は、\nからっぽだ。");
 					return;
 				}
 				await s.narrate("箱づみの　りんご。\n『つがる』と書いてある。");
+				if (n === 2)
+					await s.narrate("箱に、『三つで　百円』の\n札が　さしてある。");
 			},
 		},
 
@@ -903,41 +1057,59 @@ export const tonarimachi: MapDef = {
 				await s.narrate("店の勝手口。ネギの\nはこが、つんである。");
 			},
 		},
+		// はいたつの自転車（もどって来た回数 seen_tonari_kita で）: とまっている → 出かけた → もどった
 		{
 			id: "nishi_jitensha",
 			x: 1,
 			y: 14,
 			trigger: "talk",
 			run: async (s) => {
-				await s.narrate("かべに、はいたつの自転車。\nにもつ台に『米』のはこ。");
-				await s.narrate("とまっているのに、\nいそがしそうな自転車だ。");
+				const kai = numFlag(s, "seen_tonari_kita");
+				if (kai === 0) {
+					await s.narrate(
+						"かべに、はいたつの自転車。\nにもつ台に『米』のはこ。",
+					);
+					await s.narrate("とまっているのに、\nいそがしそうな自転車だ。");
+					return;
+				}
+				await s.narrate(
+					kai === 1
+						? "自転車は、出かけている。\nかべに、スタンドの　あと。"
+						: "自転車が　もどっている。\nにもつ台の　はこが、からだ。",
+				);
 			},
 		},
 		// 福引券（たいやきのおつり）をもっていると、キリコの一言が変わる（P0-9）。
-		// 留守を一度見ていれば「まだ　もどらない」。seen_fukubiki はそのためだけのフラグ
+		// seen_fukubiki 数＝はじめて見た回（seen_tonari_kita）+1。前のセーブの true は 1（1回目の訪問）。
+		// 同じ回の二度目は「まだ　もどらない」。前の回に見た人が、もどって来た回にまた見ると、
+		// ガラガラに布がかかっている（係は、とうとうもどらなかった）
 		{
 			id: "fukubiki",
 			x: 10,
 			y: 18,
 			trigger: "talk",
 			run: async (s) => {
-				const mata = !!s.flag("seen_fukubiki");
-				s.set("seen_fukubiki");
+				const mae = numFlag(s, "seen_fukubiki");
+				const kai = numFlag(s, "seen_tonari_kita");
+				if (!mae) s.set("seen_fukubiki", kai + 1);
+				const mata = mae > 0;
 				await s.narrate("『福引き』ののぼりと、\nガラガラの抽選器。");
-				if (!s.flag("got_fukubikiken")) {
-					await s.narrate("係の人は、いま\n留守のようだ。");
-					await s.say("kiriko", "（一回だけ回したい\nンゴ……がまん）");
+				await s.narrate(
+					mata && mae <= kai
+						? "ガラガラに、布が\nかけてある。"
+						: mata
+							? "係の人は、まだ\nもどらない。"
+							: "係の人は、いま\n留守のようだ。",
+				);
+				if (s.flag("got_fukubikiken")) {
+					await s.say("kiriko", "（券だけ、もって\nかえるンゴ）");
 					return;
 				}
-				await s.narrate(
-					mata
-						? "係の人は、まだ\nもどらない。"
-						: "係の人は、いま\n留守のようだ。",
-				);
-				await s.say("kiriko", "（券だけ、もって\nかえるンゴ）");
+				if (!mata) await s.say("kiriko", "（一回だけ回したい\nンゴ……がまん）");
 			},
 		},
-		// 2032/9/13（月）の一週間あと＝9/20（月）が敬老の日
+		// 2032/9/13（月）の一週間あと＝9/20（月）が敬老の日。
+		// ㊿ ekimae のベンチのじいちゃん（seen_ekimae_jii 数）と話した人には、キリコの一言
 		{
 			id: "hata",
 			x: 26,
@@ -946,6 +1118,8 @@ export const tonarimachi: MapDef = {
 			run: async (s) => {
 				await s.narrate("街灯の　ポールに、\n『敬老の日　大売り出し』。");
 				await s.narrate("……来週の　月曜だ。");
+				if (numFlag(s, "seen_ekimae_jii") >= 1)
+					await s.say("kiriko", "（駅の　じいちゃんも、\n来週ンゴ）");
 			},
 		},
 
@@ -1015,6 +1189,9 @@ export const tonarimachi: MapDef = {
 				}
 				if (!s.flag("seen_record_oyaji2")) {
 					s.set("seen_record_oyaji2");
+					// B面の話を聞いた人（seen_record_bmen）。つぎの回に店へ入ると、曲が B面になっている（record_naka）。
+					// seen_record_oyaji2 は針の枝でも立つので、それとは分ける
+					s.set("seen_record_bmen");
 					await s.say(null, "いまの　盤かい？\nB面の　ほうが　いいよ", {
 						name,
 					});
@@ -1054,6 +1231,7 @@ export const tonarimachi: MapDef = {
 			async (s) => {
 				// 前の回にも話した人へ（話すたびに呼ぶ）。使うのは「まいど」の枝だけ
 				const back = modori(s, "taiyaki_obachan");
+				const name = "たいやき屋";
 				if (!s.flag("got_taiyaki")) {
 					await s.say(null, "たいやき、やいてるよ。\nあんこ、しっぽまで入り", {
 						name: "たいやき屋",
@@ -1082,11 +1260,30 @@ export const tonarimachi: MapDef = {
 					return;
 				}
 				// 前の回にも話した人には、その回の最初に一度だけ
-				if (back)
-					await s.say(null, "おや、もどって　きたね", { name: "たいやき屋" });
+				if (back) await s.say(null, "おや、もどって　きたね", { name });
+				// 答えた人は、おぼえられている（seen_taiyaki_shippo／atama。帰りの車窓 rideHome のかじり方も）
+				if (s.flag("seen_taiyaki_shippo") || s.flag("seen_taiyaki_atama")) {
+					await s.say(
+						null,
+						s.flag("seen_taiyaki_shippo")
+							? "しっぽの　子だね。\nまいど！"
+							: "頭の　子だね。\nまいど！",
+						{ name },
+					);
+					return;
+				}
 				await s.say(null, "まいど！　あんこは\nしっぽから？　頭から？", {
-					name: "たいやき屋",
+					name,
 				});
+				// B（キャンセル）は答えない（cancel は選択肢の外の 2。どちらのフラグも立てない）
+				const i = await s.choose(["＞＞1 しっぽから", "＞＞2 頭から"], {
+					cancel: 2,
+				});
+				if (i === 0 || i === 1) {
+					s.set(i === 0 ? "seen_taiyaki_shippo" : "seen_taiyaki_atama");
+					await s.say(null, "はは。おぼえとくよ", { name });
+					return;
+				}
 				await s.say("kiriko", "……なやましい質問ンゴ");
 			},
 			{ dir: "down" },
@@ -1182,7 +1379,7 @@ export const tonarimachi: MapDef = {
 			{ wander: true },
 		),
 		// 八百屋（seen_yaoya_n 数。話すたび +1）: 呼びこみ → しまいの値下げ → 売りきれ。
-		// ㉖ senro to_tonarimachi の朝（だいこんの箱）と、りんごの箱（ringo_box）が読む
+		// ㉖ senro to_tonarimachi の朝（だいこんの箱）と、りんごの箱（ringo_box）・置き看板（oki_kanban）が読む
 		npc(
 			"yaoya_oyaji",
 			22,
@@ -1209,15 +1406,29 @@ export const tonarimachi: MapDef = {
 			{ dir: "up" },
 		),
 		// 会釈だけの通行人（しらない町の、無害な他者）。seen_eshaku_tonari を、帰りの電車
-		// （rideHome）の　むかいの席が拾う（その回だけ。町を出るとき deru で消え、また話せば立つ）
+		// （rideHome）の　むかいの席が拾う（その回だけ。町を出るとき deru で消え、また話せば立つ）。
+		// 前の回にも会った人（modori）は「また」、同じ回の二度目からは「もう　いちど」
 		npc(
 			"eshaku",
 			26,
 			11,
 			TSUUKOU,
 			async (s) => {
+				const back = modori(s, "eshaku");
+				const mata = !!s.flag("seen_eshaku_tonari");
 				s.set("seen_eshaku_tonari");
-				await s.narrate("かるく、会釈をされた。\nしらない町でも、おなじだ。");
+				if (back) {
+					await s.narrate("また、あの　人だ。\nこんどは、先に　会釈した。");
+					return;
+				}
+				if (mata) {
+					await s.narrate("もう　いちど、会釈。");
+					return;
+				}
+				await s.narrate(
+					"ネクタイを　ゆるめた　人に、\nかるく　会釈を　された。",
+				);
+				await s.narrate("こちらも、かるく　かえした。");
 			},
 			{ dir: "down" },
 		),

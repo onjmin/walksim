@@ -16,6 +16,18 @@
 //           （tod="asa"・ending_ready）。坂で 辞めた 人（早番）と すれ違い（yoake_arrive）、
 //           駅の ベンチの やきうの となりで「保守」と 書いて おわる（yakiu_end → まとめカード）
 //
+// 海の中の 筋（段・時間帯・回収）:
+//   電気うき … 宵、つり座（tsuri_za）から 見える 防波堤の さきの 置きざおと 赤い 電気うき（seen_umi_denkiuki）→ 深夜は うろこ一まい →
+//              朝の つり人「……それは、きかない　やくそく」（日の入りまでの 決まりの 外で だれかが つっていた）
+//   あみ     … 夕方の あたらしい糸（seen_umi_ami。せがれの 話を 聞いた 人には まだ しろい）→ 宵は あみ針 →
+//              深夜の 夜ふけに 半分 なくなる（seen_amiban2。第三の あかりと 同じ 条件）→ 朝、第三が もどった あと ぬれて もどる
+//   夕日の道 … 桟橋の さき（seen_umi_yuhi）→ 宵は 灯台の あかりが とおる → 深夜は 第三の エンジン → 朝は 船の すじ
+//   はしっこ … 車止め・道の おわり・河口0.0km を 三つ 見る（seen_umi_hashikko。apart shimi が 読む）
+//   海の家と ベンチ … 『また来年！』（seen_umi_uminoie）と『いつの？』（seen_umi_bench2）が そろうと 一度（seen_umi_kotae）
+//   しお見表 … 夕方の『満潮　6:52』の 赤丸（seen_umi_shiomi）→ 朝は「もう　すぎている」
+//   つり人の ぬし … kawara の じいさんの 鯉（seen_tsuri2）を 夕方の つり人に きく（seen_umi_nushi）
+//   電車     … 夕方の 車庫の 音（seen_umi_densha）→ トンネルの 口（夕・深夜）・時刻表（深夜）・room の 布団の 遠い音
+//
 // 座標: 北 (20,0)→danchi(15,22)・danchi からの着地 (20,1) 下向き。
 // 線路 y17（x35〜42 が歩ける）。(43,17) はトンネルの口（決してワープしない・一歩押しもどす）。
 // ホーム(y16)→駅前(y15)→岬の草はら→海ぞいの道 と歩いてつながる。
@@ -169,29 +181,13 @@ const funeBelt = (x: number, y: number): EventDef => ({
 	},
 });
 
-/** 街灯（(12,4)(36,4) の土手と (10,8) の岸壁で共用。lights は yoru,shinya で点く）。 */
-const gaitou = async (s: Story): Promise<void> => {
-	const t = s.flag("tod");
-	if (t === "shinya") {
-		await s.narrate("あかりの輪の中だけ、\nコンクリートが　見える。");
-		return;
-	}
-	if (t === "yoru") {
-		await s.narrate("街灯のあかりに、羽虫が\nあつまっている。");
-		return;
-	}
-	if (t === "asa") {
-		await s.narrate("街灯。もう、\nきえている。");
-		return;
-	}
-	await s.narrate("しおで　さびた街灯。\nまだ、ついていない。");
-};
-
 /**
  * つないである漁船（(8,15)(10,15) の桟橋の両わき）。
  * 『第三』は、あみ番の せがれの船（夕方の amiban2「あしたの朝、四時に　出る」）。
  * 夕方に見て seen_umi_fune_yu → 深夜の 夜ふけ（shinyaStep>=7・seen_amiban2）に あかりと エンジン（seen_umi_fune_shinya）→
  * 朝は funeBelt で もどってくる（seen_umi_fune_asa）。人は出さない（灯りと 機械の音だけ）。
+ * 『第五』は 第三の 対: 深夜は 第三の あかりを 見た 人に「くらい　まま」、
+ * 朝は room tv の 天気よほう（seen_tenki）を 見た 人に 船の ラジオの「きょうは　はれ」（⑲）。
  */
 const fune = async (s: Story, name: string): Promise<void> => {
 	const t = s.flag("tod");
@@ -200,6 +196,13 @@ const fune = async (s: Story, name: string): Promise<void> => {
 			s.set("seen_umi_fune_shinya");
 			await s.narrate("第三　はま丸に、あかりが\nひとつ　ついている。");
 			await s.narrate("エンジンを　あたためる\n音が　する。");
+			return;
+		}
+		// 第三の あかり（seen_umi_fune_shinya）を 見た あとの 第五
+		if (name === "第五" && s.flag("seen_umi_fune_shinya")) {
+			await s.narrate(
+				"第五は、となりの　あかりの\nよこで、くらい　まま　ねている。",
+			);
 			return;
 		}
 		await s.narrate("船は、くろい　かたまりに\nなっている。");
@@ -220,6 +223,12 @@ const fune = async (s: Story, name: string): Promise<void> => {
 			await s.narrate(
 				"ここの船は、もう　出ていった\nあとだ。ロープだけ　ういている。",
 			);
+			return;
+		}
+		// ⑲ room tv（yoru）の「あしたは、はれ」（seen_tenki）を 見た 人だけ
+		if (s.flag("seen_tenki")) {
+			await s.narrate("船の　ラジオが、『きょうは\nはれ』と　言っている。");
+			await s.say("kiriko", "（テレビの　とおりンゴ）");
 			return;
 		}
 		await s.narrate("船の上で、ラジオが\n天気よほうを　言っている。");
@@ -272,8 +281,28 @@ const suwaru = async (s: Story): Promise<void> => {
 	await s.fadeIn(900);
 	await s.narrate("テトラの　すきまで、波が\nちゃぷ、ちゃぷ、と　鳴る。");
 	if (kanHeld(s)) await kanLine(s);
+	// ⑮ kawara の ススキ（got_susuki）が、まだ room の コップに さされず ポケットに ある 人
+	else if (s.flag("got_susuki") && !s.flag("seen_susuki_kabin"))
+		await s.narrate("ポケットの　ススキが、\nしおかぜに　ゆれた。");
 	else await s.narrate("コンクリートが、まだ\nすこし　あたたかい。");
 	await s.say("kiriko", "……よし。もうすこし\nあるくンゴ");
+};
+
+/**
+ * ② はしっこ: 線路の 車止め（seen_umi_kurumadome）・道の おわり（seen_umi_ikidomari）・
+ * 河口の きょり標（seen_umi_kakou）を 三つとも 見たら 一度（seen_umi_hashikko。apart shimi が 朝に 読む）。
+ * 呼ぶ所: kurumadome・ikidomari・kyori_0 の さいご。
+ */
+const hashikko = async (s: Story): Promise<void> => {
+	if (s.flag("seen_umi_hashikko")) return;
+	if (
+		!s.flag("seen_umi_kurumadome") ||
+		!s.flag("seen_umi_ikidomari") ||
+		!s.flag("seen_umi_kakou")
+	)
+		return;
+	s.set("seen_umi_hashikko");
+	await s.say("kiriko", "（道も、川も、線路も\nここで　おしまいンゴ）");
 };
 
 export const umi: MapDef = {
@@ -346,8 +375,10 @@ export const umi: MapDef = {
 					noPortrait: true,
 				});
 				await s.narrate("……夜に、レコードで\n聞いた　声だった。");
-				// ⑪ street eshaku（yu）の 作業着の 人を 見た 人だけ
-				if (s.flag("seen_eshaku_st"))
+				// ⑪ street eshaku（yu）の 作業着の 人を 見た 人だけ（2回目の くつひもまで 見た 人は そっちを）
+				if (s.flag("seen_eshaku_kutsu"))
+					await s.narrate("夕方、くつひもを\nむすびなおしていた　人だ。");
+				else if (s.flag("seen_eshaku_st"))
 					await s.narrate("夕方、まちのどおりで\n会釈を　くれた　人だ。");
 				await s.say("kiriko", "……おはようンゴ");
 				await s.narrate("会釈だけして、\n坂を　のぼっていった。");
@@ -457,38 +488,46 @@ export const umi: MapDef = {
 			sprite: JP.signpost,
 			trigger: "talk",
 			fixedDir: true,
+			// 見ただけで seen_umi_kakou（② はしっこの 一つ）。どの 道でも さいごに hashikko
 			run: async (s) => {
-				await s.narrate("くいの　きょり標。\n『河口　0.0km』");
-				// ㉒ kawara sagiBelt（asa）で とびたつのを 見た 人だけ、一度
-				if (
-					s.flag("tod") === "asa" &&
-					s.flag("seen_sagi_asa") &&
-					!s.flag("seen_sagi_umi")
-				) {
-					s.set("seen_sagi_umi");
-					await s.narrate("河口の　浅瀬に、\nしらさぎが　一羽　立っている。");
-				}
-				if (s.flag("seen_kyori_14") && s.flag("seen_kyori_12")) {
-					if (!s.flag("seen_kyori_0")) {
-						s.set("seen_kyori_0");
-						await s.narrate("14.0、12.5、……0.0。");
-						await s.say("kiriko", "……やまの　上から、\nここまで　来たンゴ");
+				s.set("seen_umi_kakou");
+				const hyou = async (): Promise<void> => {
+					await s.narrate("くいの　きょり標。\n『河口　0.0km』");
+					// ㉒ kawara sagiBelt（asa）で とびたつのを 見た 人だけ、一度
+					if (
+						s.flag("tod") === "asa" &&
+						s.flag("seen_sagi_asa") &&
+						!s.flag("seen_sagi_umi")
+					) {
+						s.set("seen_sagi_umi");
+						await s.narrate("河口の　浅瀬に、\nしらさぎが　一羽　立っている。");
+					}
+					if (s.flag("seen_kyori_14") && s.flag("seen_kyori_12")) {
+						if (!s.flag("seen_kyori_0")) {
+							s.set("seen_kyori_0");
+							await s.narrate("14.0、12.5、……0.0。");
+							await s.say("kiriko", "……やまの　上から、\nここまで　来たンゴ");
+							return;
+						}
+						await s.narrate("川は、ここで　おしまいだ。");
 						return;
 					}
-					await s.narrate("川は、ここで　おしまいだ。");
-					return;
-				}
-				if (s.flag("seen_kyori_14") || s.flag("seen_kyori_12")) {
-					await s.say("kiriko", "（……あの　くいの、\nつづきンゴ）");
-					return;
-				}
-				await s.narrate("川は、浜の　はしで\n海に　とけている。");
+					if (s.flag("seen_kyori_14") || s.flag("seen_kyori_12")) {
+						await s.say("kiriko", "（……あの　くいの、\nつづきンゴ）");
+						return;
+					}
+					await s.narrate("川は、浜の　はしで\n海に　とけている。");
+				};
+				await hyou();
+				await hashikko(s);
 			},
 		},
 
 		// ── 出入り口 ──
 		warp("to_danchi", 20, 0, { map: "danchi", x: 15, y: 22, dir: "up" }),
 		// トンネルの口（決してワープしない。一歩おしもどす）
+		// ④ 夕方の densha_belt（seen_umi_densha）で 車庫へ 入る 音を 聞いた 人は、夕方は その 音の ゆくえ・
+		// 深夜は 車庫で ねむる 電車。聞いていない 人の 深夜は、なにも きこえない。宵は 風だけ（人は 出さない）
 		{
 			id: "tunnel_mouth",
 			x: 43,
@@ -501,8 +540,16 @@ export const umi: MapDef = {
 				if (t === "asa" && s.flag("seen_yoake_umi")) {
 					await s.say("kiriko", "（……こっちじゃ\nないンゴ）");
 				} else if (t === "shinya") {
-					await s.narrate("おくの　車庫に、\n電車が　ねむっている。");
+					await s.narrate(
+						s.flag("seen_umi_densha")
+							? "夕方の　電車が、おくの\n車庫で　ねむっている。"
+							: "おくから、なにも\nきこえない。",
+					);
+				} else if (t === "yoru") {
+					await s.narrate("おくから、ひんやりした\n風が　出てくる。");
 				} else {
+					if (t === "yu" && s.flag("seen_umi_densha"))
+						await s.narrate("さっきの　電車の　音は、\nこの　おくへ　きえた。");
 					await s.say("kiriko", "……入るのは、\nやめておくンゴ");
 				}
 				await s.move("player", "l");
@@ -532,7 +579,9 @@ export const umi: MapDef = {
 			},
 		})),
 
-		// ── 北の土手（海の家・じはんき・街灯・道のおわり） ──
+		// ── 北の土手（海の家・じはんき・道のおわり。街灯は 灯りだけ＝点く・消えるは 灯台に まかせる） ──
+		// 海の家の『また来年！』（seen_umi_uminoie）と、駅の ベンチの『いつの？』（seen_umi_bench2）。
+		// どちらを 先に 見ても、二つ目で 一度だけ キリコが 答える（seen_umi_kotae）
 		{
 			id: "uminoie",
 			x: 28,
@@ -552,10 +601,16 @@ export const umi: MapDef = {
 					await s.narrate("シャッターが、あさの光で\nしろく　見える。");
 					return;
 				}
+				s.set("seen_umi_uminoie");
 				await s.narrate(
 					"海の家の　シャッター。\n『今年の営業は　おわりました』",
 				);
 				await s.narrate("『また来年！』の字だけ、\nやけに　大きい。");
+				// eki_bench の『いつの？』（seen_umi_bench2）を 先に 見た 人だけ、一度
+				if (s.flag("seen_umi_bench2") && !s.flag("seen_umi_kotae")) {
+					s.set("seen_umi_kotae");
+					await s.say("kiriko", "（海の家は、\n『また来年！』ンゴ）");
+				}
 			},
 		},
 		{
@@ -564,7 +619,9 @@ export const umi: MapDef = {
 			y: 4,
 			trigger: "talk",
 			run: async (s) => {
-				if (s.flag("tod") === "shinya") {
+				// 宵も 深夜も、街灯の 輪の 外
+				const t = s.flag("tod");
+				if (t === "shinya" || t === "yoru") {
 					await s.narrate("かべの　メニューは、\nくらくて　よめない。");
 					return;
 				}
@@ -608,16 +665,17 @@ export const umi: MapDef = {
 				await s.narrate("じはんき。よこっ腹が、\nしおかぜで　さびている。");
 			},
 		},
-		{ id: "lamp_w", x: 12, y: 4, trigger: "talk", run: gaitou },
-		{ id: "lamp_e", x: 36, y: 4, trigger: "talk", run: gaitou },
+		// 道の おわり（② はしっこの 一つ。seen_umi_ikidomari）
 		{
 			id: "ikidomari",
 			x: 1,
 			y: 5,
 			trigger: "talk",
 			run: async (s) => {
+				s.set("seen_umi_ikidomari");
 				await s.narrate("生けがきの　むこうは、\n草やぶだ。");
 				await s.narrate("道は、ここで\nおわっている。");
+				await hashikko(s);
 			},
 		},
 
@@ -693,6 +751,8 @@ export const umi: MapDef = {
 		},
 
 		// ── 漁港の岸壁（しお見表・小屋・うきわ・あみ・さかなばこ） ──
+		// しお見表: 夕方に あしたの『満潮　6:52』の 赤丸（seen_umi_shiomi）→ 宵は 字が 夕やみに とけて タコの はちまきだけ →
+		// 深夜は まっくら → 朝、見た 人には「もう　すぎている」。（9/13 は 上弦の すぐ あと＝大潮では ない）
 		{
 			id: "shiomihyo",
 			x: 2,
@@ -701,14 +761,30 @@ export const umi: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				const t = s.flag("tod");
+				if (t === "shinya") {
+					await s.narrate("しお見表は、まっくらだ。");
+					return;
+				}
 				await s.narrate("しお見表。漁協の人の\n手書きだ。");
-				if (s.flag("tod") === "asa") {
+				if (t === "asa") {
 					// 朝の町の時計（asaClock 6:58〜）より 前の 時刻に そろえる
+					if (s.flag("seen_umi_shiomi")) {
+						await s.narrate("赤丸の　6:52は、\nもう　すぎている。");
+						return;
+					}
 					await s.narrate("『満潮　6:52』。\n……もう、ひきはじめている。");
 					return;
 				}
-				await s.narrate("『大潮』に　赤丸。\nすみに、タコの　らくがき。");
-				await s.narrate("タコは、はちまきを\nしめている。");
+				if (t === "yoru") {
+					await s.narrate(
+						"字は、夕やみに　とけている。\nタコの　はちまきだけ　白い。",
+					);
+					return;
+				}
+				s.set("seen_umi_shiomi");
+				await s.narrate("あしたの　らんに　赤丸。\n『満潮　6:52』");
+				await s.narrate("すみに、タコの　らくがき。\nはちまきを　しめている。");
 			},
 		},
 		{
@@ -767,6 +843,9 @@ export const umi: MapDef = {
 				}
 			},
 		},
+		// 干した あみ: 夕方の あたらしい糸（seen_umi_ami）→ 宵は あみ針が さしたまま →
+		// 深夜の 夜ふけ、あみ番の「四時に　出る」を 聞いた 人には 半分 なくなる（せがれが 船に 積んだ。fune の 第三の あかりと 同じ 条件）→
+		// 朝、夕方に 見て 第三の もどり（seen_umi_fune_asa）も 見た 人には ぬれて もどっている（船が まだなら「まだ　半分　ない」）。人は 出さない（あみの 変化だけ）
 		{
 			id: "ami_a",
 			x: 11,
@@ -775,22 +854,41 @@ export const umi: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					if (s.flag("seen_amiban2") && shinyaStep(s) >= 7) {
+						await s.narrate("あみが、半分　なくなっている。");
+						return;
+					}
 					await s.narrate("あみに、夜つゆが\nついている。");
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("あみから、しおと　海そうの\nにおいが　する。");
+					await s.narrate("あみに、あみ針が\nさしたまま　ある。");
 					return;
 				}
 				if (t === "asa") {
+					// 第三が もどった（funeBelt の seen_umi_fune_asa）あとだけ、ぬれて もどる。
+					// 「しろい　糸」は 夕方に「まだ　しろい」を 見た 人（seen_amiban2）だけ
+					if (s.flag("seen_umi_ami") && s.flag("seen_umi_fune_asa")) {
+						await s.narrate(
+							s.flag("seen_amiban2")
+								? "ぬれた　あみが、もどっている。\nしろい　糸の　ところも。"
+								: "ぬれた　あみが、もどっている。",
+						);
+						return;
+					}
+					// 船が まだ: 四時に 出た 話を 聞いた 人には、深夜の「半分　なくなっている」の 続き
+					if (s.flag("seen_amiban2") && !s.flag("seen_umi_fune_asa")) {
+						await s.narrate("あみは、まだ　半分　ない。");
+						return;
+					}
 					await s.narrate("あみの　半分が、もう\nたたんで　ある。");
 					return;
 				}
+				s.set("seen_umi_ami");
 				await s.narrate("干してある　あみ。\nところどころ、あたらしい糸。");
-				if (!s.flag("seen_umi_kani")) {
-					s.set("seen_umi_kani");
-					await s.narrate("あみの　すみから、小さな\nカニが　にげていった。");
-				}
+				// amiban2 の「あしたの朝、四時に　出る」を 聞いた 人だけ
+				if (s.flag("seen_amiban2"))
+					await s.narrate("あたらしい糸の　ところが、\nまだ　しろい。");
 			},
 		},
 		{
@@ -825,6 +923,15 @@ export const umi: MapDef = {
 								? "（ゆうべの　あつまりの\nかおンゴ）"
 								: "（……もらったんじゃ\nないンゴね）",
 						);
+						return;
+					}
+					// ㊹ suupaa ばあちゃんの「あしたは　アジフライが　半額」（seen_baa_aji）を 聞いた 人だけ、一度（seen_umi_ajifry）
+					if (s.flag("seen_baa_aji") && !s.flag("seen_umi_ajifry")) {
+						s.set("seen_umi_ajifry");
+						await s.say(
+							"kiriko",
+							"（ばあちゃんの　半額の\nアジフライ、これンゴ？）",
+						);
 					}
 					return;
 				}
@@ -837,6 +944,13 @@ export const umi: MapDef = {
 			y: 12,
 			trigger: "talk",
 			run: async (s) => {
+				// 深夜は となりの しお見表と おなじく、字が 読めない
+				if (s.flag("tod") === "shinya") {
+					await s.narrate(
+						"ポリバケツ。ふたの　字は、\nかげに　なって　見えない。",
+					);
+					return;
+				}
 				await s.narrate("ポリバケツ。ふたに\n『つりえさ　もちかえり』。");
 				await s.narrate("『り』だけ、あとから\nたしてある。");
 			},
@@ -877,6 +991,9 @@ export const umi: MapDef = {
 				await fune(s, "第五");
 			},
 		},
+		// 桟橋の さき: 夕方の 夕日の 道（seen_umi_yuhi）→ 宵は その あたりを 灯台の あかりが とおる →
+		// 深夜は 第三の あかり（seen_umi_fune_shinya）を 見た 人に うしろの エンジン →
+		// 朝は 船が もどる（seen_umi_fune_asa）のを 見た 人に 白い すじ（夕日の 道を 見た 人には キリコも）
 		{
 			id: "sanbashi_saki",
 			x: 9,
@@ -885,22 +1002,43 @@ export const umi: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					if (s.flag("seen_umi_fune_shinya")) {
+						await s.narrate(
+							"うしろで、第三の　エンジンが\nずっと　鳴っている。",
+						);
+						return;
+					}
 					await s.narrate("まっくらな　海。\n波の音だけが　とどく。");
 					return;
 				}
 				if (t === "yoru") {
+					if (s.flag("seen_umi_yuhi")) {
+						await s.narrate(
+							"夕日の　道の　あった　あたりを、\n灯台の　あかりが　とおる。",
+						);
+						return;
+					}
 					await s.narrate("海と　空の　さかいめが、\nもう　わからない。");
 					return;
 				}
 				if (t === "asa") {
+					if (s.flag("seen_umi_fune_asa")) {
+						await s.narrate(
+							"船の　とおった　あとが、\n白い　すじに　なっている。",
+						);
+						if (s.flag("seen_umi_yuhi"))
+							await s.say("kiriko", "（ゆうべの、夕日の\n道の　上ンゴ）");
+						return;
+					}
 					await s.narrate("水平線が、しろく\nにじんでいる。");
 					return;
 				}
+				s.set("seen_umi_yuhi");
 				await s.narrate("夕日が、海の上に\n一本の　道を　つくっている。");
 			},
 		},
 
-		// ── 防波堤（みなとの中・テトラ・すわる所・灯台） ──
+		// ── 防波堤（みなとの中・つり座・すわる所・灯台） ──
 		{
 			id: "minato_naka",
 			x: 22,
@@ -931,26 +1069,24 @@ export const umi: MapDef = {
 				await s.narrate("――ぴしゃ、と\nボラが　はねた。");
 			},
 		},
+		// つり座（つり人の いない 宵・深夜だけ。夕方と朝は つり人が ここに 立つ）。
+		// 宵は 日の入りの あとの、防波堤の さきの 置きざおと 赤い 電気うき（seen_umi_denkiuki。人は 出さない＝さおと うきだけ）→
+		// 深夜は のこった うろこ → 朝の tsuribito_asa で キリコが きく「……それは、きかない　やくそく」
 		{
-			id: "tetora",
-			x: 19,
+			id: "tsuri_za",
+			x: 23,
 			y: 14,
 			trigger: "talk",
+			when: (st) => st.flags.tod === "yoru" || st.flags.tod === "shinya",
 			run: async (s) => {
-				const t = s.flag("tod");
-				if (t === "shinya") {
-					await s.narrate("テトラの　かげが、\nくろく　かさなっている。");
+				if (s.flag("tod") === "shinya") {
+					await s.narrate("つり座に、アジの\nうろこが　一まい。");
 					return;
 				}
-				if (t === "yoru") {
-					await s.narrate("テトラの　おくで、\n波が　ごぼ、と鳴る。");
-					return;
-				}
-				if (t === "asa") {
-					await s.narrate("テトラの　あたまに、\nカモメが　一羽。");
-					return;
-				}
-				await s.narrate("テトラポッドの　すきまで、\nフナムシが　にげた。");
+				s.set("seen_umi_denkiuki");
+				await s.narrate(
+					"防波堤の　さきに、置きざおが\n一本。赤い　電気うきが　ゆれている。",
+				);
 			},
 		},
 		{
@@ -1006,25 +1142,18 @@ export const umi: MapDef = {
 		},
 
 		// ── 岬の駅（車止め・時計・時刻表） ──
+		// 線路の おわり（② はしっこの 一つ。seen_umi_kurumadome）
 		{
 			id: "kurumadome",
 			x: 34,
 			y: 17,
 			trigger: "talk",
 			run: async (s) => {
-				const t = s.flag("tod");
+				s.set("seen_umi_kurumadome");
 				await s.narrate("線路の　おわり。車止めの\nむこうは、もう　海だ。");
-				if (t === "shinya") {
+				if (s.flag("tod") === "shinya")
 					await s.narrate("車止めの　すぐ下で、\n波の音。");
-					return;
-				}
-				if (t === "yoru") {
-					await s.narrate("車止めの　赤い板に、\n灯台の　あかりが　とどく。");
-					return;
-				}
-				if (t === "asa") {
-					await s.narrate("車止めに、あさの光が\nあたっている。");
-				}
+				await hashikko(s);
 			},
 		},
 		{
@@ -1062,6 +1191,9 @@ export const umi: MapDef = {
 			run: async (s) => {
 				if (s.flag("tod") === "shinya") {
 					await s.narrate("時刻表。つぎの電車の\nらんは、朝まで　空いている。");
+					// ④ 夕方の densha_belt（seen_umi_densha）で 車庫へ 入る 音を 聞いた 人だけ
+					if (s.flag("seen_umi_densha"))
+						await s.narrate("……夕方の　あれが、\nここの　さいごだった。");
 					return;
 				}
 				await s.narrate("時刻表。のぼりが\n一日　四本。くだりは　ない。");
@@ -1073,7 +1205,8 @@ export const umi: MapDef = {
 			x: 38,
 			y: 15,
 			trigger: "talk",
-			// 段: 『また　夏に』（seen_umi_bench。結の yakiu_end が読む）→ その下の『いつの？』（seen_umi_bench2）
+			// 段: 『また　夏に』（seen_umi_bench。結の yakiu_end が読む）→ その下の『いつの？』（seen_umi_bench2）。
+			// 『いつの？』の あと、海の家の『また来年！』（seen_umi_uminoie）を 見た 人だけ 一度 答える（seen_umi_kotae）
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "asa") {
@@ -1103,6 +1236,10 @@ export const umi: MapDef = {
 					s.set("seen_umi_bench2");
 					await s.narrate("せもたれの　らくがき。\n『また　夏に』");
 					await s.narrate("その下に、べつの字で\n『いつの？』");
+					if (s.flag("seen_umi_uminoie") && !s.flag("seen_umi_kotae")) {
+						s.set("seen_umi_kotae");
+						await s.say("kiriko", "（海の家は、\n『また来年！』ンゴ）");
+					}
 					return;
 				}
 				await s.narrate("『また　夏に』\n『いつの？』");
@@ -1247,6 +1384,19 @@ export const umi: MapDef = {
 					}
 					return;
 				}
+				// ① kawara tsuri_jichan の『二十年ものの鯉』（seen_tsuri2）を 聞いた 人だけ、一度（ぬしを 嘘とは 言わない）
+				if (s.flag("seen_tsuri2") && !s.flag("seen_umi_nushi")) {
+					s.set("seen_umi_nushi");
+					await s.say("kiriko", "川の　ぬし、しってる\nンゴ？");
+					await s.say(
+						null,
+						"かわらの　じいさんのか。\n……二十年、おなじ　話だ",
+						{
+							name: "つり人",
+						},
+					);
+					return;
+				}
 				await s.narrate("うきが、夕日の中で\nちかちかしている。");
 			},
 			{ dir: "down", when: (st) => st.flags.tod === "yu" },
@@ -1300,11 +1450,25 @@ export const umi: MapDef = {
 			async (s) => {
 				if (!s.flag("seen_tsuribito_asa")) {
 					s.set("seen_tsuribito_asa");
-					await s.say(null, "日の出から、ってな。\nきっちり　守ってるだろ", {
-						name: "つり人",
-					});
-					if (s.flag("seen_tsuribito_umi")) {
-						await s.say("kiriko", "ゆうべは、アジ\nつれたンゴ？");
+					// 決まりの 看板（seen_umi_rule）か 夕方の つり人（seen_tsuribito_umi）を 知っている 人には『日の出から』
+					await s.say(
+						null,
+						s.flag("seen_umi_rule") || s.flag("seen_tsuribito_umi")
+							? "日の出から、ってな。\nきっちり　守ってるだろ"
+							: "朝の　アジは、\nはやい　もん　勝ちだ",
+						{ name: "つり人" },
+					);
+					// 続きは 一つだけ: 宵の つり座の 電気うき（seen_umi_denkiuki）＞ 夕方の アジの 話（seen_tsuribito_umi）
+					// 日の入りまでの 決まりを 知らない 人は、うきの ぬしを きくだけ（答えは 同じ）
+					const q = s.flag("seen_umi_denkiuki")
+						? s.flag("seen_umi_rule") || s.flag("seen_tsuribito_umi")
+							? "ゆうべの　電気うき、\n日の入りの　あとンゴ？"
+							: "ゆうべの　赤い　電気うき、\nおじさんのンゴ？"
+						: s.flag("seen_tsuribito_umi")
+							? "ゆうべは、アジ\nつれたンゴ？"
+							: "";
+					if (q) {
+						await s.say("kiriko", q);
 						await s.say(null, "……それは、\nきかない　やくそく", {
 							name: "つり人",
 						});
