@@ -668,17 +668,34 @@ export const koen: MapDef = {
 			trigger: "talk",
 			fixedDir: true,
 			run: async (s) => {
+				// (64) イノシシ注意の シール: 夕 はがれかけ／宵 ぱたぱた（seen_koen_michi） → 深夜 音だけ → 朝 草に おちた
+				//   （yamamichi rindou_sign が seen_koen_michi を読む）
 				const t = s.flag("tod");
+				const michi = s.flag("seen_koen_michi");
 				if (t === "shinya") {
 					await s.narrate("『← やまみち』。\n道の先は、木の　かげだ。");
+					if (michi) {
+						s.se("tick", { volume: 0.15 });
+						await s.narrate("ぱた……ぱた。");
+					}
 					return;
 				}
 				await s.narrate("『← やまみち』\n『あかまつ峠まで　2.4km』");
 				if (t === "asa") {
+					if (michi) {
+						await s.narrate("シールは、くいの　足もとの\n草に　おちていた。");
+						return;
+					}
 					await s.narrate("くいの　てっぺんに、\n朝つゆの　玉。");
 					return;
 				}
-				await s.narrate("『イノシシに注意』の　シールが\nはがれかけている。");
+				if (t === "yoru") {
+					s.set("seen_koen_michi");
+					await s.narrate("シールの　はがれた　はしが、\n夜風で　ぱたぱた。");
+					return;
+				}
+				s.set("seen_koen_michi");
+				await s.narrate("イノシシ注意の　シールが、\nはがれかけている。");
 			},
 		},
 
@@ -934,6 +951,9 @@ export const koen: MapDef = {
 					if (s.flag("seen_toudai_kairi")) {
 						await s.narrate("海の　ほうで、灯台が\nひかって、きえる。");
 						await s.say("kiriko", "（八海里……\nここまで　とどくンゴ）");
+					} else if (s.flag("seen_toudai_yoru")) {
+						// ㊷ 宵に 灯台が 点くのを 見た人（umi toudai の seen_toudai_yoru）
+						await s.narrate("海の　ほうで、灯台が\nひかって、きえる。");
 					}
 					if (
 						s.flag("seen_fumikiri_yu") ||
@@ -1030,15 +1050,30 @@ export const koen: MapDef = {
 			y: 21,
 			trigger: "talk",
 			run: async (s) => {
-				if (s.flag("tod") === "shinya") {
+				const t = s.flag("tod");
+				if (t === "shinya") {
 					await s.narrate("ネットに　はられた紙。\nくらくて、よめない。");
 					return;
 				}
-				// 『9月19日　練習試合』（seen_koen_nittei）→ ball_kid（朝）の どんぐりの おまじない
-				s.set("seen_koen_nittei");
-				await s.narrate("『みどりがおかジュニア\n　れんしゅう　土日9時～』");
-				await s.narrate("『9月19日（日）　練習試合\n　vs かわしもクラブ』");
-				await s.narrate("お茶当番の　らんに、\n『ゆうた母』。");
+				if (t === "yoru") {
+					await s.narrate("外灯で、『9月19日』だけ\nよめる。");
+					return;
+				}
+				// (61) 『9月19日　練習試合』（seen_koen_nittei）→ ball_kid（朝）の どんぐり・「日曜、しあい」／kawara mizukiri_kid
+				if (t === "asa" && s.flag("seen_koen_nittei")) {
+					await s.narrate("紙の　すみに、えんぴつで\nスタメンの　メモ。");
+				} else {
+					s.set("seen_koen_nittei");
+					await s.narrate("『みどりがおかジュニア\n　れんしゅう　土日9時～』");
+					await s.narrate("『9月19日（日）　練習試合\n　vs かわしもクラブ』");
+					await s.narrate("お茶当番の　らんに、\n『ゆうた母』。");
+				}
+				// (61) kawara の 水きりの子の「かわしもクラブ」（seen_shiai_kawa）
+				//   キリコの 気づきは 一度だけ（seen_koen_nittei_kawa）
+				if (s.flag("seen_shiai_kawa") && !s.flag("seen_koen_nittei_kawa")) {
+					s.set("seen_koen_nittei_kawa");
+					await s.say("kiriko", "（水きりの　子の\nチームンゴ）");
+				}
 			},
 		},
 		{
@@ -1479,6 +1514,14 @@ export const koen: MapDef = {
 							name: "野球の子",
 						},
 					);
+					return;
+				}
+				// (61) 日程表を 読んだ人に 一度（nittei の seen_koen_nittei）
+				if (s.flag("seen_koen_nittei") && !s.flag("seen_koen_kid_nittei")) {
+					s.set("seen_koen_kid_nittei");
+					await s.say(null, "日曜、しあい。\nボール、たりないとこだった", {
+						name: "野球の子",
+					});
 					return;
 				}
 				// 夕方 給水塔の らくがきを 見た人には、かいた子が わかる

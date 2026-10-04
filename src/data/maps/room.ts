@@ -45,7 +45,7 @@
 //   seen_pc_ao・seen_pc_osara・seen_pizza_asa・seen_tv_senzai・seen_suwari_nure・
 //   seen_hari_maru・seen_phono_kurabe・seen_susuki_kabin・seen_tana_rec・seen_cal_aki・
 //   seen_nikki_yoru / seen_nikki_shinya（字）・seen_nikki_kesu・got_kan（kanDesk 経由）・
-//   seen_phono_asa（筋(53)。shelf が読む）・seen_kitaku_yoru（宵に帰った。window が読む）・
+//   seen_phono_asa（筋(53)。shelf が読む）・seen_phono_kara（数。宵の から回りの段）・seen_kitaku_yoru（宵に帰った。window が読む）・
 //   seen_nikki_asa・seen_receipt・seen_makura_asa・seen_bane_asa（この4つは room の中だけ。朝の日記・机・枕元を一度にする）。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
@@ -68,6 +68,7 @@ import {
 	shinyaStep,
 	shinyaWalked,
 	suwariNure,
+	truckOoi,
 	yoruClock,
 	yoruStep,
 } from "../nostalgia";
@@ -128,6 +129,8 @@ const TOOI_OTO: {
 	pan: number;
 	volume: number;
 	text: string;
+	/** 筋(65) 国道でトラックを何台も見た人（truckOoi）だけの文（kokudo 行のみ）。 */
+	textMany?: string;
 }[] = [
 	// senro のふみきり（夕方 seen_fumikiri_yu・宵 seen_fumikiri_yoru）
 	{
@@ -226,6 +229,8 @@ const TOOI_OTO: {
 		pan: -0.8,
 		volume: 0.2,
 		text: "国道を、トラックの\nながい　音が　とおっていく。",
+		// 筋(65) kokudo truck_a/truck_b で数えた（seen_truck_kokudo>=4）人には、まだ　とおっている
+		textMany: "トラックが、また　一台\nとおっていく。",
 	},
 ];
 
@@ -253,7 +258,9 @@ const tooiOto = async (s: Story): Promise<boolean> => {
 			await s.wait(420);
 			s.se(o.se, { pan: o.pan, volume: o.volume });
 		}
-		await s.narrate(o.text);
+		await s.narrate(
+			o.map === "kokudo" && o.textMany && truckOoi(s) ? o.textMany : o.text,
+		);
 	}
 	return heard.length > 0;
 };
@@ -562,9 +569,21 @@ export const room: MapDef = {
 					);
 					return;
 				}
-				// 宵の2回目から（レコードは まだ 無い。深夜の バス停で ひろう）
-				if (t === "yoru" && !rec && !first)
-					await s.narrate("ターンテーブルが、から回り\nする　音。");
+				// 宵の2回目から（レコードは まだ 無い。深夜の バス停で ひろう）。
+				// 段は seen_phono_kara（数）で進み、3回目で shelf の空き箱へつなぐ
+				if (t === "yoru" && !rec && !first) {
+					const n = numFlag(s, "seen_phono_kara") + 1;
+					s.set("seen_phono_kara", n);
+					if (n === 1)
+						await s.narrate("ターンテーブルが、から回り\nする　音。");
+					else if (n === 2)
+						await s.narrate("針を　あげた。\nかける　レコードが　ない。");
+					else await s.say("kiriko", "（本棚の　箱も、\nからっぽンゴ）");
+					return;
+				}
+				// 深夜、まだ レコードの無い人には、ほこりだけ（段は進めない）
+				if (t === "shinya" && !rec)
+					await s.narrate("ターンテーブルに、\nうっすら　ほこり。");
 			},
 		},
 		// ── しらべられる家具（見えない talk イベント）。時間帯で一言が変わる ──
@@ -668,7 +687,22 @@ export const room: MapDef = {
 					return;
 				}
 				await s.narrate("そとは　しずか。\n窓の　あかりは、ぜんぶ　消えた。");
-				await s.narrate("街灯と、コンビニの\nあかりだけ　ついている。");
+				// ⑫ 深夜の町を歩いてきた人（shinyaStep>=1）は、外から見たものを内から見る（上から一つ）。
+				// street my_win の青い窓（seen_mywin_ao）・street vending_ev（yoru）のあかい札（seen_akafuda_st）
+				// ・夕方に自販機を見ただけの人（seen_jihanki_st）は札でなく　あかりを言う
+				const sStep = shinyaStep(s);
+				await s.narrate(
+					sStep >= 1 && s.flag("seen_mywin_ao")
+						? "さっき　下から　見あげた\n窓の、内がわだ。"
+						: sStep >= 1 && s.flag("seen_akafuda_st")
+							? "自販機の　あかい札が、\nここからも　見える。"
+							: sStep >= 1 && s.flag("seen_jihanki_st")
+								? "自販機の　あかりが、\nここからも　見える。"
+								: "街灯と、コンビニの\nあかりだけ　ついている。",
+				);
+				// 深夜を長く歩いた人には、もっと　しずか
+				if (sStep >= 3)
+					await s.narrate("街灯の　したを、\nだれも　とおらない。");
 			},
 		},
 		{
@@ -690,6 +724,9 @@ export const room: MapDef = {
 						);
 					else if (s.flag("seen_koen_kaikan"))
 						await s.say("kiriko", "（10月の　木曜に、\nまる　つけるンゴ）");
+					// 筋(62) tonarimachi hata の『敬老の日　大売り出し』（seen_keirou_tonari）。来週の月曜＝9/20
+					else if (s.flag("seen_keirou_tonari"))
+						await s.say("kiriko", "（来週の　月曜は、\nお休みンゴ）");
 				};
 				// 深夜は、もう日づけをまたいでいる（14日の火曜）
 				if (t === "shinya") {

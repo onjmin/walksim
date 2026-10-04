@@ -23,6 +23,9 @@
 //   まるい字の『みなみ』（driveinn_sign の seen_drivein_kokudo → 朝の famiresu_kanban・seen_kanban_kokudo）→ ekimae old_sign
 //   歩道橋の宵（hodokyoView・seen_hodo_yoru「ライトが　下を　とおりぬけていく」）→ yamamichi miharashi（yoru）
 //   ねこのたまり場の深夜（草の　まるい　へこみ）← danchi neko_ura のあつまり（seen_neko_shukai）
+//   トラックの数（truck の帯・seen_truck_kokudo 数）→ 深夜の歩道橋（truckOoi）・room TOOI_OTO
+//   給油機のメーター（yu・seen_gs_meter『12.40L』）→ 宵「まだ　出ている」→ 朝「0.00に　もどっている」
+//   はり紙の下の『24時間営業』（seen_gasman2 か朝・seen_hari_famiresu）→ ekimae old_sign
 //
 // 座標凍結v3: 東 (39,10)→street(1,11)・street からの着地 (38,10)／
 // 西 (0,10)→ekimae(30,9)・ekimae からの着地 (1,10)／
@@ -34,7 +37,7 @@
 //
 // 寄り道: 歩道橋→ファミレス前（北）／ガソリンスタンド（南西）／
 // 隠し: 東のしげみ (37,11) が見た目のまま通れる→ねこのたまり場。
-// ガードレールの花 (13,9) は説明しない（へこみ (12,9) のとなり。それだけ）。
+// ガードレールの根もとのコスモス (13,9)（筋(67) seen_kosumosu_kokudo → senro cosmos_b）。
 
 import type {
 	EventDef,
@@ -52,6 +55,7 @@ import {
 	kanTick,
 	numFlag,
 	shinyaClock,
+	truckOoi,
 	yoruAkubi,
 	yoruClock,
 } from "../nostalgia";
@@ -121,7 +125,7 @@ const rows = [
 	"      .....................f=f.         ", // y6  ファミレス前・北階段 (28,6)・死んだ自販機 (30,6)
 	"      .........................         ", // y7
 	"----------------------------------------", // y8  国道（センターライン）
-	"rrrrrrrrrrrrrrrrrrrrrrrr=rrrrrrrrrrrrrrr", // y9  南階段 (24,9)・へこみ (12,9)・花たば (13,9)
+	"rrrrrrrrrrrrrrrrrrrrrrrr=rrrrrrrrrrrrrrr", // y9  南階段 (24,9)・ガードレール (12,9)・コスモス (13,9)
 	"........................................", // y10 歩道。西 (0,10)→ekimae・東 (39,10)→street
 	"bAAAA......MM.bbLbbb:.......!..V..!.Lqbb", // y11 スタンド屋根・洗車機・街灯・danchi (20,11)・バスだまり・隠し (37,11)
 	"b)c)o......mm.bbbbbb:bbbbbbbbbbbbbbb,,,b", // y12 事務所の窓 (2,12)・戸 (4,12)・給油機・ねこのたまり場 (36-38,12)
@@ -152,7 +156,17 @@ const truck = (id: string, pan: number) => async (s: Story) => {
 	if (lastTruck === id) return;
 	lastTruck = id;
 	const t = s.flag("tod");
-	if (t === "yu" || t === "yoru") s.se("train", { pan, volume: 0.35 });
+	if (t !== "yu" && t !== "yoru") return;
+	// 筋(65) 聞いた数を数える（seen_truck_kokudo → hodokyo_view の深夜・room TOOI_OTO の truckOoi）
+	s.set("seen_truck_kokudo", numFlag(s, "seen_truck_kokudo") + 1);
+	if (t === "yu") {
+		s.se("train", { pan, volume: 0.35 });
+		return;
+	}
+	// 宵は 音が 近く、ライトが 歩道を なでていく（文は 足さない）
+	s.se("train", { pan, volume: 0.5 });
+	// 帯をまたぐたびに 歩きが 止まらないよう、待たない
+	void s.flash("rgba(255,223,158,0.18)", 160);
 };
 /** 見えない環境音の帯（歩道 y10 の1マス）。宵はトラックだけが鳴る（ヒグラシ・スズメは鳴らない）。 */
 const belt = (
@@ -186,6 +200,9 @@ const hodokyoView = async (s: Story): Promise<void> => {
 		await s.narrate(
 			"……とおくから、トラックが\n一台、走ってきて　とおりすぎた。",
 		);
+		// 筋(65) 夕方・宵に トラックを 何度も 聞いた人だけ（truck の帯の seen_truck_kokudo）
+		if (truckOoi(s))
+			await s.narrate("……さっきは、あんなに\nとおっていたのに。");
 		return;
 	}
 	if (t === "asa") {
@@ -494,6 +511,22 @@ export const kokudo: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("はり紙。『営業時間\nAM11:00～PM10:00』");
+				// ⑩/㊾ 下の 古い はり紙（seen_hari_famiresu → ekimae old_sign）
+				// 店員の2層目（gasman「むかしは夜中までやってて」）を聞いた人だけ
+				if (s.flag("seen_gasman2")) {
+					s.set("seen_hari_famiresu");
+					await s.narrate(
+						"その下に、もう一枚。\n『24時間営業』の　字が　のぞく。",
+					);
+					await s.say("kiriko", "（夜中まで、だった\nころンゴ）");
+					return;
+				}
+				// 朝は 店員の話を 聞いていなくても、朝日で すける
+				if (s.flag("tod") === "asa") {
+					s.set("seen_hari_famiresu");
+					await s.narrate("朝日で、下の　紙の\n『24』だけ　すける。");
+					return;
+				}
 				await s.narrate("すみのテープが、四つとも\n茶色くなっている。");
 			},
 		},
@@ -637,33 +670,34 @@ export const kokudo: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				await s.narrate("ガードレール。とそうが\nところどころ、はげている。");
-				await s.narrate("大きな　へこみが、ひとつ。");
 			},
 		},
-		// ガードレールの花（説明しない。tod で見え方が かわるだけ。段も回収も つけない＝罠15）
+		// ガードレールの根もとの コスモス（筋(67) senro cosmos_b が読む）。tod で 見え方が かわる
 		{
 			id: "hanataba",
 			x: 13,
 			y: 9,
-			sprite: JP.hanataba,
+			sprite: JP.flowers,
 			trigger: "talk",
 			through: true,
 			fixedDir: true,
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "asa") {
-					await s.narrate("花たばに、朝つゆが\nついている。");
+					s.set("seen_kosumosu_kokudo");
+					await s.narrate("朝つゆで、花が　ぜんぶ\nこっちを　むいている。");
 					return;
 				}
 				if (t === "shinya") {
-					await s.narrate("花たばが、くらがりで\n白く見える。");
+					await s.narrate("くらがりで、白い　花だけ\nうかんでいる。");
 					return;
 				}
 				if (t === "yoru") {
 					await s.narrate("街灯の　オレンジで、\n花の　色が　わからない。");
 					return;
 				}
-				await s.narrate("ガードレールの根もとに、\n花たばが　そなえてある。");
+				s.set("seen_kosumosu_kokudo");
+				await s.narrate("ガードレールの　根もとに、\nコスモスが　さいている。");
 			},
 		},
 		{
@@ -694,6 +728,9 @@ export const kokudo: MapDef = {
 				if (t === "yoru") {
 					// 宵（P0-1）。深夜の「とっくに、行ったあと」の手前
 					await s.narrate("時こく表。さいしゅうは\n22時10分。……まだ、ある。");
+					// 筋(63) ekimae busstop（yoru）の 赤い字の さいしゅうを 見た人だけ
+					if (s.flag("seen_bus_akaji"))
+						await s.say("kiriko", "（駅のは、もう\n赤い字だったンゴ）");
 					return;
 				}
 				await s.narrate("バスていの時こく表。\nつぎは、17時41分。");
@@ -980,17 +1017,33 @@ export const kokudo: MapDef = {
 					await s.narrate("給油機。ノズルに\nカバーが　かかっている。");
 					return;
 				}
+				// 夕の メーター『12.40L』（seen_gs_meter）→ 宵「まだ　出ている」→ 朝「0.00に　もどっている」
 				if (t === "asa") {
+					if (s.flag("seen_gs_meter")) {
+						await s.narrate("メーターが、0.00に\nもどっている。");
+						// kiropost の『東京まで　112km』（seen_kiro_kokudo）を 見た人だけ
+						if (s.flag("seen_kiro_kokudo"))
+							await s.say(
+								"kiriko",
+								"（12リットルで、\n112キロ　行けるンゴ？）",
+							);
+						return;
+					}
 					await s.narrate("給油機。けさは、まだ\nだれも来ていない。");
 					return;
 				}
 				if (t === "yoru") {
+					if (s.flag("seen_gs_meter")) {
+						await s.narrate("蛍光灯の　下、12.40の\n数字が　まだ　出ている。");
+						return;
+					}
 					await s.narrate(
 						"給油機。蛍光灯の　あかりが、\nつるりと　うつっている。",
 					);
 					return;
 				}
-				await s.narrate("給油機。よくみがかれて、\n夕日が　うつっている。");
+				s.set("seen_gs_meter");
+				await s.narrate("給油機。メーターに、\n『12.40L』のまま。");
 			},
 		},
 		{

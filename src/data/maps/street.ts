@@ -300,6 +300,9 @@ const tenshuAsa = async (s: Story): Promise<void> => {
 		await s.say(null, "うちの　ラジオは\nさいごまで　やってたよ", {
 			name: "店主",
 		});
+		// 電器屋の はり紙の 下の『ラジオ　修理します』（denki_bill の 2段目・seen_denki_radio）を 見た 人だけ
+		if (s.flag("seen_denki_radio"))
+			await s.say(null, "となりで　直して\nもらったやつさ", { name: "店主" });
 		return;
 	}
 	await s.say(null, "よく　ねむれた顔だ。\n……いや、ねぶそくか？", {
@@ -1113,18 +1116,30 @@ export const street: MapDef = {
 					await s.narrate(
 						"レジの　よこで、ホットスナックの\nケースが　ひかっている。",
 					);
+					// のこりの からあげ（seen_hotsnack_st）→ 朝は あげたてに かわる
+					s.set("seen_hotsnack_st");
+					await s.narrate("からあげが　ひとつだけ\nのこっている。");
 					await s.narrate(`時計は――${shinyaClock(s)}。`);
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("『あさごはん　あります』の\nのぼりが　出ている。");
+					// 深夜の のこり ひとつ（seen_hotsnack_st）を 見た 人だけ
+					await s.narrate(
+						s.flag("seen_hotsnack_st")
+							? "ケースに、あげたての\nからあげが　ならんでいる。"
+							: "『あさごはん　あります』の\nのぼりが　出ている。",
+					);
 					return;
 				}
-				// 宵は ゆげと レジの 音だけ（人の 姿は 書かない。時計は見せない）
+				// 宵は レジの 音だけ（人の 姿は 書かない。時計は見せない。おでんは 夕方・conbini_door にゆずる）
+				// 宵に ここで 牛乳を 買った 人（got_gyunyu）だけ キリコ。一度きり（got_gyunyu を 2 に 進める。
+				// ほかの 場所は got_gyunyu を 真偽で 読むので 2 でも 真のまま）
 				if (t === "yoru") {
-					await s.narrate(
-						"おでんの　ゆげ。レジの　ほうで、\nピッ、と　バーコードの　音。",
-					);
+					await s.narrate("レジの　ほうで、\nピッ、と　バーコードの　音。");
+					if (s.flag("got_gyunyu") && numFlag(s, "got_gyunyu") === 1) {
+						s.set("got_gyunyu", 2);
+						await s.say("kiriko", "（吾輩も、さっき\nピッ　されたンゴ）");
+					}
 					return;
 				}
 				await s.narrate("コンビニのまど。おでんの\nゆげで、くもっている。");
@@ -1206,16 +1221,23 @@ export const street: MapDef = {
 				await s.narrate("画面のすみに――17:04。");
 			},
 		},
-		// 貼り紙の下の貼り紙（時間帯を問わず同じ。二度目で下の紙に気づく。P0-8）
+		// 貼り紙の下の貼り紙（段は denki_bill の run の上のコメントを見る。深夜は上の紙だけ。P0-8）
 		{
 			id: "denki_bill",
 			x: 14,
 			y: 9,
 			trigger: "talk",
+			// 段（seen_denki_bill 数）: 1 駄菓子屋の ボケ → 2 下の紙（seen_denki_radio → 朝の tenshuAsa の ラジオ）
+			// → 3 ボケの とりけし（一度だけ）→ 4回目からは 上の紙だけ。深夜は 段を 進めない
 			run: async (s) => {
+				if (s.flag("tod") === "shinya") {
+					await s.narrate("街灯で、いちばん　上の\n紙だけ　よめる。");
+					return;
+				}
 				await s.narrate("はり紙。『テレビ\nおやすくします』");
-				if (!s.flag("seen_denki_bill")) {
-					s.set("seen_denki_bill");
+				const n = numFlag(s, "seen_denki_bill");
+				if (n === 0) {
+					s.set("seen_denki_bill", 1);
 					await s.narrate("日づけは、先月だ。");
 					await s.say(
 						"kiriko",
@@ -1223,9 +1245,17 @@ export const street: MapDef = {
 					);
 					return;
 				}
+				if (n >= 3) {
+					await s.narrate("日づけは、先月だ。");
+					return;
+				}
+				s.set("seen_denki_bill", n + 1);
+				s.set("seen_denki_radio");
 				await s.narrate("はり紙の下に、もう一枚。\n『テレビ　修理します』");
 				await s.narrate("その下に、もう一枚。\n『ラジオ　修理します』");
 				await s.say("kiriko", "……ずっと、電器屋\nだったンゴ");
+				if (n === 2)
+					await s.say("kiriko", "（駄菓子屋は、吾輩の\nかんちがいンゴ）");
 			},
 		},
 		// 店先（夕方は店主がいるのでカウンターにゆずる）。
@@ -1338,12 +1368,12 @@ export const street: MapDef = {
 					} else {
 						await s.narrate("ゆうびんポスト。けさの\nあつめは、9時からだ。");
 					}
-					// apart nbox の 不在票（seen_fuzai）を 見た 人だけ。朝なので バイクは 出してよい
-					// 1回だけ（seen_post_bike）。同じ バイクが 毎回 まがらないように
+					// apart nbox の 不在票（seen_fuzai）。答えは nbox の 朝の ダンボール。ここは 止まらずに とおりすぎる
+					// 1回だけ（seen_post_bike）。同じ バイクが 毎回 とおらないように
 					if (s.flag("seen_fuzai") && !s.flag("seen_post_bike")) {
 						s.set("seen_post_bike");
 						await s.narrate(
-							"ゆうびんの　バイクが、\nアパートの　ほうへ　まがった。",
+							"ゆうびんの　バイクが、\nアパートの　前を　とおりすぎた。",
 						);
 					}
 					return;
@@ -1477,19 +1507,36 @@ export const street: MapDef = {
 			y: 12,
 			trigger: "talk",
 			run: async (s) => {
+				// 時間帯の 段（夕 まだ seen_gaito_yu → 宵 ついていた seen_gaito_yoru
+				// → 深夜 輪の なかに じぶんの かげ seen_gaito_shinya → 朝 きえた。つく・きえる ところは 見せない）
 				const t = s.flag("tod");
 				if (t === "shinya") {
-					await s.narrate("街灯。しろく、\nついている。");
+					await s.narrate("街灯が、しろく\nともっている。");
+					if (s.flag("seen_gaito_yoru")) {
+						s.set("seen_gaito_shinya");
+						await s.narrate("街灯の　輪の　なかに、\nキリコの　かげだけ。");
+					}
 					return;
 				}
 				if (t === "asa") {
 					await s.narrate("街灯。もう、\nきえている。");
+					if (s.flag("seen_gaito_shinya"))
+						await s.say(
+							"kiriko",
+							"（ついた　ところも、きえた\nところも　見なかったンゴ）",
+						);
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("街灯。いつのまにか、\nついていた。");
+					await s.narrate(
+						s.flag("seen_gaito_yu")
+							? "街灯。いつのまにか、\nついていた。"
+							: "街灯。しろく　ついている。",
+					);
+					s.set("seen_gaito_yoru");
 					return;
 				}
+				s.set("seen_gaito_yu");
 				await s.narrate("街灯。まだ、\nついていない。");
 			},
 		},
@@ -1645,8 +1692,13 @@ export const street: MapDef = {
 			run: async (s) => {
 				await s.narrate("『すずき』の　ひょうさつ。");
 				const t = s.flag("tod");
+				// 宵の ふろばの 窓（seen_furo_st）を 見た 人だけ 窓を 書く（におい は arrive_shinya のほう）
 				if (t === "shinya") {
-					await s.narrate("しずかだ。");
+					await s.narrate(
+						s.flag("seen_furo_st")
+							? "ふろばの　窓は、\nもう　くらい。"
+							: "しずかだ。",
+					);
 					return;
 				}
 				if (t === "asa") {
@@ -1701,8 +1753,13 @@ export const street: MapDef = {
 			run: async (s) => {
 				await s.narrate("『たなか』の　ひょうさつ。");
 				const t = s.flag("tod");
+				// 筋(52) 宵の はなさき（seen_tanaka_inu）を 見た 人だけ。鳴かせない（ひと声は room の TOOI_OTO）
 				if (t === "shinya") {
-					await s.narrate("しずかだ。");
+					await s.narrate(
+						s.flag("seen_tanaka_inu")
+							? "戸の　むこうで、ねいきの\nような　音。"
+							: "しずかだ。",
+					);
 					return;
 				}
 				if (t === "asa") {

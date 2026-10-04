@@ -19,7 +19,8 @@
 //   ミニトマト（seen_tomato_danchi）・
 //   すなばのスコップ（seen_baketsu → 深夜 ぬく seen_scoop_motsu → バケツへ seen_scoop_shimau）・
 //   夕刊の自転車（seen_yukan_jitensha）・
-//   なわとびの子（seen_nawatobi 数 → 深夜の『10』seen_nawatobi_10 → 朝の階段）・上のかいの窓の声（seen_gohan_*）・
+//   なわとびの子（seen_nawatobi 数 → 宵の『3』『6』『9』seen_tetsubo_chalk → 深夜の『10』seen_nawatobi_10 → 朝の階段）・
+//   上のかいの窓の声（seen_gohan_*）・深夜のじはんきの一本（seen_kan_danchi → 朝の つめかえ）・
 //   クスノキのスズメ（seen_kusunoki_suzume → 朝 とびだす seen_kusunoki_asa・てつぼう）・
 //   ひがんばなのくき（seen_kadan_kuki → 朝 ほどけかける）・給水塔のランプ（深夜 seen_kyusui_danchi → 朝）・
 //   将棋の『まった』（seen_shogi_danchi → 宵の盤・朝のじいちゃん seen_shogi_asa）・
@@ -46,6 +47,7 @@ import {
 	chukeiDan,
 	kanHeld,
 	kanLine,
+	kanLv,
 	kanShinya,
 	kanTick,
 	nekoSeen,
@@ -466,9 +468,23 @@ export const danchi: MapDef = {
 					await s.narrate(
 						"集会所の掲示。はり紙は\n三枚。はしが　めくれている。",
 					);
+					// 夕に はり紙を よんだ人（seen_shuukaijo_hari）だけ: こども将棋の 申しこみ →
+					// 夕の『まった！』（shuukaijo_win の seen_shogi_danchi）も 聞いた人に キリコ。
+					// 朝の じいちゃん（taiso_jichan の seen_shogi_asa）と かぶらないよう、名前（物）に よせる
+					if (s.flag("seen_shuukaijo_hari")) {
+						await s.narrate(
+							"『こども将棋』の　紙に、\nえんぴつの　名前が　ひとつ。",
+						);
+						if (s.flag("seen_shogi_danchi"))
+							await s.say("kiriko", "（あの　『まった』の\n名前ンゴ？）");
+					}
 					return;
 				}
 				s.set("seen_aki_danchi");
+				if (t === "yoru") {
+					await s.narrate("外灯で、『つきみ』の　字だけ\nよめる。");
+					return;
+				}
 				if (s.flag("seen_shuukaijo_hari")) {
 					await s.narrate(
 						"画びょうの　あとに、\nむかしの『こども将棋』の　はし。",
@@ -1035,12 +1051,25 @@ export const danchi: MapDef = {
 					// （seen_nawatobi_10 → 朝の c_stairs）
 					if (numFlag(s, "seen_nawatobi") >= 1) {
 						s.set("seen_nawatobi_10");
+						// 宵の『3』『6』『9』（seen_tetsubo_chalk）を 見た人だけ「『9』の　となり」
 						await s.narrate(
-							"てつぼうの下に、チョークで\n『10』。まるが　ついている。",
+							s.flag("seen_tetsubo_chalk")
+								? "『9』の　となりに、\n『10』。まるが　ついている。"
+								: "てつぼうの下に、チョークで\n『10』。まるが　ついている。",
 						);
 						return;
 					}
 					await s.narrate("てつぼうが、夜つゆで\nぬれている。");
+					return;
+				}
+				if (t === "yoru") {
+					// なわとびの子（seen_nawatobi）を 見た人は、宵に『3』『6』『9』→ 深夜に『10』（段）
+					if (numFlag(s, "seen_nawatobi") >= 1) {
+						s.set("seen_tetsubo_chalk");
+						await s.narrate("てつぼうの　下に、チョークで\n『3』『6』『9』。");
+						return;
+					}
+					await s.narrate("外灯で、てつぼうの\nかげが　すなばまで　のびる。");
 					return;
 				}
 				if (t === "asa") {
@@ -1175,10 +1204,27 @@ export const danchi: MapDef = {
 				if (t === "shinya") {
 					await s.narrate("じはんき。この明かりだけが\nついている。");
 					// 『あったか～い』の缶（P0-6。一晩に一本。持っていれば いまの温度を1行）
+					// この じはんきで 一本目を 買ったとき（kanLv 0→1）だけ seen_kan_danchi
+					const before = kanLv(s);
 					await kanShinya(s);
+					if (before === 0 && kanLv(s) >= 1) s.set("seen_kan_danchi");
 					return;
 				}
-				await s.narrate("じはんき。おしるこの\nボタンが、もう　ある。");
+				// おしるこの 札: 夕『つめた～い』→ 宵『あったか～い』→ 深夜の 一本 → 朝の つめかえ
+				if (t === "asa") {
+					await s.narrate("じはんきの　前で、缶の\nつめかえを　している。");
+					// 深夜に この じはんきで 缶を 買った人（seen_kan_danchi）だけ
+					if (s.flag("seen_kan_danchi"))
+						await s.say("kiriko", "（ゆうべの　一本ぶん\nンゴ）");
+					return;
+				}
+				if (t === "yoru") {
+					await s.narrate("おしるこの　段だけ、札が\n赤い『あったか～い』に。");
+					return;
+				}
+				await s.narrate(
+					"じはんき。おしるこの　ボタン。\n札は　まだ『つめた～い』。",
+				);
 			},
 		},
 		{
@@ -1342,7 +1388,29 @@ export const danchi: MapDef = {
 			x: 28,
 			y: 16,
 			trigger: "talk",
+			// つなの はみ出し（夕・宵で seen_tsuna_danchi）→ 深夜は はしだけ 白い → 朝、おしこんである
 			run: async (s) => {
+				const t = s.flag("tod");
+				if (t === "shinya") {
+					await s.narrate("くらがりに、つなの　はしだけ\n白く　見える。");
+					return;
+				}
+				if (t === "asa") {
+					await s.narrate("『じちかい』と書かれた\n木箱。");
+					// 夕・宵に はみ出しを 見た人だけ。夕の 管理人さん（kanrinin の seen_kanrinin）を 知る人に キリコ
+					if (s.flag("seen_tsuna_danchi")) {
+						await s.narrate("はみ出していた　つなが、\n中に　おしこんである。");
+						if (s.flag("seen_kanrinin")) {
+							await s.say("kiriko", "（ほうきの　人ンゴ）");
+							return;
+						}
+					}
+					// キリコの 心の声は 一つだけ（ほうきの人を 出さなかったときに 秋まつり）
+					if (akiMatsuri(s))
+						await s.say("kiriko", "（秋まつりの　つなひき\nンゴ？）");
+					return;
+				}
+				s.set("seen_tsuna_danchi");
 				await s.narrate("『じちかい』と書かれた\n木箱。");
 				await s.narrate("つなひきの　つなが\nはみ出している。");
 				// ③ つきみ秋まつりの おしらせ（回覧板・はり紙・ほかの町。nostalgia akiMatsuri）を 見た人だけ
@@ -1705,6 +1773,11 @@ export const danchi: MapDef = {
 						name: "じいちゃん",
 					});
 					await s.say("kiriko", "（『まった』の　子ンゴ）");
+					// 夕に 集会所の『こども将棋　ふっかつ』（shuukaijo_ev の seen_shuukaijo_hari）を よんだ人だけ
+					if (s.flag("seen_shuukaijo_hari"))
+						await s.say(null, "むかしは　わしが\nおしえとったんだ", {
+							name: "じいちゃん",
+						});
 					return;
 				}
 				await s.say(null, "六時半だよ、あした。\n……来る気が　あるなら", {

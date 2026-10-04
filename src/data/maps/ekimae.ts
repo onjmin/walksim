@@ -132,8 +132,24 @@ const wave = (id: string, pan: number) => async (s: Story) => {
 	lastWave = id;
 	const t = s.flag("tod");
 	if (t === "yu") s.se("higurashi", { pan, volume: 0.8 });
-	else if (t === "asa") s.se("suzume", { pan, volume: 0.8 });
+	else if (t === "asa") {
+		s.se("suzume", { pan, volume: 0.8 });
+		// 夕方の 駅前で ヒグラシを きいた 人に、朝の 最初の 一波で 一度だけ（帯ふたつの 先に 踏んだ ほう）
+		if (arrived(s, "ekimae", "yu") && !s.flag("seen_higurashi_eki")) {
+			s.set("seen_higurashi_eki");
+			await s.narrate(
+				"きのう　ヒグラシの　ないてた\n木に、スズメが　あつまる。",
+			);
+		}
+	}
 };
+/** old_sign: 国道の ファミレス看板の まるい字（kokudo seen_kanban_kokudo）を 見た 人への 一行。 */
+const kanbanKokudo = (s: Story) =>
+	s.say("kiriko", "（国道の　看板と、\nおなじ　まるい字ンゴ）");
+/** old_sign: 国道の ファミレスの はり紙（kokudo seen_hari_famiresu）を 見た 人への 一行。 */
+const hariFamiresu = (s: Story) =>
+	s.say("kiriko", "（ファミレスの　はり紙も、\n下に　古いのが　あったンゴ）");
+
 /** 見えない環境音の帯（大どおりの2列にまたがせる）。 */
 const waveBelt = (id: string, x: number, pan: number): EventDef[] =>
 	[9, 10].map((y) => ({
@@ -253,6 +269,11 @@ export const ekimae: MapDef = {
 				s.se("densha_far", { pan: -0.5, volume: 0.4 });
 				await s.wait(700);
 				await s.narrate("駅舎の窓から、ホームの\nあかりが　もれている。");
+				// 夕方に 乗った 人／夕方の 駅前で 遠い音を きいた 人だけ
+				if (s.flag("seen_tonarimachi"))
+					await s.say("kiriko", "（乗った　電車、\nまだ　はしってるンゴ）");
+				else if (arrived(s, "ekimae", "yu"))
+					await s.narrate("夕方と　おなじ　方から、\nさっきより　小さい　音。");
 				await yoruAkubi(s);
 			},
 		},
@@ -516,6 +537,13 @@ export const ekimae: MapDef = {
 					await s.say(null, "そうかい。……そりゃ、\n乗らなきゃ　見られん", {
 						name: "じいちゃん",
 					});
+					// (62) となりまちの『敬老の日　大売り出し』（tonarimachi hata）を 見た 人だけ
+					if (s.flag("seen_keirou_tonari"))
+						await s.say(
+							null,
+							"来週は　敬老の日だと。\nわしは　まだ　わかい　つもりだ",
+							{ name: "じいちゃん" },
+						);
 					return;
 				}
 				await s.say(null, "ゆうがたのは、よく\nこんでる。……えらいねえ", {
@@ -1037,18 +1065,30 @@ export const ekimae: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("さいしゅうバスは、\nとっくに　出たあとだ。");
+					// (63) 宵に 赤い字を 見た 人だけ
+					if (s.flag("seen_bus_akaji"))
+						await s.say(
+							"kiriko",
+							"（赤い字の　さいしゅう、\nもう　行ったンゴ）",
+						);
 					return;
 				}
 				// 朝の 7:45 は 駅前の時計（いちばん進んでも 7:35）より、つねにあと
 				if (t === "asa") {
 					await s.narrate("バスのりば。つぎは\n7:45　だんち行き。");
+					// 夕方の 18:05 を 見た 人だけ
+					if (s.flag("seen_bus_eki"))
+						await s.narrate("きのうの　18:05と　おなじ\n『だんち行き』。");
 					return;
 				}
-				// 宵は時こくの数字を出さない（kokudo のバス停の「さいしゅうは22時10分」とぶつけない）
+				// 宵は時こくの数字を出さない（kokudo のバス停の「さいしゅうは22時10分」とぶつけない）。
+				// seen_bus_akaji は kokudo busstop（宵）と ここの 深夜が 読む
 				if (t === "yoru") {
+					s.set("seen_bus_akaji");
 					await s.narrate("バスのりば。時刻表の\nさいしゅうだけ、赤い字。");
 					return;
 				}
+				s.set("seen_bus_eki");
 				await s.narrate("バスのりば。つぎは\n18:05　だんち行き。");
 			},
 		},
@@ -1060,12 +1100,28 @@ export const ekimae: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					// ㉟ すわった あとは 一行だけ。seen_suwari_eki は 部屋の 布団（suwariNure）と 朝が 読む
+					if (s.flag("seen_suwari_eki")) {
+						await s.narrate("ぬれた　ベンチ。\nさっき　すわった　はしだ。");
+						return;
+					}
 					await s.narrate("ベンチは、夜つゆに\nぬれている。");
+					const i = await s.choose(["＞＞1 すわる", "＞＞2 やめておく"], {
+						cancel: 1,
+					});
+					if (i !== 0) return;
+					s.set("seen_suwari_eki");
+					await s.narrate("すそが、ひやっと\nつめたく　なった。");
 					return;
 				}
 				if (t === "asa") {
 					// 夕方に「見てるだけで　いい」じいちゃんと 話した 人だけ
 					if (s.flag("seen_ekimae_jii")) {
+						// ㉟ 深夜に ここへ すわった 人は、じいちゃんの はしと 重ねる
+						if (s.flag("seen_suwari_eki")) {
+							await s.say("kiriko", "（ゆうべ　すわった　はしに、\n新聞ンゴ）");
+							return;
+						}
 						await s.narrate("じいちゃんの　いた　はしに、\nけさの　新聞。");
 						await s.say("kiriko", "（始発も、見に　来たンゴ）");
 						return;
@@ -1167,7 +1223,10 @@ export const ekimae: MapDef = {
 					await s.narrate("自転車おきば。一台だけ、\nのこっている。");
 					await s.narrate("かごに、ぬれた　ざっしが\n入ったままだ。");
 					// ㉞ 通りの ベンチ（street bench_ev）か スーパーの ラック（suupaa zasshi）で 見た 号
-					if (s.flag("seen_zasshi") || s.flag("seen_suupaa_zasshi"))
+					// スーパーで レジの 音を きいた 人（seen_suupaa_zasshi2）は、売れた 一冊と 重ねる
+					if (s.flag("seen_suupaa_zasshi2"))
+						await s.say("kiriko", "（スーパーで　売れた\n号ンゴ）");
+					else if (s.flag("seen_zasshi") || s.flag("seen_suupaa_zasshi"))
 						await s.say("kiriko", "（月曜の　号ンゴ）");
 					return;
 				}
@@ -1342,7 +1401,10 @@ export const ekimae: MapDef = {
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("ホームのあかりが、レールに\nほそく　のびている。");
+					// ホームの あかりは arrive_yoru が 言うので、ここは レールだけ
+					await s.narrate(
+						"レールが、くらい　なかに\nほそく　二本　のびている。",
+					);
 					return;
 				}
 				await s.narrate("レールが、夕日で\n光っている。");
@@ -1469,11 +1531,19 @@ export const ekimae: MapDef = {
 					await s.narrate(
 						"完成予想図の　駅ビルにも、\nこの　まるい字が　あった。",
 					);
+					// 看板（まるい字）を 見た 人は 看板の 行、そうでなければ はり紙の 行（下の 分岐と 同じ 順）
+					if (s.flag("seen_kanban_kokudo")) await kanbanKokudo(s);
+					else if (s.flag("seen_hari_famiresu")) await hariFamiresu(s);
 					return;
 				}
 				// ㊾ 国道の ファミレス看板の 朝の まるい字（kokudo famiresu_kanban）を 見た 人
 				if (s.flag("seen_kanban_kokudo")) {
-					await s.say("kiriko", "（国道の　看板と、\nおなじ　まるい字ンゴ）");
+					await kanbanKokudo(s);
+					return;
+				}
+				// ⑩/㊾ 国道の ファミレスの はり紙（kokudo famiresu_hours）を 見た 人
+				if (s.flag("seen_hari_famiresu")) {
+					await hariFamiresu(s);
 					return;
 				}
 				// ⑱ スーパーの ばあちゃんに「店は　駅より　あと」と 聞いた 人

@@ -544,9 +544,29 @@ export const tonarimachi: MapDef = {
 			sprite: JP.recordWagon,
 			trigger: "talk",
 			fixedDir: true,
+			// もどって来た回数（seen_tonari_kita）で段: よけてある三まい → 白い布。見た段を seen_record_wagon 数に
+			// 残す（2 以上＝布を見た。senro to_tonarimachi の宵が「中に　しまわれた」で読む）
 			run: async (s) => {
+				const k = numFlag(s, "seen_tonari_kita");
+				s.set(
+					"seen_record_wagon",
+					Math.max(numFlag(s, "seen_record_wagon"), k === 0 ? 1 : k),
+				);
+				if (k >= 2) {
+					await s.narrate("ワゴンに、白い　布が\nかけてある。");
+					return;
+				}
 				await s.narrate("店頭のワゴン。『どれでも\n3まい500円』。");
-				await s.say("kiriko", "……えらべる気が\nしないンゴ");
+				if (k === 0) {
+					await s.say("kiriko", "……えらべる気が\nしないンゴ");
+					return;
+				}
+				// 中の棚（record_tana）を二度見た人だけ、棚とは別のドーナツ盤が一まい　まじっているのに気づく
+				await s.narrate(
+					numFlag(s, "seen_record_tana") >= 2
+						? "ドーナツ盤も、ワゴンに\n一まい　まじっている。"
+						: "ワゴンの　前に、だれかが\nえらんだ　三まいが　よけてある。",
+				);
 			},
 		},
 		// 店の前で、一曲おわる（一度だけ。音だけの場面）。seen_record_owari は record_naka と
@@ -575,9 +595,16 @@ export const tonarimachi: MapDef = {
 			x: 14,
 			y: 9,
 			trigger: "talk",
+			// seen_honya_hatsubai は立ち読みの子（tachiyomi の3回目）が読む。子が本を棚にもどした
+			// （seen_tachiyomi_modoshi）あとは、その一冊が「のこり一冊」
 			run: async (s) => {
+				s.set("seen_honya_hatsubai");
 				await s.narrate("本屋の窓。『本日発売』の\nポスターが　三枚。");
-				await s.narrate("しらない漫画ばかりだ。");
+				await s.narrate(
+					s.flag("seen_tachiyomi_modoshi")
+						? "ポスターの　一枚に、\n『のこり　一冊』の　紙。"
+						: "しらない漫画ばかりだ。",
+				);
 			},
 		},
 		{
@@ -1100,7 +1127,15 @@ export const tonarimachi: MapDef = {
 			x: 6,
 			y: 14,
 			trigger: "talk",
+			// 3回目の訪問から（seen_tonari_kita 2 以上）は店じまい。seen_kissa_kanki は senro to_tonarimachi の朝が読む
 			run: async (s) => {
+				if (numFlag(s, "seen_tonari_kita") >= 2) {
+					s.set("seen_kissa_kanki");
+					await s.narrate(
+						"換気扇が、とまっている。\nにおいだけ　のこっている。",
+					);
+					return;
+				}
 				await s.narrate("純喫茶の換気扇が、\nゆっくり　まわっている。");
 				await s.narrate(
 					s.flag("seen_kissa_nioi")
@@ -1216,11 +1251,25 @@ export const tonarimachi: MapDef = {
 			x: 26,
 			y: 18,
 			trigger: "talk",
+			// seen_keirou_tonari は ekimae のじいちゃん（2回目）と room calendar（asa）が読む。
+			// もどって来た回（seen_tonari_kita 1 以上）は、夕風で　のぼりが　ポールに　まきついている
+			// （「来週」の行が出ない回は、キリコも来週と言わない）
 			run: async (s) => {
+				s.set("seen_keirou_tonari");
+				const mata = numFlag(s, "seen_tonari_kita") >= 1;
 				await s.narrate("街灯の　ポールに、\n『敬老の日　大売り出し』。");
-				await s.narrate("……来週の　月曜だ。");
+				await s.narrate(
+					mata
+						? "のぼりが　風で、\nポールに　まきついている。"
+						: "……来週の　月曜だ。",
+				);
 				if (numFlag(s, "seen_ekimae_jii") >= 1)
-					await s.say("kiriko", "（駅の　じいちゃんも、\n来週ンゴ）");
+					await s.say(
+						"kiriko",
+						mata
+							? "（駅の　じいちゃんの\n日ンゴ）"
+							: "（駅の　じいちゃんも、\n来週ンゴ）",
+					);
 			},
 		},
 
@@ -1431,7 +1480,11 @@ export const tonarimachi: MapDef = {
 					return;
 				}
 				if (n === 3) {
+					s.set("seen_tachiyomi_modoshi");
 					await s.narrate("……ふう、と　息をついて、\n本を　棚に　もどした。");
+					// 本屋の窓（honya_win）のポスターを見た人だけ
+					if (s.flag("seen_honya_hatsubai"))
+						await s.narrate("読んでいたのは、窓の\nポスターの　一冊だった。");
 					return;
 				}
 				await s.narrate("となりの　巻を、もう\nひらいている。");

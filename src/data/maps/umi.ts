@@ -175,6 +175,9 @@ const funeBelt = (x: number, y: number): EventDef => ({
 		s.set("seen_umi_fune_asa");
 		await s.narrate("とん、とん、とん、と\n漁船の　エンジンの音。");
 		await s.narrate("みなとの口から、船が\n一そう　はいってくる。");
+		// shiomihyo（yu）の 赤丸（seen_umi_shiomi）を 見た 人だけ
+		if (s.flag("seen_umi_shiomi"))
+			await s.narrate("しお見表の　赤丸の\nころだ。");
 		if (!s.flag("seen_umi_fune_yu") && !s.flag("seen_umi_fune_shinya")) return;
 		await s.narrate("へさきの字は、『第三　はま丸』。");
 		if (s.flag("seen_umi_fune_shinya"))
@@ -419,7 +422,14 @@ export const umi: MapDef = {
 				await s.narrate("やきうの　画面に、\nレスが　ひとつ　ふえた。");
 				await s.say("nanj", "……草");
 				await s.wait(700);
-				await s.narrate("漁船の　エンジンの　音が、\nちかづいてくる。");
+				// funeBelt で 第三の もどり（seen_umi_fune_asa）を 見た 人は 岸壁の 氷の 音（深夜の あかりも 見た 人は 第三と）
+				await s.narrate(
+					s.flag("seen_umi_fune_asa")
+						? s.flag("seen_umi_fune_shinya")
+							? "岸壁で、第三の　氷を\nおろす音が　している。"
+							: "岸壁で、氷を　おろす音が\nしている。"
+						: "漁船の　エンジンの　音が、\nちかづいてくる。",
+				);
 				s.set("seen_hoshu_end");
 				s.set("clear");
 				s.set("ending_seen");
@@ -785,7 +795,7 @@ export const umi: MapDef = {
 
 		// ── 漁港の岸壁（しお見表・小屋・うきわ・あみ・さかなばこ） ──
 		// しお見表: 夕方に あしたの『満潮　6:52』の 赤丸（seen_umi_shiomi）→ 宵は 字が 夕やみに とけて タコの はちまきだけ →
-		// 深夜は まっくら → 朝、見た 人には「もう　すぎている」。（9/13 は 上弦の すぐ あと＝大潮では ない）
+		// 深夜は まっくら → 朝、見た 人には「もう　すぎている」・funeBelt「赤丸の　ころ」・amiban_asa「しおに　のって」。（9/13 は 上弦の すぐ あと＝大潮では ない）
 		{
 			id: "shiomihyo",
 			x: 2,
@@ -810,8 +820,11 @@ export const umi: MapDef = {
 					return;
 				}
 				if (t === "yoru") {
+					// 夕方に 赤丸と タコを 見た 人（seen_umi_shiomi）だけ、はちまきが のこる
 					await s.narrate(
-						"字は、夕やみに　とけている。\nタコの　はちまきだけ　白い。",
+						s.flag("seen_umi_shiomi")
+							? "字は、夕やみに　とけている。\nタコの　はちまきだけ　白い。"
+							: "字は、夕やみに\nとけている。",
 					);
 					return;
 				}
@@ -864,13 +877,24 @@ export const umi: MapDef = {
 					await s.narrate("小屋のかべの　うきわが、\n風で　こつん、と鳴った。");
 					return;
 				}
+				if (t === "yoru") {
+					// 夕方に あひるの かお（seen_umi_ukiwa）を 見た 人だけ
+					await s.narrate(
+						s.flag("seen_umi_ukiwa")
+							? "街灯の　輪の　はしで、\nあひるの　かおだけ　白い。"
+							: "小屋の　かべに、\nうきわの　かげ。",
+					);
+					return;
+				}
+				// はり紙は 夕方と 朝だけ 読める
 				if (t === "asa") {
 					await s.narrate("うきわが、朝つゆで\nぬれている。");
+					await s.narrate("はり紙。『おとしもの\n8月3日　はまで』");
 					return;
 				}
 				await s.narrate("小屋のかべに、こどもの\nうきわが　かけてある。");
 				await s.narrate("はり紙。『おとしもの\n8月3日　はまで』");
-				if (t === "yu" && !s.flag("seen_umi_ukiwa")) {
+				if (!s.flag("seen_umi_ukiwa")) {
 					s.set("seen_umi_ukiwa");
 					await s.narrate("あひるの　かおが、\nだいぶ　日にやけている。");
 				}
@@ -940,9 +964,17 @@ export const umi: MapDef = {
 					return;
 				}
 				if (t === "asa") {
+					// 第三が もどる（funeBelt の seen_umi_fune_asa）まで、はこは から
+					if (!s.flag("seen_umi_fune_asa")) {
+						await s.narrate("からの　さかなばこが、\nならべて　ある。");
+						return;
+					}
 					await s.narrate(
 						"さかなばこに、氷と　アジが\nぎっしり　つまっている。",
 					);
+					// 夕方に 桟橋の『第三』を 見た 人（seen_umi_fune_yu）だけ、夕方の『はま丸』の 字の はこ
+					if (s.flag("seen_umi_fune_yu"))
+						await s.narrate("『はま丸』の　はこから\nいっぱいだ。");
 					// ⑤ tsuri_rule の『ネコに　えさを　やらないで』を 見た 人だけ、一度
 					if (s.flag("seen_umi_rule") && !s.flag("seen_umi_neko")) {
 						s.set("seen_umi_neko");
@@ -1080,6 +1112,12 @@ export const umi: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					// 夕方の ボラ（seen_umi_bora）を 見た 人だけ、深夜の 一度目に（見たら 2 に）
+					if (numFlag(s, "seen_umi_bora") === 1) {
+						s.set("seen_umi_bora", 2);
+						await s.narrate("――ぴしゃ。くらい　みなとで、\n一回だけ　はねた。");
+						return;
+					}
 					await s.narrate("みなとの中は　しずかで、\n水の音も　しない。");
 					return;
 				}
@@ -1098,6 +1136,8 @@ export const umi: MapDef = {
 					await s.narrate("みなとの中は、まだ\nしずかだ。");
 					return;
 				}
+				// 深夜に 見た あと（2）を 1 に もどさない
+				if (!s.flag("seen_umi_bora")) s.set("seen_umi_bora");
 				await s.narrate("みなとの中は、\n波が　たたない。");
 				await s.narrate("――ぴしゃ、と\nボラが　はねた。");
 			},
@@ -1134,17 +1174,25 @@ export const umi: MapDef = {
 			x: 31,
 			y: 13,
 			trigger: "talk",
-			// 段: 初回＝銘板 → 夕方の2回目＝八海里（seen_toudai_kairi）／宵は 点く瞬間を一度（seen_toudai_yoru）→ まわる／
-			// 深夜は 明滅／朝は 消える瞬間を一度（seen_toudai_asa）→ もう ひかっていない
+			// 段: 夕方の 初回＝銘板 → 夕方の2回目＝八海里（seen_toudai_kairi）／宵は 点く瞬間を一度（seen_toudai_yoru）→ まわる／
+			// 深夜は 初回だけ「銘板は くらくて 読めない」（seen_toudai_shinya）→ 明滅／
+			// 朝は まず 消える瞬間を一度（seen_toudai_asa。点くのを 見た 人には その 灯台）→ 2回目に 銘板（未読なら）→ もう ひかっていない
 			run: async (s) => {
 				const t = s.flag("tod");
-				if (!s.flag("seen_toudai")) {
+				const meiban = async () => {
 					s.set("seen_toudai");
 					await s.narrate("赤い　ぼうしの、\nちいさな　灯台。");
 					await s.narrate("銘板。『昭和三十八年\n初点灯』");
+				};
+				if (t === "yu" && !s.flag("seen_toudai")) {
+					await meiban();
 					return;
 				}
 				if (t === "shinya") {
+					if (!s.flag("seen_toudai") && !s.flag("seen_toudai_shinya")) {
+						s.set("seen_toudai_shinya");
+						await s.narrate("銘板は、くらくて\nよめない。");
+					}
 					await s.narrate("ひかって、きえて、\nまた　ひかる。");
 					return;
 				}
@@ -1161,6 +1209,14 @@ export const umi: MapDef = {
 					if (!s.flag("seen_toudai_asa")) {
 						s.set("seen_toudai_asa");
 						await s.narrate("灯台の　ガラスに、朝日が\nうつって　ひかった。");
+						// 宵に 点く瞬間（seen_toudai_yoru）を 見た 人だけ
+						if (s.flag("seen_toudai_yoru"))
+							await s.narrate("ゆうべ　点くのを　見た\n灯台だ。");
+						return;
+					}
+					// 消える瞬間を 銘板より 先に（1回しか 調べない 人にも 回収が とどく）
+					if (!s.flag("seen_toudai")) {
+						await meiban();
 						return;
 					}
 					await s.narrate("灯台は、もう　ひかって\nいない。");
@@ -1466,6 +1522,11 @@ export const umi: MapDef = {
 						});
 					}
 					await s.say(null, "ほら、あの音。\nせがれの船だ", { name: "あみ番" });
+					// shiomihyo の 赤丸（seen_umi_shiomi）と「四時に　出る」（seen_amiban2）を 知っている 人だけ
+					if (s.flag("seen_umi_shiomi") && s.flag("seen_amiban2"))
+						await s.say(null, "しおに　のって\nかえってくる", {
+							name: "あみ番",
+						});
 					if (s.flag("seen_amiban2")) {
 						await s.say(null, "ゆうべの　あみが、\nいま　あがってくる", {
 							name: "あみ番",
@@ -1525,6 +1586,11 @@ export const umi: MapDef = {
 					return;
 				}
 				await s.narrate("バケツの中は、\n海の水だけだ。");
+				// 2回目だけ: 夕方の minato_naka の ボラ（seen_umi_bora）を 見た 人に（seen_tsuribito_asa を 2 に）
+				if (s.flag("seen_umi_bora") && numFlag(s, "seen_tsuribito_asa") < 2) {
+					s.set("seen_tsuribito_asa", 2);
+					await s.say(null, "ボラは　つらねえよ", { name: "つり人" });
+				}
 			},
 			{ dir: "down", when: (st) => st.flags.tod === "asa" },
 		),

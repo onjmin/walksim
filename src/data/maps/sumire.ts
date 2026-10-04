@@ -31,6 +31,9 @@
 //   しらさぎ㉒ saka_rail 夕方『中州に白い点』（seen_sagi_saka）→ 朝の saka_rail・kawara sagiBelt
 //   ねこ⑤     alley_box 夕方か宵（seen_neko_sumire）→ 深夜は毛だけ → 朝『もどっている』
 //   ピアノ     yamada_door か arrive_yu（夕方に着いた人）→ 朝『……こえた』
+//   ブランコ(68) swing 夕方まきつけ（seen_buranko_maki）→ 深夜にほどく（seen_buranko_hodoki）→ 朝・jii_asa
+//   外灯       park_lamp 宵・深夜の『じじ』（seen_jiji_sumire 数）→ 朝の点検札・kichi_board のまばたき
+//   白線       fence_ground 夕方（seen_hakusen）→ 朝のライン引き・gate の音
 //   ひみつきち kichi_board 宵『夜は、るす』→ 深夜にしゃがむ（seen_kichi_shinya）→ 朝の板
 //   ほかの地区から: たまご⑰（seen_obachan）・ゴミの日⑯・秋まつり③・ささぶね㉓・牛乳（got_gyunyu）・
 //              中継の打ち切り（room tv の seen_chukei_end → kondo_win 宵）・
@@ -373,6 +376,10 @@ export const sumire: MapDef = {
 					if (t === "asa") {
 						await s.narrate("校門は、まだ\nしまっている。");
 						await s.narrate("チャイムの　ためし鳴らしが\n一度だけ　聞こえた。");
+						// 夕方の白線（fence_ground・seen_hakusen）を見た人にだけ、引きなおす音
+						if (s.flag("seen_hakusen")) {
+							await s.narrate("ライン引きの、\nカラカラいう　音。");
+						}
 						return;
 					}
 					if (t === "yoru") {
@@ -416,17 +423,23 @@ export const sumire: MapDef = {
 				const t = s.flag("tod");
 				if (t === "shinya") {
 					await s.narrate("フェンスごしの校庭。\nだれも、いない。");
-					await s.narrate("白線だけが、うすく\n見える。");
+					await s.narrate("鉄棒が、ひとつだけ\n外灯で　白い。");
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("せんせいが、ライン引きを\nおしている。");
+					// 夕方の『半分きえている』白線（seen_hakusen）を回収。音は gate_8/9 の朝のチャイムのあとにも
+					await s.narrate(
+						s.flag("seen_hakusen")
+							? "半分きえていた　白線が、\nまっすぐ　ひかれていく。"
+							: "せんせいが、ライン引きを\nおしている。",
+					);
 					return;
 				}
 				if (t === "yoru") {
-					await s.narrate("フェンスごしの校庭。\nどこかで、虫が　鳴いている。");
+					await s.narrate("白線が、外灯で\nとぎれとぎれに　見える。");
 					return;
 				}
+				s.set("seen_hakusen");
 				await s.narrate("フェンスごしの校庭。\n白線が、半分きえている。");
 			},
 		},
@@ -671,19 +684,49 @@ export const sumire: MapDef = {
 				trigger: "talk",
 				run: async (s) => {
 					const t = s.flag("tod");
+					// 筋(68) 夜中のブランコ: 夕方のまきつけ（seen_buranko_maki）→宵→深夜に　ほどく
+					// （seen_buranko_hodoki）→朝の　おなじ高さ・jii_asa 2回目・poemKey/kirokuLines
+					const maki = s.flag("seen_buranko_maki");
+					const hodoki = s.flag("seen_buranko_hodoki");
 					if (t === "shinya") {
+						if (hodoki) {
+							await s.narrate(
+								"ほどいた　くさりが、\nまだ　すこし　ゆれている。",
+							);
+							return;
+						}
 						await s.narrate("ブランコが、ふたつ\nならんで　とまっている。");
+						if (!maki) return;
+						const i = await s.choose(["＞＞1 ほどく", "＞＞2 そのまま"], {
+							cancel: 1,
+						});
+						if (i !== 0) return;
+						s.set("seen_buranko_hodoki");
+						s.se("tick", { volume: 0.2 });
+						await s.narrate("ぎい、と　ひとつ　鳴った。");
 						return;
 					}
 					if (t === "asa") {
-						await s.narrate("くさりに、朝つゆが\nついている。");
+						await s.narrate(
+							hodoki
+								? "ブランコが　ふたつ、\nおなじ　高さで　さがっている。"
+								: maki
+									? "まきついたまま。\nくさりに　朝つゆ。"
+									: "くさりに、朝つゆが\nついている。",
+						);
 						return;
 					}
 					if (t === "yoru") {
-						await s.narrate("ブランコ。外灯で、くさりが\nひかっている。");
+						await s.narrate(
+							maki
+								? "まきついたまま、\n外灯で　ひかっている。"
+								: "ブランコ。外灯で、くさりが\nひかっている。",
+						);
 						return;
 					}
 					await s.narrate("ブランコ。くさりが\nまだ　あたたかい。");
+					s.set("seen_buranko_maki");
+					await s.narrate("かたほうだけ、くさりが　上の棒に\nまきつけてある。");
 				},
 			}),
 		),
@@ -803,16 +846,31 @@ export const sumire: MapDef = {
 			trigger: "talk",
 			run: async (s) => {
 				const t = s.flag("tod");
-				if (t === "shinya") {
-					await s.narrate("外灯の下だけ、\n地面が　しろい。");
+				// 宵・深夜の『じじ』を数で段に（seen_jiji_sumire）。2回以上の人には朝の点検札・
+				// kichi_board 深夜のまばたき
+				if (t === "shinya" || t === "yoru") {
+					const n = numFlag(s, "seen_jiji_sumire");
+					s.set("seen_jiji_sumire", n + 1);
+					if (t === "shinya") {
+						await s.narrate("外灯の下だけ、\n地面が　しろい。");
+					} else {
+						await s.narrate("公園の外灯。");
+					}
+					await s.narrate(
+						n === 0
+							? "じじ、と　鳴っている。"
+							: n === 1
+								? "じじ……じ。\n一度、まばたきした。"
+								: "……また、ついた。",
+					);
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("外灯は、もう\nきえている。");
-					return;
-				}
-				if (t === "yoru") {
-					await s.narrate("公園の外灯。じじ、と\n鳴りながら　ついている。");
+					await s.narrate(
+						numFlag(s, "seen_jiji_sumire") >= 2
+							? "柱に、『点検しました\n9/14』の　札。"
+							: "外灯は、もう\nきえている。",
+					);
 					return;
 				}
 				await s.narrate("公園の外灯。\nまだ、ついていない。");
@@ -977,12 +1035,21 @@ export const sumire: MapDef = {
 				await s.narrate("『すみれ歯科』");
 				const t = s.flag("tod");
 				// 宵も、もう診療時間の外（18時まで）
-				if (t === "shinya" || t === "yoru") {
+				if (t === "yoru") {
 					await s.narrate("『じかんがい』の札が\nかかっている。");
 					return;
 				}
+				if (t === "shinya") {
+					await s.narrate("札の　『じかんがい』の　字が、\n外灯で　白い。");
+					return;
+				}
 				if (t === "asa") {
-					await s.narrate("けさの新聞が、ドアに\nはさまっている。");
+					// 歯医者さん（haisha_asa）と話したあとは、新聞が　とりこまれている
+					await s.narrate(
+						s.flag("seen_haisha_asa")
+							? "新聞は、もう　ない。\nマットが　まっすぐだ。"
+							: "けさの新聞が、ドアに\nはさまっている。",
+					);
 					return;
 				}
 				await s.narrate("『本日の診療は\n18時まで』の札。");
@@ -1050,13 +1117,26 @@ export const sumire: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					// 深夜は数で段（seen_mirror_shinya）。反射の手が　ちいさいだけ（怪異にしない）
+					const n = numFlag(s, "seen_mirror_shinya");
+					s.set("seen_mirror_shinya", n + 1);
+					await s.narrate("カーブミラーに、まがった\n道が　うつる。");
 					await s.narrate(
-						"カーブミラーに、まがった\n道と、じぶんだけが　うつる。",
+						n === 0
+							? "じぶんだけが　うつる。"
+							: n === 1
+								? "ミラーに　むかって、\n手を　ふってみた。"
+								: "まるい　ミラーの　なかで、\n吾輩の　手が　ちいさい。",
 					);
 					return;
 				}
 				if (t === "asa") {
-					await s.narrate("カーブミラーに、あさの空が\nまるく　うつっている。");
+					// 登校の子（gakko_ko・seen_gakko_ko）と話した人には、登校の列のランドセルが　よこぎる（その子とは名ざさない）
+					await s.narrate(
+						s.flag("seen_gakko_ko")
+							? "ミラーの　はしを、\nランドセルが　ひとつ　よこぎった。"
+							: "カーブミラーに、あさの空が\nうつっている。",
+					);
 					return;
 				}
 				if (t === "yoru") {
@@ -1064,6 +1144,12 @@ export const sumire: MapDef = {
 					return;
 				}
 				await s.narrate("カーブミラーに、\n夕やけが　うつっている。");
+				// 塾かばんの子（juku_ko）: 話す前は　うかがう子、話したあとは　そっぽをむく（本人はその場に立ったまま）
+				await s.narrate(
+					s.flag("seen_juku_ko")
+						? "ミラーの　なかで、\nじゅくかばんの子が　そっぽをむいた。"
+						: "ミラーの　はしに、じゅくかばんの\n子が　こっちを　うかがっている。",
+				);
 			},
 		},
 		// 深夜に　もう出てる　ふくろ（seen_gomi_hayai）→ 朝のカラス・ごみ出しの人のぼやき（gomidashi）
@@ -1354,7 +1440,12 @@ export const sumire: MapDef = {
 						s.set("seen_kichi_shinya");
 						await s.narrate("ひみつきちに、しゃがんだ。\n……ひざが、つかえる。");
 						await s.wait(2500);
-						await s.narrate("板のすきまから、外灯が\nひとつだけ　見える。");
+						// 公園の外灯の『じじ』を2回以上聞いた人（park_lamp・seen_jiji_sumire）には、まばたき
+						await s.narrate(
+							numFlag(s, "seen_jiji_sumire") >= 2
+								? "外灯が、ちかっ、と\nまばたきした。"
+								: "板のすきまから、外灯が\nひとつだけ　見える。",
+						);
 						// 手に缶があれば、じはんきのうなりの代わりに缶の1行（一段さめる）
 						if (kanHeld(s)) {
 							await kanLine(s);
@@ -1733,6 +1824,17 @@ export const sumire: MapDef = {
 					return;
 				}
 				// ㊽ 団地の体操のじいちゃん（danchi taiso_jichan・seen_taiso_danchi）と話した人だけ
+				// 筋(68) 深夜にブランコをほどいた人（swing_23/24・seen_buranko_hodoki）に、2回目で一度だけ。
+				// 団地の分岐より前（return せず、団地の人には　続けて　団地の2行）
+				if (s.flag("seen_buranko_hodoki") && !s.flag("seen_jii_buranko")) {
+					s.set("seen_jii_buranko");
+					await s.say(null, "ゆうべ、ブランコの\n音が　したな。ねこかね", {
+						name: "じいさん",
+					});
+					await s.say("kiriko", "（……ねこンゴ）");
+					// 団地の筋㊽も　見えるように、団地の人には　そのまま　続ける
+					if (!s.flag("seen_taiso_danchi")) return;
+				}
 				if (s.flag("seen_taiso_danchi")) {
 					await s.say(null, "団地の　じいさん、\nまだ　のばしてたろ", {
 						name: "じいさん",

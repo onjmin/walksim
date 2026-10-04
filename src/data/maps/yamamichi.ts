@@ -206,22 +206,38 @@ const lampBus = async (s: Story): Promise<void> => {
 	await s.narrate("田んぼの　街灯。\nまだ、ついていない。");
 };
 
-/** 公園への分かれ道の街灯 (40,11)。宵は坂の入口だけ明るく、深夜は坂の上が まっくら。 */
+/**
+ * 公園への分かれ道の街灯 (40,11)。lamp_bus とは文を分けて、公園との つなぎ目にする。
+ * (64) 公園への坂: 宵は koen に宵に着いた人、深夜は 展望台に すわった人か koen に深夜に着いた人にだけ、
+ * 坂の上の 公園の 一行。朝は (60) やまみちの蛾（lamp_bus の seen_ga_yama）を 見た人にだけ くらべる一行。
+ */
 const lampKoen = async (s: Story): Promise<void> => {
 	const t = s.flag("tod");
 	if (t === "shinya") {
+		if (s.flag("seen_suwari_koen") || arrived(s, "koen", "shinya")) {
+			await s.narrate("上の　展望台は、\nここからは　見えない。");
+			return;
+		}
 		await s.narrate("坂の　上は、まっくらだ。");
 		return;
 	}
 	if (t === "yoru") {
+		if (arrived(s, "koen", "yoru")) {
+			await s.narrate("坂の　上の　公園にも、\n外灯が　ついていた。");
+			return;
+		}
 		await s.narrate("公園への　坂の　入口だけ\n明るい。");
 		return;
 	}
 	if (t === "asa") {
+		if (numFlag(s, GA) >= 1) {
+			await s.narrate("こっちの　かさには、\n蛾が　いない。");
+			return;
+		}
 		await s.narrate("街灯。もう、\nきえている。");
 		return;
 	}
-	await s.narrate("田んぼの　街灯。\nまだ、ついていない。");
+	await s.narrate("公園への　坂。上で、\nカラスが　かえっていく。");
 };
 
 /**
@@ -495,10 +511,36 @@ export const yamamichi: MapDef = {
 			y: 0,
 			trigger: "touch",
 			through: true,
+			// 時間帯ごとの段（seen_touge_yama_<tod> を +1）。その時間帯の初回だけ 時間帯の文、
+			// 2回目は「やっぱり」、3回目からは キリコの一言だけ。seen_touge_yama は通算（nostalgia の表どおり）。
+			// はり紙を読んだ人（seen_tsuukou_yama）は、宵に「くずれた　ほう」の水の音を聞き（さくの宵とは別の言いかた）、
+			// 朝に さくの足もとの タイヤの あとを 回数によらず一度は見る（seen_touge_tire）
 			run: async (s) => {
-				const t = s.flag("tod");
-				if (t === "yoru" || t === "shinya") {
-					await s.narrate("さくが　ある。\nむこうは、まっくらだ。");
+				const t = s.flag("tod") || "yu";
+				const yonda = s.flag("seen_tsuukou_yama");
+				s.set("seen_touge_yama", numFlag(s, "seen_touge_yama") + 1);
+				const key = `seen_touge_yama_${t}`;
+				const n = numFlag(s, key);
+				s.set(key, n + 1);
+				if (t === "asa" && yonda && !s.flag("seen_touge_tire")) {
+					s.set("seen_touge_tire");
+					if (n === 0) {
+						await s.narrate("さくが　ある。\n谷から、もやが　あがってくる。");
+					}
+					await s.narrate("さくの　足もとに、\nあたらしい　タイヤの　あと。");
+				} else if (n >= 2) {
+					await s.say("kiriko", "（ここで　ひきかえすンゴ）");
+				} else if (n === 1) {
+					await s.narrate("……やっぱり、さく。");
+				} else if (t === "yoru") {
+					await s.narrate("むこうの　空に、まだ　すこし\n青が　のこっている。");
+					if (yonda) await s.narrate("くずれた　ほうで、\n水の音が　する。");
+				} else if (t === "shinya") {
+					await s.narrate(
+						yonda
+							? "むこうは、まっくらだ。\nくずれた　ほうから　沢の音。"
+							: "むこうは、まっくらだ。\n沢の音だけ　する。",
+					);
 				} else if (t === "asa") {
 					await s.narrate("さくが　ある。\n谷から、もやが　あがってくる。");
 				} else {
@@ -635,6 +677,10 @@ export const yamamichi: MapDef = {
 				await s.narrate(
 					"その下に　『落石注意』。\n石の絵が、ちょっと　まるい。",
 				);
+				// (64) 公園への坂: koen michishirube の はがれかけの シールを見た人にだけ
+				if (s.flag("seen_koen_michi")) {
+					await s.narrate("こっちの　標識の　シールは、\nはがれていない。");
+				}
 			},
 		},
 		{

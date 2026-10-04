@@ -18,7 +18,8 @@
 // ⑱ 一晩: hako・milk_a・reitou・pan・housou_first→baachan_ev（seen_suupaa_koe）・okusan（数）→ ekimae・street・danchi
 // ③ 秋まつり: nodojiman 2回目（seen_aki_suupaa）→ akiMatsuri（room calendar・yamamichi susuki）
 // ㉘ コロッケ: korokke（got_korokke）→ room evening・kokudo・tonarimachi
-// ㉞ 月曜の号: zasshi（seen_suupaa_zasshi。street ベンチの seen_zasshi を読む）→ ekimae bikes（shinya）
+// ㉞ 月曜の号: zasshi（seen_suupaa_zasshi。street ベンチの seen_zasshi を読む）→2回目 レジのピッ＋ベル（seen_suupaa_zasshi2）
+//    → baachan_ev の待機『月曜は、まんがが　よく　出るよ』・ekimae bikes（shinya『スーパーで　売れた　号ンゴ』）
 // ㊹ あしたのアジフライ: baachan_ev（seen_baa_aji。okusan 数3 の人にキリコ）→ ekimae chirashi・umi sakanabako（asa）
 // ㊺ 棚と部屋: rejiyoko（seen_suupaa_denchi）→ room clock（shinya）／nichiyou（seen_suupaa_senzai）
 //    → room tv（yoru）／cupmen（seen_suupaa_cupmen）→ room evening
@@ -26,7 +27,7 @@
 // ㊿ 駅前の受け: okashi が ekimae kiosk_lady（seen_kiosk）を、gacha が denwa（seen_ekimae_10en）を読む
 // 店の中だけの回収: pop（seen_suupaa_pop）の「いちおし」は baachan_ev が答える（seen_suupaa_pop2）。
 // 店の中だけの段（数）: okusan・korokke（seen_korokke_n）・wagon・speaker_ev（たまご→タイムサービス）・
-// zasshi（2回目で入口のベル、一冊へる）は、話す／調べるたびに 進む。kago は かごの行方（コロッケ・会計・おくさん）で かわる。
+// zasshi（2回目でレジのピッと入口のベル、一冊へる）は、話す／調べるたびに 進む。kago は かごの行方（コロッケ・会計・おくさん）で かわる。
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
 import { npc } from "../helpers";
@@ -159,7 +160,14 @@ const baachan = async (s: Story): Promise<void> => {
 		});
 		return;
 	}
-	await s.say(null, "ゆっくり　見ておいで", { name: "レジのばあちゃん" });
+	// ㉞ zasshi の2段目（レジで一冊売れた）を見た人には、その話
+	await s.say(
+		null,
+		s.flag("seen_suupaa_zasshi2")
+			? "月曜は、まんがが\nよく　出るよ"
+			: "ゆっくり　見ておいで",
+		{ name: "レジのばあちゃん" },
+	);
 };
 
 export const suupaa: MapDef = {
@@ -463,10 +471,11 @@ export const suupaa: MapDef = {
 			run: async (s) => {
 				// ㉞ 月曜の号 → ekimae bikes（shinya。かごの ぬれた ざっし）。2回目は 一冊へっている
 				if (s.flag("seen_suupaa_zasshi")) {
-					// 入口のベル＝だれかが　一冊　買って　出ていった（目の前で　だまって　消えたのでは　ない）。
-					// ベルは最初の一度だけ（seen_suupaa_zasshi2）
+					// レジの音→入口のベル＝だれかが　一冊　買って　出ていった（目の前で　だまって　消えたのでは　ない）。
+					// 最初の一度だけ（seen_suupaa_zasshi2）。baachan_ev の待機・ekimae bikes（shinya）が読む
 					if (!s.flag("seen_suupaa_zasshi2")) {
 						s.set("seen_suupaa_zasshi2");
+						await s.narrate("レジで、ピッと　ひとつ。");
 						s.se("doorbell", { volume: 0.4 });
 						await s.wait(500);
 					}
