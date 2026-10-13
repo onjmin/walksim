@@ -22,6 +22,7 @@ import { tonarimachi } from "./maps/tonarimachi";
 import { umi } from "./maps/umi";
 import { yamamichi } from "./maps/yamamichi";
 import { zakkyo } from "./maps/zakkyo";
+import { zakkyo10 } from "./maps/zakkyo10";
 import { hudClock } from "./nostalgia";
 import { items, records } from "./records";
 import { sfx } from "./sfx";
@@ -41,6 +42,7 @@ export const data: GameData = {
 		ekimae,
 		suupaa,
 		zakkyo,
+		zakkyo10,
 		okujo,
 		laundry,
 		tonarimachi,

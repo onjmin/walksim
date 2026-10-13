@@ -121,10 +121,142 @@ const noboru = async (s: Story): Promise<void> => {
 	await s.wait(500);
 };
 
+// ── 夜の 寄り道「エレベーター」（STORY.md §5.4。深夜・レコード「実況」を 聞いたあと） ──
+// 4→2→6→2→10→5 と おす。5階で だれかが 乗ってくる（見せない。かごが しずむ・香水）。
+// １を おすと かごは 上へ。ふり向く・こたえると つかまる（tsukamaru）。だまっていると
+// もう一つの 10階（zakkyo10）に 着く。どの 階でも「やめておく」で おりられる。
+// 恐怖の 3要素：危機感＝せまい かご・止まらない かご／不条理感＝１で 上へ・ふえた スリッパ／
+// 視野狭窄＝レコードの 声が『５階』で 切れている（その 先を 遊ぶ 人が 最悪へ つなぐ）。
+
+/**
+ * つかまった（ルールを やぶった・10階の 足音に おいつかれた）。暗転して 1階の ホールで
+ * 目が さめる。なにが あったかは 書かない。seen_ijou_tsukamatta（数）。
+ */
+export const tsukamaru = async (s: Story): Promise<void> => {
+	s.set("seen_ijou_ashi", 0);
+	s.set("seen_ijou_tsukamatta", numFlag(s, "seen_ijou_tsukamatta") + 1);
+	await s.fadeOut(1600);
+	await s.wait(1500);
+	await s.warp("zakkyo", 8, 4, "down", { fade: false });
+	s.se("hum", { volume: 0.4 });
+	await s.fadeIn(1200);
+	await s.narrate("……ホールの　ゆかに、\nすわりこんでいた。");
+	await s.narrate("エレベーターの　表示は\n『５』。");
+	await s.say("kiriko", "（……なにが　あったか、\nおもいだせないンゴ）");
+};
+
+/** 手順の 階ごとの 一言（とびらが ひらいて 見える もの）。 */
+const IJOU_KAI: { f: (typeof ZAKKYO_BUTTONS)[number]; line: string }[] = [
+	{ f: "4", line: "くらい　ろうか。\n牌の　音が　した　気が　した。" },
+	{ f: "2", line: "くらい　ろうか。\n歯医者の　においだけ。" },
+	{ f: "6", line: "スナックの　看板が、\nついた　まま。" },
+	{ f: "2", line: "さっきと　同じ　２階。\nスリッパが、一足　ふえている。" },
+	{ f: "10", line: "囲碁サロンの　前。\nまっくら。" },
+	{ f: "5", line: "とびらが　ひらいた。\nだれも　いない。" },
+];
+
+/** 手順を ためす。10階（zakkyo10）へ 着いたか、つかまったら true。やめたら false。 */
+const ijou = async (s: Story): Promise<boolean> => {
+	for (const k of IJOU_KAI) {
+		const i = await s.choose(
+			[`＞＞1 ${zen(k.f)}を　おす`, "＞＞2 やめておく"],
+			{
+				cancel: 1,
+			},
+		);
+		if (i !== 0) {
+			await s.say("kiriko", "（……やめとくンゴ）");
+			return false;
+		}
+		s.se("tick", { volume: 0.6 });
+		s.se("hum", { volume: 0.4 });
+		await s.wait(900);
+		s.se("door", { volume: 0.5 });
+		await s.narrate(k.line);
+		if (k.f === "6" && s.flag("seen_zakkyo_hari"))
+			await s.say("kiriko", "（カラオケは、\n２時まで　ンゴ……）");
+	}
+	s.se("door", { volume: 0.5 });
+	await s.narrate("とびらが　しまる。");
+	await s.wait(800);
+	await s.narrate("……かごが、すこし\nしずんだ。");
+	if (s.flag("seen_zakkyo_kousui"))
+		await s.narrate("香水の　におい。\n……宵に　かいだのと、同じ。");
+	else await s.narrate("うしろで、香水の　におい。");
+	await s.narrate("１を　おした。");
+	s.se("hum", { volume: 0.4 });
+	await s.narrate("表示が、『６』に　なった。");
+	await s.say("kiriko", "（……１を　おしたのに、\n上ンゴ）");
+	await s.narrate("うしろで、だれかが\n息を　すった。");
+	const furimuku = await s.choose(
+		["＞＞1 ふり向く", "＞＞2 表示を　見ている"],
+		{
+			cancel: 1,
+		},
+	);
+	if (furimuku === 0) {
+		await s.narrate("ふり向いた。");
+		await tsukamaru(s);
+		return true;
+	}
+	await s.narrate("７……８……");
+	await s.say(null, "……なんかい？", {
+		name: "？？？",
+		noPortrait: true,
+		noVoice: true,
+	});
+	const kotaeru = await s.choose(["＞＞1 こたえる", "＞＞2 だまっている"], {
+		cancel: 1,
+	});
+	if (kotaeru === 0) {
+		await s.say("kiriko", "……い、１階ンゴ");
+		await tsukamaru(s);
+		return true;
+	}
+	await s.narrate("９……");
+	await s.wait(900);
+	await s.narrate("１０。");
+	await s.narrate("香水の　においが、\nしなく　なっていた。");
+	await s.fadeOut(700);
+	await s.warp("zakkyo10", 11, 3, "down", { se: "door" });
+	return true;
+};
+
+/** 深夜、かごの すみの レコード「実況」（別の 掲示板へ 行った 人。STORY.md §4.5）。 */
+const jikkyouRec = async (s: Story): Promise<void> => {
+	if (s.flag("tod") !== "shinya" || s.has("rec_e")) return;
+	await s.narrate("かごの　すみに、黒い\nレコードが　おちている。");
+	s.se("item");
+	s.give("rec_e");
+	await s.record("rec_e");
+	await s.say("kiriko", "（……５階、ンゴ）");
+};
+
+/** 10階から もどった あと（1回目：表示が ひとりでに あがる／2回目：もどっている）。 */
+const kaeriNoHyouji = async (s: Story): Promise<boolean> => {
+	if (!s.flag("seen_ijou_kaeri") || s.flag("tod") !== "shinya") return false;
+	if (!s.flag("seen_ijou_agaru")) {
+		s.set("seen_ijou_agaru");
+		await s.narrate("エレベーター。\n表示は　『１』。");
+		s.se("hum", { volume: 0.3 });
+		await s.wait(900);
+		await s.narrate("……『２』。『３』。\nひとりでに、上へ　あがっていく。");
+		await s.say("kiriko", "（だれも、\nよんでないンゴ）");
+		return true;
+	}
+	return false;
+};
+
 /** 1階のエレベーター（前の (11,3) から上向きで調べる）。 */
 const elevator = async (s: Story): Promise<void> => {
+	if (await kaeriNoHyouji(s)) return;
 	const d = hyouji(s);
 	await s.narrate(`エレベーター。\n階数の　表示は　『${zen(d)}』。`);
+	// 10階から もどって、表示が ひとりでに あがって いったのを 見たあと（一度だけ）
+	if (s.flag("seen_ijou_agaru") && !s.flag("seen_ijou_modoru")) {
+		s.set("seen_ijou_modoru");
+		await s.say("kiriko", "（……いつのまに、\nおりて　きたンゴ）");
+	}
 	if (s.flag("tod") === "asa" && numFlag(s, "seen_zakkyo_kanri") >= 3)
 		await s.say("kiriko", "（管理人さん、\nもう　上ンゴ）");
 	if (d !== "1") {
@@ -140,6 +272,7 @@ const elevator = async (s: Story): Promise<void> => {
 	if (demae) await s.narrate("出前の　人と、\nいっしょに　のりこんだ。");
 	else await s.narrate("とびらが　ひらいた。\nのりこむ。");
 	await kagoNoHitokoto(s);
+	await jikkyouRec(s);
 	if (!s.flag("seen_zakkyo_botan")) {
 		s.set("seen_zakkyo_botan");
 		await s.narrate("ボタンは　１から　１０と、Ｒ。\n二列に　ならんでいる。");
@@ -150,6 +283,11 @@ const elevator = async (s: Story): Promise<void> => {
 			{ cancel: 2 },
 		);
 		if (i === 1) {
+			// 深夜、レコード「実況」を 聞いたあとは 手順を ためせる
+			if (s.flag("tod") === "shinya" && s.has("rec_e")) {
+				if (await ijou(s)) return;
+				continue;
+			}
 			await s.say("kiriko", "（ほかの　階に、\n用は　ないンゴ）");
 			continue;
 		}

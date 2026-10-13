@@ -26,6 +26,22 @@ export const records: Record<string, RecordDef> = {
 			"ほな、いってきます",
 		],
 	},
+	// 雑居ビルの かごの すみ（夜の 寄り道「エレベーター」。STORY.md §5.4）：別の 掲示板へ
+	// （2 の 最後の レス「実況は　あっちで　やっとるで」）。『５階』で 切れる（data/maps/zakkyo.ts の ijou）。
+	// 声の 主は 無事で、真の 筋の 窓の 場面で 自分の 窓に いる（street.ts の mado）
+	rec_e: {
+		id: "rec_e",
+		title: "実況",
+		voice: rei,
+		date: "2032/09/14(火) 01:41",
+		lines: [
+			"はい、実況　はじめるで。\nエレベーターで　異世界　いくやつ",
+			"４階。……２階。……６階。\n草　生やしとる　場合ちゃうな",
+			"２階。……１０階。……５階",
+			"……だれか　のってきた",
+			"……え、なんで。１　おしたのに\n上　いくん",
+		],
+	},
 };
 
 // 本作のアイテムは全部 key: true（使えない・減らない）。レコードは records と同じ id で登録する。
@@ -36,7 +52,20 @@ export const items: Record<string, ItemDef> = {
 		desc: "去った　おんJ民の、今夜の　声。\nメニューの「レコード」で　聞ける。",
 		key: true,
 	},
+	rec_e: {
+		id: "rec_e",
+		name: "レコード「実況」",
+		desc: "去った　おんJ民の、今夜の　声。\nメニューの「レコード」で　聞ける。",
+		key: true,
+	},
+	// 雑居ビルの もう一つの 10階で ひろう（zakkyo10 の salon）。朝、屋上の 管理人さんが 見る（okujo）
+	goishi: {
+		id: "goishi",
+		name: "白い碁石",
+		desc: "雑居ビルの　１０階で　ひろった。\nつめたい。",
+		key: true,
+	},
 };
 
 /** 持っている レコードの id（メニュー・まとめカード・窓の 場面が 使う）。 */
-export const ALL_RECORDS = ["rec_q"] as const;
+export const ALL_RECORDS = ["rec_q", "rec_e"] as const;

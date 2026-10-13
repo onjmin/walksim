@@ -545,9 +545,18 @@ export const okujo: MapDef = {
 			trigger: "talk",
 			when: (st) => st.flags.tod === "asa",
 			run: async (s) => {
+				const say = (text: string) => s.say(null, text, { name: "管理人さん" });
+				// 夜の 寄り道「エレベーター」の 物証（zakkyo10 の 白い 碁石）。月曜は 囲碁サロンの 定休日
+				if (s.has("goishi") && !s.flag("seen_okujo_goishi")) {
+					s.set("seen_okujo_goishi");
+					await s.narrate("ポケットの　碁石が、\nかちり、と　鳴った。");
+					await say("おや、それ。１０階の\n囲碁サロンの　石じゃないの。");
+					await say("……きのうは　月曜で、\nお休みだったんだけどね。");
+					await s.say("kiriko", "……ひろったンゴ");
+					return;
+				}
 				const n = numFlag(s, "seen_okujo_kanri_asa");
 				if (n < 2) s.set("seen_okujo_kanri_asa", n + 1);
-				const say = (text: string) => s.say(null, text, { name: "管理人さん" });
 				if (n === 0) {
 					// 夕方に会った人には「きのうの　子」
 					if (numFlag(s, "seen_zakkyo_kanri") > 0)
