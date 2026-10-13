@@ -135,14 +135,19 @@ const noboru = async (s: Story): Promise<void> => {
 export const tsukamaru = async (s: Story): Promise<void> => {
 	s.set("seen_ijou_ashi", 0);
 	s.set("seen_ijou_tsukamatta", numFlag(s, "seen_ijou_tsukamatta") + 1);
-	await s.fadeOut(1600);
-	await s.wait(1500);
+	// 静寂（STORY.md §5.4）：その 瞬間は 見せず、音も なく 切って、あとの 場面へ とぶ
+	s.bgm(null);
+	await s.fadeOut(0);
+	await s.wait(2600);
 	await s.warp("zakkyo", 8, 4, "down", { fade: false });
+	// 町の 曲は、ホールを 出るまで 戻さない（warp が @tod を 鳴らしなおすので すぐ 止める）
+	s.bgm(null);
+	await s.fadeIn(0);
+	await s.wait(1800);
 	s.se("hum", { volume: 0.4 });
-	await s.fadeIn(1200);
 	await s.narrate("……ホールの　ゆかに、\nすわりこんでいた。");
+	await s.wait(1200);
 	await s.narrate("エレベーターの　表示は\n『５』。");
-	await s.say("kiriko", "（……なにが　あったか、\nおもいだせないンゴ）");
 };
 
 /** 手順の 階ごとの 一言（とびらが ひらいて 見える もの）。 */
@@ -178,7 +183,9 @@ const ijou = async (s: Story): Promise<boolean> => {
 	}
 	s.se("door", { volume: 0.5 });
 	await s.narrate("とびらが　しまる。");
-	await s.wait(800);
+	// 静寂：ここで 町の 曲が 消える。何も 書かない 間を おいてから、かごが しずむ
+	s.bgm(null);
+	await s.wait(2800);
 	await s.narrate("……かごが、すこし\nしずんだ。");
 	if (s.flag("seen_zakkyo_kousui"))
 		await s.narrate("香水の　におい。\n……宵に　かいだのと、同じ。");
@@ -186,7 +193,7 @@ const ijou = async (s: Story): Promise<boolean> => {
 	await s.narrate("１を　おした。");
 	s.se("hum", { volume: 0.4 });
 	await s.narrate("表示が、『６』に　なった。");
-	await s.say("kiriko", "（……１を　おしたのに、\n上ンゴ）");
+	await s.wait(2000);
 	await s.narrate("うしろで、だれかが\n息を　すった。");
 	const furimuku = await s.choose(
 		["＞＞1 ふり向く", "＞＞2 表示を　見ている"],
@@ -195,11 +202,11 @@ const ijou = async (s: Story): Promise<boolean> => {
 		},
 	);
 	if (furimuku === 0) {
-		await s.narrate("ふり向いた。");
 		await tsukamaru(s);
 		return true;
 	}
 	await s.narrate("７……８……");
+	await s.wait(2400);
 	await s.say(null, "……なんかい？", {
 		name: "？？？",
 		noPortrait: true,
@@ -209,7 +216,7 @@ const ijou = async (s: Story): Promise<boolean> => {
 		cancel: 1,
 	});
 	if (kotaeru === 0) {
-		await s.say("kiriko", "……い、１階ンゴ");
+		await s.say("kiriko", "……い、１階――");
 		await tsukamaru(s);
 		return true;
 	}

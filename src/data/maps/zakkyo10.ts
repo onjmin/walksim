@@ -39,7 +39,6 @@ const ashiStep = async (s: Story): Promise<boolean> => {
 	} else if (n === 4) {
 		s.se("stairs", { volume: 0.4, pan: 0.6 });
 		await s.narrate("足音が、ひとつ　下の\nおどりばで　とまった。");
-		await s.say("kiriko", "（……もどらないと\nいけないンゴ）");
 	} else if (n >= 5) {
 		s.se("stairs", { volume: 0.6, pan: 0.6 });
 		await s.wait(900);
@@ -130,8 +129,9 @@ const elevator = async (s: Story): Promise<void> => {
 	s.set("seen_ijou_kaeri");
 	s.set("seen_ijou_ashi", 0);
 	await s.warp("zakkyo", 11, 3, "down", { se: "door" });
+	// 一息：蛍光灯の 音が もどる。説明せず、少し 間を おいて ひとことだけ
 	s.se("hum", { volume: 0.5 });
-	await s.narrate("ジー、と　蛍光灯が\n鳴っている。");
+	await s.wait(1800);
 	await s.say("kiriko", "……鳴ってるンゴ");
 };
 
@@ -187,10 +187,11 @@ export const zakkyo10: MapDef = {
 			once: true,
 			run: async (s) => {
 				s.set("seen_ijou_ashi", 1);
-				await s.wait(500);
+				// 静寂：曲も 蛍光灯の 音も ない。説明は せず、間だけ おく
+				await s.wait(2200);
 				await s.narrate("とびらが　ひらいた。\n１０階。");
-				await s.narrate("蛍光灯は　ついている。\n……音が　しない。");
-				await s.say("kiriko", "（ジー、が\nないンゴ）");
+				await s.wait(1600);
+				await s.narrate("蛍光灯は　ついている。");
 			},
 		},
 		{ id: "mado_a", x: 2, y: 2, trigger: "talk", run: mado },
