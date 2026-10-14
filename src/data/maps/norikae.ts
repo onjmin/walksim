@@ -301,7 +301,8 @@ const rojiShinya = async (s: Story): Promise<void> => {
 		s.se("item");
 		s.give("rec_t");
 		await s.record("rec_t");
-		await s.say("kiriko", "（……矢印、ンゴ）");
+		// レコードは ふつうに 終わる（声の 主に 何も 起きていない）。キリコは 何も 言わない
+		await s.wait(900);
 		await s.narrate("……南京錠が、はずれて\nぶらさがっている。");
 		return;
 	}

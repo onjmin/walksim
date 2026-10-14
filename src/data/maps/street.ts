@@ -338,6 +338,7 @@ const mado = async (s: Story): Promise<void> => {
 	await s.narrate("ひとつ、また　ひとつ。");
 	// 夕方・宵に すずきさん家の カレーの 窓を 見た 人だけ（h1_win）
 	if (s.flag("seen_curry_st")) await s.narrate("カレーの　家の　窓にも。");
+	// 寄り道の 人の 窓では キリコに 名ざしさせない（灯りと 物音だけ。気づくのは 遊ぶ 人。STORY.md §5.4 の 静寂）。
 	// 去り方の 目録（受験・鯖・ミスキー。STORY.md §4.5）。深夜なので 声は 出さず、
 	// 通りから 見える 灯りと、聞こえる 物音だけ（部屋の 中は 書かない）
 	await s.narrate("机の　スタンドの\nしろい　あかり。");
@@ -353,21 +354,18 @@ const mado = async (s: Story): Promise<void> => {
 	if (s.has("rec_e")) {
 		await s.narrate("べつの　窓で、だれかが\nひとりで　ふきだした。");
 		await s.narrate("画面に　むかって、\n早口で　なにか　打っている。");
-		await s.say("kiriko", "（……『実況』の　声\nンゴ）");
 	}
 	// 飽きた 人（夜の 寄り道「駅と 駅の あいだ」の レコード「夜釣り」。STORY.md §5.4）。
 	// 寄り道では 竿と クーラーボックスだけが のこっていた。その 人は、始発の 釣りに 出かける
 	if (s.has("rec_t")) {
 		await s.narrate("べつの　玄関が、\nそっと　あいた。");
 		await s.narrate("竿の　ケースと、\nクーラーボックスの　かげ。");
-		await s.say("kiriko", "（……『夜釣り』の　声\nンゴ）");
 	}
 	// 結婚・子ども（夜の 寄り道「終わらない 洗濯」の レコード「夜泣き」。STORY.md §5.4）。
 	// 寄り道では ガラスの むこうで 泣き声が していた。その 子は、家で あやされている
 	if (s.has("rec_k")) {
 		await s.narrate("べつの　窓で、赤ちゃんが\n泣いて、すぐ　やんだ。");
 		await s.narrate("だれかが、ちいさな　声で\nうたっている。");
-		await s.say("kiriko", "（……『夜泣き』の　声\nンゴ）");
 	}
 	// 就職（夜の 寄り道「線路ぞいの 無人駅」の レコード「終電」。STORY.md §5.4）。
 	// 寄り道では ベンチに ネクタイが のこっていた。その 人は、自分の 部屋に 帰っている
@@ -376,7 +374,6 @@ const mado = async (s: Story): Promise<void> => {
 			"べつの　窓で、スーツの　かげが\nたおれこむように　横に　なった。",
 		);
 		await s.narrate("ネクタイは、して\nいなかった。");
-		await s.say("kiriko", "（……『終電』の　声\nンゴ）");
 	}
 	// ⑪ 辞めた 人（早番・04:10）：夕方の 会釈の 人。夜明けに うみべで すれ違う
 	await s.narrate("……ひとつ、あかりが　消えた。");

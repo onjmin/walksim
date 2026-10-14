@@ -345,7 +345,8 @@ const ekiShinya = async (s: Story): Promise<void> => {
 		s.se("item");
 		s.give("rec_s");
 		await s.record("rec_s");
-		await s.say("kiriko", "（……灯り、ンゴ）");
+		await s.wait(900);
+		await s.narrate("線路の　さきは、\nまっくら。");
 		return;
 	}
 	const i = await s.choose(["＞＞1 線路ぞいを　あるく", "＞＞2 やめておく"], {

@@ -24,8 +24,9 @@
 //              （seen_kansouki_shinya）→ 朝: 4ばんの糸くず「とりに　来たンゴね」
 //   缶         jihanki（shinya。ここで買った人は seen_laundry_kan）→ 朝: その段に『うりきれ』
 //   すわる     bench（shinya。seen_suwari_laundry）→ 朝: bench の朝日
-//   夜の寄り道 wasuremono（shinya。レコード「夜泣き」rec_k）→ deguchi で「かわくまで　待つ」→
-//              laundry_ura → 出れば kansouki_4 が とまって ドアが あく（seen_kawaku_kaeri）→
+//   夜の寄り道 kansouki_4（shinya。『のこり　18分』seen_kansouki_shinya）→ deguchi で「かわくまで　待つ」→
+//              laundry_ura（中の わすれものの 箱で レコード「夜泣き」rec_k）→
+//              出れば kansouki_4 が とまって ドアが あく（seen_kawaku_kaeri）→
 //              朝: obachan が ちいさな くつした（chiisai_kutsushita）に「ぬくい」
 // 町とのつながり: arrive_yoru は apart の宵のせんたくき（arrive_yoru の done）と音を重ねる。
 //
@@ -151,8 +152,9 @@ const bench = async (s: Story): Promise<void> => {
 };
 
 // ── 夜の 寄り道「終わらない 洗濯」（STORY.md §5.4。待った 先は laundry_ura） ──
-// 深夜、わすれものの 箱に レコード「夜泣き」（結婚・子ども。STORY.md §4.5）。聞いた あと、4ばんが
-// まわっている うちに 出口を ふむと、出るか 待つかを えらばせる。待つと、同じ 店の まま 時間だけ ずれる。
+// 深夜、4ばんの『のこり　18分』を 見た あと、まわっている うちに 出口を ふむと、出るか 待つかを
+// えらばせる。待つと、同じ 店の まま 時間だけ ずれる。ほかの 寄り道と ちがい、入口に レコードは ない
+// （レコード「夜泣き」は 中で、泣き声を 聞いた あとに 拾う。laundry_ura の wasuremono）。
 
 /** かわかない 店の 数を ぜんぶ もどす（待つとき・つかまったとき・出たとき。laundry_ura）。 */
 export const kawakuReset = (s: Story): void => {
@@ -163,7 +165,8 @@ export const kawakuReset = (s: Story): void => {
 
 /** 深夜の 出口。待ったら true（laundry_ura へ）。出るなら false（ふつうに すみれ町へ）。 */
 const kawakuMatsu = async (s: Story): Promise<boolean> => {
-	if (s.flag("tod") !== "shinya" || !s.has("rec_k")) return false;
+	if (s.flag("tod") !== "shinya" || !s.flag("seen_kansouki_shinya"))
+		return false;
 	if (s.flag("seen_kawaku_kaeri")) return false;
 	await s.narrate("4ばんは、まだ\nまわっている。");
 	const i = await s.choose(["＞＞1 出る", "＞＞2 かわくまで　待つ"], {
@@ -663,15 +666,6 @@ export const laundry: MapDef = {
 				const t = s.flag("tod");
 				const hako = !!s.flag("seen_kutsushita_hako");
 				await s.narrate("『わすれもの』の　箱。");
-				// 深夜、ハンカチの となりに レコード「夜泣き」（夜の 寄り道「終わらない 洗濯」の 入口）
-				if (t === "shinya" && !s.has("rec_k")) {
-					await s.narrate("ハンカチの　となりに、\n黒い　レコード。");
-					s.se("item");
-					s.give("rec_k");
-					await s.record("rec_k");
-					await s.say("kiriko", "（……18分、ンゴ）");
-					return;
-				}
 				if (t === "asa") {
 					if (hako) {
 						await s.narrate(
