@@ -56,6 +56,8 @@ import {
 	arrived,
 	asaClock,
 	chukeiDan,
+	hoshuBuzz,
+	hoshuKaku,
 	kanAsa,
 	kanDesk,
 	kanLv,
@@ -464,9 +466,17 @@ export const room: MapDef = {
 				await s.wait(900);
 				await s.fadeIn(1200);
 				await s.wait(400);
-				await s.narrate("……目が　さめた。");
-				await s.narrate("時計の音が　しない。\n――2:00。とまっている。");
-				await s.say("kiriko", "……電池、きれたンゴ。\nまだ　よなかンゴ");
+				// 保守の 目ざましで 起きる（STORY.md §5.5）。スレには まだ だれも 書いていない
+				await hoshuBuzz(s);
+				await s.narrate("まくらもとで、スマホが\nふるえている。『保守　2:00』");
+				await s.narrate("スレの　いちばん　下は、\nねる前の、吾輩の『保守』。");
+				await s.say("kiriko", "（……だれも、書いてないンゴ）");
+				await hoshuKaku(s, "「保守」と　書いた。");
+				await s.wait(400);
+				await s.narrate(
+					"時計の音が　しない。\n――かべの　時計も、2:00。とまっている。",
+				);
+				await s.say("kiriko", "……電池、きれたンゴ");
 				await s.wait(400);
 				await s.say("kiriko", "……ねむれそうにないし、\n散歩してくるンゴ");
 			},
@@ -899,6 +909,9 @@ export const room: MapDef = {
 				} else {
 					await s.narrate("ふとんに　もぐりこんだ。");
 				}
+				// 保守の 目ざまし（STORY.md §5.5）。寝る 前に 書いて、1時間 おきに かける
+				await hoshuKaku(s, "スマホで、スレに「保守」。");
+				await s.narrate("目ざましを、1時間　おきに\nかけた。");
 				// 布団で聞く町（P0-3）。宵の就寝だけ。
 				// どの地区にも行っていなければ、今までと同じ
 				const tooi = t === "yoru" && (await tooiOto(s));
@@ -1061,7 +1074,7 @@ export const room: MapDef = {
 					// 画面の時計は 町の深夜の時計（shinyaClock。地区を回るほど進む）。かべの時計だけ 2:00 のまま
 					await s.narrate(`画面の　すみの　時計は、\n${shinyaClock(s)}。`);
 					await s.narrate(
-						"保守村の　スレは、しずかだ。\nさいごの　レスは、名無しの『保守』。",
+						"保守村の　スレは、しずかだ。\nさいごの　レスは、吾輩の『保守』。",
 					);
 					await s.say("kiriko", "……みんな、ねてるンゴ");
 					return;
@@ -1082,7 +1095,8 @@ export const room: MapDef = {
 							await s.narrate(
 								"『シヨ：……お皿、まだ\nかえって　きてないんだけど』",
 							);
-						await s.say("kiriko", "……吾輩も、あとで\n書くンゴ");
+						// 吾輩が 書かなくても、朝の スレは のびている（umi yakiu_end の 前振り）
+						await s.say("kiriko", "（……吾輩が　書かなくても、\nのびてるンゴ）");
 						return;
 					}
 					await s.narrate("あたらしい書きこみが、\nすこしずつ、ふえていく。");

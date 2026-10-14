@@ -50,6 +50,7 @@ import {
 	akiMatsuri,
 	arrived,
 	asaClock,
+	hoshuWalk,
 	kanHeld,
 	kanLine,
 	kanLv,
@@ -365,6 +366,7 @@ export const norikae: MapDef = {
 	// 入るたびに 環境音を 一波（夕方＝ヒグラシ／朝＝スズメ）。深夜は 缶が 地区ひとつぶん 冷める
 	onEnter: async (s) => {
 		kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.7 });
 		else if (t === "asa") s.se("suzume", { volume: 0.7 });

@@ -47,6 +47,7 @@ import {
 	akiMatsuri,
 	arrived,
 	chukeiDan,
+	hoshuWalk,
 	kanHeld,
 	kanLine,
 	kanLv,
@@ -292,6 +293,7 @@ export const danchi: MapDef = {
 	onEnter: async (s) => {
 		lastWave = "";
 		kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu") {
 			// ヒグラシは 帯（seen_higurashi_danchi）と おなじ段で: 0.8 → 0.5 → 鳴かない。ここでは 数えない

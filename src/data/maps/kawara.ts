@@ -53,6 +53,7 @@ import type {
 import { npc, warp } from "../helpers";
 import {
 	arrived,
+	hoshuWalk,
 	kanHeld,
 	kanLine,
 	kanTick,
@@ -445,6 +446,7 @@ export const kawara: MapDef = {
 	onEnter: async (s) => {
 		lastWave = "";
 		kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu")
 			s.se("higurashi", { volume: s.flag("seen_natsu_owari") ? 0.4 : 0.8 });

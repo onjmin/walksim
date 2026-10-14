@@ -14,7 +14,7 @@
 //           漁船がかえってくる（funeBelt）。NPC 3体（あみ番・つり人・駅の ベンチの やきう。船は音と文）。
 //           結（STORY.md §5.5・§5.9）：まちのどおりの 窓の 場面（転）の あと、団地の 坂を くだって 来る
 //           （tod="asa"・ending_ready）。坂で 辞めた 人（早番）と すれ違い（yoake_arrive）、
-//           駅の ベンチの やきうの となりで「保守」と 書いて おわる（yakiu_end → まとめカード）
+//           駅の ベンチの やきうの となりで、保守を 書かずに 眠って おわる（yakiu_end → まとめカード）
 //
 // 海の中の 筋（段・時間帯・回収）:
 //   電気うき … 宵、つり座（tsuri_za）から 見える 防波堤の さきの 置きざおと 赤い 電気うき（seen_umi_denkiuki）→
@@ -46,6 +46,8 @@ import { npc, warp } from "../helpers";
 import {
 	arrived,
 	asaClock,
+	hoshuBuzz,
+	hoshuWalk,
 	kanHeld,
 	kanLine,
 	kanShinya,
@@ -347,6 +349,7 @@ export const umi: MapDef = {
 	// 入るたびに生活音を一波（夕方＝坂の上のヒグラシ／朝＝スズメ）。深夜は缶が地区ひとつぶん冷める
 	onEnter: async (s) => {
 		kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { pan: -0.2, volume: 0.6 });
 		else if (t === "asa") s.se("suzume", { pan: -0.3, volume: 0.6 });
@@ -400,7 +403,8 @@ export const umi: MapDef = {
 				await s.narrate("とおくの　駅の　ベンチに、\nだれか　すわっている。");
 			},
 		},
-		// 結②（頂点）：駅の ベンチの やきう。キリコが 外から「保守」と 書く → まとめカード
+		// 結②（頂点）：駅の ベンチの やきう。保守の 目ざましが 鳴っても、キリコは 書かずに 眠る → まとめカード
+		// （STORY.md §5.9。2026-10-14 作り直し：2 の「保守」の くり返しを やめ、ひとりで 背負うのを やめる）
 		npc(
 			"yakiu_end",
 			39,
@@ -417,14 +421,25 @@ export const umi: MapDef = {
 				// eki_bench の らくがきを 見た 人だけ
 				if (s.flag("seen_umi_bench"))
 					await s.narrate("せもたれの『また　夏に』が、\nせなかに　あたる。");
-				// ㉛ room pc（asa）の「……吾輩も、あとで　書くンゴ」を 見た 人だけ
+				// 保守の 目ざまし。画面を 見て、書かずに 閉じる（キリコの 気持ちは 言わせない。静寂）
+				await s.wait(900);
+				await hoshuBuzz(s);
+				await s.narrate("ポケットで、スマホが\nふるえた。");
+				await s.narrate("画面を　ひらいた。");
+				// ㉛ room pc（asa）で「書かなくても　のびてる」スレを 見た 人だけ
 				if (s.flag("seen_asa_thread"))
-					await s.say("kiriko", "（あとで　書くって、\n言ったンゴ）");
-				await s.narrate("スマホを　だして、\n書きこんだ。「保守」");
-				s.se("item");
-				await s.narrate("やきうの　画面に、\nレスが　ひとつ　ふえた。");
+					await s.narrate("朝の　スレは、\nもう　だいぶ　のびている。");
+				await s.wait(1400);
+				await s.narrate("……画面を、とじた。");
+				await s.wait(1200);
+				await s.say("nanj", "……おまえが　書かんでも、\n落ちへんわ");
+				s.se("tick", { volume: 0.4, pan: 0.3 });
+				await s.narrate("やきうの　画面に、\nだれかの『保守』が　ふえた。");
+				await s.wait(900);
+				await s.say("kiriko", "……ねむいンゴ");
 				await s.say("nanj", "……草");
 				await s.wait(700);
+				await s.narrate("キリコは、やきうの　かたに\nもたれて、目を　とじた。");
 				// funeBelt で 第三の もどり（seen_umi_fune_asa）を 見た 人は 岸壁の 氷の 音（深夜の あかりも 見た 人は 第三と）
 				await s.narrate(
 					s.flag("seen_umi_fune_asa")
@@ -437,8 +452,15 @@ export const umi: MapDef = {
 				s.set("clear");
 				s.set("ending_seen");
 				const recs = ALL_RECORDS.filter((id) => s.has(id) > 0).length;
-				const lines = [`レコード　${recs}まい`, ...kirokuLines(s)];
-				lines.push("やきうの　となりで　保守した");
+				// 今夜 書いた 保守の 数（寝る 前・2:00・3:00。room bed・opening・hoshuWalk）。行数を ふやさず 1行目に
+				const hoshu = numFlag(s, "seen_hoshu_n");
+				const lines = [
+					hoshu > 0
+						? `レコード　${recs}まい　保守　${hoshu}かい`
+						: `レコード　${recs}まい`,
+					...kirokuLines(s),
+				];
+				lines.push("やきうの　となりで　ねむった");
 				await s.ending({
 					summary: {
 						sections: [

@@ -48,6 +48,8 @@ import { npc, warp } from "../helpers";
 import {
 	arrived,
 	asaClock,
+	hoshuBuzz,
+	hoshuWalk,
 	kanShinya,
 	kanTick,
 	natsuOwari,
@@ -390,9 +392,22 @@ const mado = async (s: Story): Promise<void> => {
 	if (s.flag("seen_eshaku_kutsu"))
 		await s.narrate("かがんで、くつひもを\nむすびなおす　気配。");
 	await s.wait(1200);
+	// 保守の 目ざまし（STORY.md §5.5 の 転）。鳴っても、キリコより 先に だれかが 書いている。
+	// キリコには なにも 言わせない（静寂）。3:00 が まだなら 3:00、鳴った あとなら 4:00
+	await hoshuBuzz(s);
+	await s.narrate(
+		s.flag("seen_hoshu_3ji")
+			? "ポケットで、スマホが　ふるえた。\n『保守　4:00』"
+			: "ポケットで、スマホが　ふるえた。\n『保守　3:00』",
+	);
+	await s.narrate("スレの　いちばん　下に、\nあたらしい　レス。");
+	await s.wait(600);
+	await s.narrate("『保守』");
+	await s.narrate("書いたのは、キリコでは\nない　だれかだった。");
 	// ここから 夜明けまで 地続き（場面を 飛ばさない。深夜の 新聞の バイクは 入れない）
-	await s.wait(700);
+	await s.wait(1400);
 	await s.narrate("とおくで、カラスが\n鳴いた。");
+	await s.narrate("目ざましが　鳴るたび、\nだれかが　先に　書いていた。");
 	await s.narrate("空の　はしっこが、\nしろく　なってきた。");
 	// 朝の スレの 住民の 声（カメオ音源）を ここで 読み込む（ボイス OFF なら 何もしない）
 	if (settings.voice) {
@@ -454,6 +469,7 @@ export const street: MapDef = {
 	onEnter: async (s) => {
 		lastWave = "";
 		kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.8 });
 		else if (t === "asa") s.se("suzume", { volume: 0.8 });

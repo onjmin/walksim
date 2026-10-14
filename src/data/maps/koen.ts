@@ -41,6 +41,7 @@ import type { GameState, MapDef, Story, TileDef } from "../../engine/defs";
 import { npc, warp } from "../helpers";
 import {
 	arrived,
+	hoshuWalk,
 	kanHeld,
 	kanLine,
 	kanTick,
@@ -254,6 +255,7 @@ export const koen: MapDef = {
 	// 入るたびに環境音を一波（夕方＝ヒグラシ／朝＝スズメ）。深夜は缶が地区ひとつぶん冷める（P0-6）
 	onEnter: async (s) => {
 		kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.7 });
 		else if (t === "asa") s.se("suzume", { volume: 0.8 });

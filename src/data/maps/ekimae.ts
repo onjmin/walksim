@@ -53,6 +53,7 @@ import {
 	arrived,
 	asaClock,
 	chukeiDan,
+	hoshuWalk,
 	kanLv,
 	kanShinya,
 	kanTick,
@@ -245,6 +246,7 @@ export const ekimae: MapDef = {
 	onEnter: async (s) => {
 		lastWave = "";
 		kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.8 });
 		else if (t === "asa") s.se("suzume", { volume: 0.8 });

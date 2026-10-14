@@ -63,6 +63,9 @@ const mmlSfx: Record<string, string> = {
 	taiko: "#volume=7;@0t100v26o1g16r32v12g32;#end;",
 	/** 電車の走行音ワンショット（約1.5秒。低いうねりを半音ずらしで重ねる）。 */
 	train: "#volume=5;@0t120v14o1c8d8e8e8d8c8;@1t120v9o1c+8d+8f8f8d+8c+8;#end;",
+	/** スマホの ふるえ（保守の 目ざまし。ブブッ、ブブッ と 低く 2回。nostalgia.ts の hoshuBuzz）。 */
+	bururu:
+		"#volume=5;@0t120v16o1c32r64c32r8c32r64c32;@1t120v10o1c+32r64c+32r8c+32r64c+32;#end;",
 	/** 小さくかわいい鳴き声（ミニワイ。もきゅ）。 */
 	mokyu: "#volume=6;@0t160v22o6g32>c32;#end;",
 	// ── ここから日常レイヤーの生活音（content-briefs「日常レイヤー」。チップチューン様式化） ──

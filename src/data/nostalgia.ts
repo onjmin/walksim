@@ -56,6 +56,8 @@
 // seen_suupaa_okusan 数     立て: suupaa okusan                                                         読み: suupaa okusan（numFlag）・danchi kaimono_yu（yu）
 // seen_suupaa_wagon  数     立て: suupaa wagon                                                          読み: suupaa wagon（numFlag）
 // ── 地区をまたぐ新しいフラグ（2026-10-04・下の「町をまたぐ筋」⑪〜㉛と強めた筋） ──
+// seen_hoshu_n      数     立て: room bed（宵）・room opening（2:00）・hoshuWalk（3:00）                     読み: umi yakiu_end（まとめ）
+// seen_hoshu_3ji    真     立て: hoshuWalk（深夜・5地区め）                                             読み: hoshuWalk・street mado（4:00 か 3:00 か）
 // seen_eshaku_st     真     立て: street eshaku（yu・作業着の人の会釈）                                 読み: street eshaku（段の 進み）
 // seen_denki_kaishu  真     立て: apart door_room（shinya・warp の前に一度）                            読み: 同じ（一度だけ）→ room pc（shinya）へ
 // seen_koen_kasa     真     立て: koen wasuregasa（yu・yoru・shinya。『3の2　さとう』）                 読み: koen wasuregasa（asa）・street kodomo_asa_a（asa）
@@ -437,6 +439,44 @@ export const kanShinya = async (s: Story): Promise<void> => {
 	await s.narrate("がこん。\nてのひらが、あつい。");
 };
 
+// ───────────────── 保守の 目ざまし（2026-10-14。STORY.md §5.5・§5.9） ─────────────────
+// 2 で 保守を 継いでから、スレが 落ちないか 気に なって 眠れない。スマホに 1時間 おきの 目ざまし。
+// 鳴るたびに キリコは 立ちどまって「保守」と 書く（seen_hoshu_n＝今夜 書いた 数。まとめカードが 読む）。
+//   宵の ふとん（room bed）→ 2:00 の 目ざめ（room opening）→ 3:00（hoshuWalk。深夜の 屋外の 地区に 入った とき）
+//   → 窓の 場面（street mado。鳴っても、だれかが 先に 書いている）→ 夜明けの ベンチ（umi yakiu_end。書かない）
+
+/** スマホが ふるえる（低い ブブッ を 2回）。 */
+export const hoshuBuzz = async (s: Story): Promise<void> => {
+	s.se("bururu", { volume: 0.8 });
+	await s.wait(900);
+	s.se("bururu", { volume: 0.8 });
+	await s.wait(700);
+};
+
+/** キリコが「保守」と 書く（数を 1つ ふやす）。 */
+export const hoshuKaku = async (s: Story, line: string): Promise<void> => {
+	s.set("seen_hoshu_n", numFlag(s, "seen_hoshu_n") + 1);
+	s.se("tick", { volume: 0.4 });
+	await s.narrate(line);
+};
+
+/**
+ * 深夜の 3:00 の 目ざまし（一度だけ。seen_hoshu_3ji）。深夜の 屋外の 地区の onEnter で `await hoshuWalk(s);`。
+ * 時計は 地区に 着くたび 11分（shinyaClock）。onEnter は 着く 前なので、5地区 まわった あと＝3:00。
+ * 窓の 場面が もう 終わっていれば 鳴らさない（そこからは 夜明けまで 地続き）。
+ */
+export const hoshuWalk = async (s: Story): Promise<void> => {
+	if (s.flag("tod") !== "shinya" || s.flag("seen_hoshu_3ji")) return;
+	if (s.flag("seen_mado") || shinyaStep(s) < 5) return;
+	s.set("seen_hoshu_3ji");
+	await s.wait(400);
+	await hoshuBuzz(s);
+	await s.narrate("ポケットで、スマホが　ふるえた。\n『保守　3:00』");
+	await s.narrate("スレの　いちばん　下は、\n2時の、吾輩の『保守』。");
+	await hoshuKaku(s, "立ちどまって、書いた。\n「保守」");
+	await s.say("kiriko", "（……これで、4時まで\nだいじょうぶンゴ）");
+};
+
 /**
  * 地区を移るたびに缶が冷める（同期・文は出さない）。6地区の onEnter に `kanTick(s);` を1行。
  * tod が shinya で 1〜2 のときだけ +1（歩くだけでは3で止まる）。
@@ -593,7 +633,7 @@ export const POEM: Record<PoemKey, string> = {
 // ㉘ コロッケ: suupaa korokke（got_korokke）→ room evening・kokudo bukatsu_kid・tonarimachi kaimono_wife
 // ㉙ 中古盤のポスター: tonarimachi record_win（seen_record_poster）→ room poster
 // ㉚ ふとんのばあちゃん: danchi futon_tori（seen_futon_tori）→ danchi b_futon・futon_tori（asa）・room bed（yoru）
-// ㉛ やきうの前振り: room evening のスレ（全員）・room pc（seen_asa_thread）→ umi yakiu_end
+// ㉛ やきうの前振り: room evening のスレ（全員）・room pc（seen_asa_thread「書かなくても　のびてる」）→ umi yakiu_end（書かずに 閉じる）
 // （強めた既存の筋）
 //    P0-2 延長: seen_chukei_end → apart d502・street denki_tv/h2_door・danchi b_win_tv・umi koya_door
 //    ③: akiMatsuri（seen_aki_danchi・seen_aki_suupaa を足す）→ room calendar・yamamichi susuki

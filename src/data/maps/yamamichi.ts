@@ -42,6 +42,7 @@ import { npc, warp } from "../helpers";
 import {
 	akiMatsuri,
 	arrived,
+	hoshuWalk,
 	kanHeld,
 	kanLine,
 	kanTick,
@@ -419,6 +420,7 @@ export const yamamichi: MapDef = {
 		hazaMita = false;
 		amenboMita = false;
 		kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu") {
 			const n = numFlag(s, HIGURASHI);

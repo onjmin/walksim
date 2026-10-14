@@ -52,6 +52,7 @@ import type {
 import { npc, warp } from "../helpers";
 import {
 	arrived,
+	hoshuWalk,
 	kanHeld,
 	kanLv,
 	kanShinya,
@@ -371,6 +372,7 @@ export const kokudo: MapDef = {
 		lastTruck = "";
 		// 深夜の缶は、地区を移るたびに冷める（P0-6。歩道橋の昇り降りは数えない）
 		if (!HODO_LANDING.includes(`${s.state.x},${s.state.y}`)) kanTick(s);
+		await hoshuWalk(s); // 3:00 の 保守の 目ざまし（一度だけ）
 		const t = s.flag("tod");
 		if (t === "yu") s.se("higurashi", { volume: 0.7 });
 		else if (t === "asa") s.se("suzume", { volume: 0.7 });
