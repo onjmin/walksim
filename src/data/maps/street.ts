@@ -343,6 +343,13 @@ const mado = async (s: Story): Promise<void> => {
 		await s.narrate("画面に　むかって、\n早口で　なにか　打っている。");
 		await s.say("kiriko", "（……『実況』の　声\nンゴ）");
 	}
+	// 飽きた 人（夜の 寄り道「駅と 駅の あいだ」の レコード「夜釣り」。STORY.md §5.4）。
+	// 寄り道では 竿と クーラーボックスだけが のこっていた。その 人は、始発の 釣りに 出かける
+	if (s.has("rec_t")) {
+		await s.narrate("べつの　玄関が、\nそっと　あいた。");
+		await s.narrate("竿の　ケースと、\nクーラーボックスの　かげ。");
+		await s.say("kiriko", "（……『夜釣り』の　声\nンゴ）");
+	}
 	// ⑪ 辞めた 人（早番・04:10）：夕方の 会釈の 人。夜明けに うみべで すれ違う
 	await s.narrate("……ひとつ、あかりが　消えた。");
 	await s.narrate("玄関の　あかり。カギの\n音が　ひとつ。");

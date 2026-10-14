@@ -12,6 +12,7 @@ import { koen } from "./maps/koen";
 import { kokudo } from "./maps/kokudo";
 import { laundry } from "./maps/laundry";
 import { norikae } from "./maps/norikae";
+import { norikaeUra } from "./maps/norikae_ura";
 import { okujo } from "./maps/okujo";
 import { room } from "./maps/room";
 import { senro } from "./maps/senro";
@@ -48,6 +49,7 @@ export const data: GameData = {
 		tonarimachi,
 		senro,
 		norikae,
+		norikae_ura: norikaeUra,
 		yamamichi,
 		koen,
 		umi,

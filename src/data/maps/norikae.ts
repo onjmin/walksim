@@ -28,12 +28,15 @@
 //   ガード        夕 頭の上の 電車 → 宵 まばら → 深夜 しずか → 貨物 → 朝 満員の 音
 //   うら口        夕 からの 牛乳びんの 箱（seen_norikae_gyunyu）→ 宵 ナイターの 音 → 朝 びんが 二本
 //   車止め        深夜 すわる（seen_suwari_norikae）→ 朝 そこに スズメ
+//   路地の門      深夜 レコード「夜釣り」→ 路地の むこう（norikae_ura）→ もどると 南京錠と 釣り糸
+//                → 朝 床屋が 2枚目の 札を 見る（seen_norikae_ura_fuda）
 // ほかの地区を読む所: senro guard_densha（seen_guard_densha）・seen_senro_arcade／tonarimachi
 //   seen_yaoya_n・got_taiyaki／zakkyo の 宵（done:zakkyo:arrive_yoru）・seen_zakkyo_kasa1（朝の スナック）／
 //   street barber（seen_toko_houki）／akiMatsuri（どこかで 秋まつりを 見た）。
 //
 // わき道: 床屋と じはんきの あいだの ほそい 路地（x9）。てつの 門に 南京錠で、いつも しまっている
-// （のちの 寄り道の 入口の 予定地。いまは ふつうの 路地として 書く。路地の マスは 通れるが、門で 入れない）。
+// （路地の マスは 通れるが、門で 入れない）。深夜だけ、夜の 寄り道「駅と 駅の あいだ」の 入口に なる
+// （rojiShinya → norikae_ura。レコード「夜釣り」rec_t・物証の 札 ura_fuda → 朝の 床屋）。
 //
 // 出入口（向きを そろえる）:
 //   東 (39,9) を 右へ 踏む → ekimae (1,15) 右向き。ekimae (0,15) を 左へ → ここ (38,9) 左向き。
@@ -69,7 +72,8 @@ import { STN } from "../tiles-station";
 //   y  パーキングの 白線と タイヤの あと   Y  精算機の 料金看板   k  車止めの ブロック（すわれる）
 const PAVE = JP.pave;
 const GUARD = STN.platformWall;
-const tiles: Record<string, TileDef> = {
+// 路地の むこう（norikae_ura）も 同じ タイルで 描く
+export const tiles: Record<string, TileDef> = {
 	...TOWN,
 	m: { layers: [JP.ground, WALL.tileLo], color: "#c8b8a0", passable: false },
 	"-": { layers: [JP.dirtPath], color: "#7a6a50", passable: true },
@@ -267,6 +271,61 @@ const kurumadome = async (s: Story): Promise<void> => {
 		return;
 	}
 	await s.narrate("車止めの　ブロック。\nかどが、すこし　かけている。");
+};
+
+// ── 夜の 寄り道「駅と 駅の あいだ」（STORY.md §5.4。路地の むこうは norikae_ura） ──
+// 深夜、門の まえに レコード「夜釣り」（飽きた 人。STORY.md §4.5）。聞くと 南京錠が はずれていて、
+// 路地を ぬけると もう一つの のりかえのみちに 出る。もどったあとは 南京錠が かかり、釣り糸が のこる。
+
+/** 路地の むこうの 数を ぜんぶ もどす（入るとき・まよったとき・もどったとき。norikae_ura）。 */
+export const uraReset = (s: Story): void => {
+	s.set("seen_ura_shuu", 0);
+	s.set("seen_ura_yaji", 0);
+	s.set("seen_ura_toko", -1);
+	s.set("seen_ura_guard", -1);
+};
+
+/** 深夜の 路地の 門。 */
+const rojiShinya = async (s: Story): Promise<void> => {
+	// もどってきた あと（余波）：門は また しまっている
+	if (s.flag("seen_ura_kaeri")) {
+		await s.narrate("門に、南京錠が\nかかっている。");
+		if (!s.flag("seen_ura_ito")) {
+			s.set("seen_ura_ito");
+			await s.narrate("門の　上に、釣り糸が\n一本　ひっかかって　ひかる。");
+		}
+		return;
+	}
+	if (!s.has("rec_t")) {
+		await s.narrate("門の　まえに、黒い\nレコードが　おちている。");
+		s.se("item");
+		s.give("rec_t");
+		await s.record("rec_t");
+		await s.say("kiriko", "（……矢印、ンゴ）");
+		await s.narrate("……南京錠が、はずれて\nぶらさがっている。");
+		return;
+	}
+	await s.narrate("南京錠が、はずれて\nぶらさがっている。");
+	const i = await s.choose(["＞＞1 路地へ　はいる", "＞＞2 やめておく"], {
+		cancel: 1,
+	});
+	if (i !== 0) return;
+	uraReset(s);
+	s.se("door", { volume: 0.4 });
+	await s.narrate("門を　おした。");
+	await s.narrate("植木鉢の　あいだを、\nぬけていく。");
+	// 静寂：ここで 町の 曲が 消える
+	s.bgm(null);
+	await s.fadeOut(900);
+	await s.wait(1600);
+	await s.warp("norikae_ura", 6, 4, "down", { fade: false });
+	await s.fadeIn(900);
+	await s.wait(1400);
+	await s.narrate("路地を　ぬけた。\nほそい　商店街。");
+	await s.wait(1200);
+	await s.narrate("床屋の　ポールが、\nまわっている。");
+	await s.narrate("電柱に、手書きの　札。\n『のりかえ　つきみ駅　→』");
+	s.set("seen_ura_toko", 0);
 };
 
 export const norikae: MapDef = {
@@ -536,7 +595,7 @@ export const norikae: MapDef = {
 					return;
 				}
 				if (t === "shinya") {
-					await s.narrate("門の　南京錠が、\n街灯で　ひかっている。");
+					await rojiShinya(s);
 					return;
 				}
 				if (t === "asa") {
@@ -1055,6 +1114,14 @@ export const norikae: MapDef = {
 			TOKOYA,
 			async (s) => {
 				const name = "床屋の人";
+				// 路地の むこうで ひろった 2枚目の 札（norikae_ura の 物証。説明は しない）
+				if (s.has("ura_fuda") && !s.flag("seen_norikae_ura_fuda")) {
+					s.set("seen_norikae_ura_fuda");
+					await s.narrate("床屋の　人が、キリコの\n手の　札を　見た。");
+					await s.say(null, "……それ、うちの　字だ", { name });
+					await s.say(null, "一枚しか、書いて\nないんだけどな", { name });
+					return;
+				}
 				// 深夜に 札が まわるのを 見た人
 				if (s.flag("seen_norikae_fuda_kaze")) {
 					await s.say(null, "電柱の　札、針金で\nとめといたよ", { name });

@@ -154,6 +154,14 @@ const CHECKPOINTS: Checkpoint[] = [
 		to: { map: "norikae", x: 38, y: 9, dir: "left" },
 	},
 	{
+		id: "cp_norikae_roji",
+		label: "路地の門（深夜・寄り道の入口）",
+		sprite: "pub:sprites/mob_ojiichan.png",
+		flags: { ...AWAKE, got_dinner_onigiri: true },
+		items: { rec_t: 1 },
+		to: { map: "norikae", x: 9, y: 9, dir: "up" },
+	},
+	{
 		id: "cp_koen_yu",
 		label: "みどりがおか公園（夕方）",
 		sprite: "pub:sprites/mob_ojiichan.png",
