@@ -10,6 +10,7 @@ import { ekimae } from "./maps/ekimae";
 import { kawara } from "./maps/kawara";
 import { koen } from "./maps/koen";
 import { kokudo } from "./maps/kokudo";
+import { kokudoUra } from "./maps/kokudo_ura";
 import { laundry } from "./maps/laundry";
 import { laundryUra } from "./maps/laundry_ura";
 import { norikae } from "./maps/norikae";
@@ -42,6 +43,7 @@ export const data: GameData = {
 		kawara,
 		danchi,
 		kokudo,
+		kokudo_ura: kokudoUra,
 		ekimae,
 		suupaa,
 		zakkyo,

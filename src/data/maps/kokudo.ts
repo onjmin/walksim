@@ -72,7 +72,8 @@ import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 const ASPHALT = JP.road;
 const WIN_LOW_BRICK = WIN.sash;
 const WIN_LOW_WHITE = WIN.sash;
-const tiles: Record<string, TileDef> = {
+// 夜の 寄り道の こくどう（kokudo_ura）も 同じ タイルと 地図で 描く
+export const tiles: Record<string, TileDef> = {
 	...TOWN,
 	r: { layers: [ASPHALT], color: "#55565e", passable: false },
 	"-": { layers: [JP.roadCenter], color: "#55565e", passable: false },
@@ -118,7 +119,7 @@ const tiles: Record<string, TileDef> = {
 };
 
 // 北＝ファミレス（歩道橋でしか来られない）。南＝歩道・バスだまり・スタンド（y11-13）。
-const rows = [
+export const rows = [
 	"                                        ", // y0
 	"                        fffff           ", // y1  歩道橋のらんかん（北）
 	"                        .....           ", // y2  歩道橋のデッキ (24-28,2)
@@ -259,6 +260,17 @@ const gasman = async (s: Story): Promise<void> => {
  * 1回目＝夕方に話していれば「徒歩のお客さん」の payoff／2回目＝夕方の洗車機のテスト運転を見た人だけ／3回目から水まき。
  */
 const gasmanAsa = async (s: Story): Promise<void> => {
+	// 人だけ いない こくどう（kokudo_ura）から もどった 人に 一度だけ。説明は しない
+	if (s.flag("seen_jikuu_kaeri") && !s.flag("seen_gasman_jikuu")) {
+		s.set("seen_gasman_jikuu");
+		await s.say(null, "ゆうべ　夜中、うちの　あかりが\nぜんぶ　ついてたって", {
+			name: "スタンドの店員",
+		});
+		await s.say(null, "トラックの　人が　言うんだ。\n……だれも　いないのにね", {
+			name: "スタンドの店員",
+		});
+		return;
+	}
 	const n = numFlag(s, "seen_gasman_asa");
 	s.set("seen_gasman_asa", n + 1);
 	if (n === 0) {
@@ -300,6 +312,31 @@ const gasmanAsa = async (s: Story): Promise<void> => {
 	await s.say(null, "朝に水をまくとね、\n一日、ほこりが立たない", {
 		name: "スタンドの店員",
 	});
+};
+
+// ── 夜の 寄り道「人だけ いない 町」（STORY.md §5.4。おりた 先は kokudo_ura） ──
+// 深夜、歩道橋の 北の 階段を おりると、灯りが ぜんぶ ついて 人だけ いない こくどうに 出る。
+// レコードは 無い（目録を 持たない 話。STORY.md §5.4 の 決めたこと 2）。もどるまで、深夜は 毎回 ここへ 出る。
+
+/** 人だけ いない こくどうの 数を ぜんぶ もどす（おりるとき・つかまったとき・もどったとき。kokudo_ura）。 */
+export const jikuuReset = (s: Story): void => {
+	s.set("seen_jikuu_n", 0);
+	s.set("seen_jikuu_kaere", false);
+	s.set("seen_jikuu_otoko", false);
+};
+
+/** 深夜、北の 階段を おりる。kokudo_ura へ 行ったら true。 */
+const jikuuOriru = async (s: Story): Promise<boolean> => {
+	if (s.flag("tod") !== "shinya" || s.flag("seen_jikuu_kaeri")) return false;
+	jikuuReset(s);
+	s.set("seen_jikuu_n", 1);
+	await s.warp("kokudo_ura", 28, 7, "down", { se: "stairs" });
+	// 静寂：説明は せず、間だけ おく
+	await s.wait(1600);
+	await s.narrate("ファミレスに、\nあかりが　ついている。");
+	await s.wait(1000);
+	await s.narrate("国道の　むこうの　スタンドも。\n街灯も、ぜんぶ。");
+	return true;
 };
 
 export const kokudo: MapDef = {
@@ -436,13 +473,19 @@ export const kokudo: MapDef = {
 			{ map: "kokudo", x: 28, y: 2, dir: "up" },
 			{ se: "stairs" },
 		),
-		warp(
-			"hodo_dn_e",
-			28,
-			3,
-			{ map: "kokudo", x: 28, y: 7, dir: "down" },
-			{ se: "stairs" },
-		),
+		// 北の 階段を おりる。深夜は 夜の 寄り道（人だけ いない こくどう＝kokudo_ura。jikuuOriru）
+		{
+			id: "hodo_dn_e",
+			x: 28,
+			y: 3,
+			trigger: "touch",
+			exit: "down",
+			through: true,
+			run: async (s) => {
+				if (await jikuuOriru(s)) return;
+				await s.warp("kokudo", 28, 7, "down", { se: "stairs" });
+			},
+		},
 		{
 			id: "hodokyo_view",
 			x: 26,
@@ -540,6 +583,9 @@ export const kokudo: MapDef = {
 			run: async (s) => {
 				await s.narrate("『ながらくの　ごあいこ――』");
 				await s.narrate("はり紙のつづきは、\n日に焼けて　よめない。");
+				// 人だけ いない こくどうから もどった あと（余波。深夜だけ）
+				if (s.flag("tod") === "shinya" && s.flag("seen_jikuu_kaeri"))
+					await s.narrate("戸の　すきまから、\nコーヒーの　におい。");
 			},
 		},
 		// 通用口（かぎが かかっている。小道具）
