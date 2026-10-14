@@ -24,6 +24,9 @@
 //              （seen_kansouki_shinya）→ 朝: 4ばんの糸くず「とりに　来たンゴね」
 //   缶         jihanki（shinya。ここで買った人は seen_laundry_kan）→ 朝: その段に『うりきれ』
 //   すわる     bench（shinya。seen_suwari_laundry）→ 朝: bench の朝日
+//   夜の寄り道 wasuremono（shinya。レコード「夜泣き」rec_k）→ deguchi で「かわくまで　待つ」→
+//              laundry_ura → 出れば kansouki_4 が とまって ドアが あく（seen_kawaku_kaeri）→
+//              朝: obachan が ちいさな くつした（chiisai_kutsushita）に「ぬくい」
 // 町とのつながり: arrive_yoru は apart の宵のせんたくき（arrive_yoru の done）と音を重ねる。
 //
 // 座標: すみれ町 (27,2) の戸を上へふむ → ここ (5,8) に上向き。
@@ -62,7 +65,8 @@ const solid = (color: string, ...layers: string[]): TileDef => ({
 	color,
 	passable: false,
 });
-const tiles: Record<string, TileDef> = {
+// 夜の 寄り道の 店（laundry_ura）も 同じ タイルと 地図で 描く
+export const tiles: Record<string, TileDef> = {
 	H: solid(C_WALL, WALL_TOP),
 	h: solid(C_WALL, WALL_BOT),
 	E: solid(C_WALL, WALL_BOT, JP.carWashTop),
@@ -88,7 +92,7 @@ const tiles: Record<string, TileDef> = {
 
 // 北の壁＝乾燥機の二段（1〜4ばん。下の段を調べる）・掲示・時計・両替機・自販機。
 // 西の壁ぞい＝せんたくき三台。まんなか＝たたみ台。東＝ベンチ。南＝わすれものの箱・出口。
-const rows = [
+export const rows = [
 	"            ", // y0
 	" HHHHHHHHHH ", // y1
 	" EEEEhPhChh ", // y2  掲示 (6,2)・時計 (8,2)
@@ -144,6 +148,43 @@ const bench = async (s: Story): Promise<void> => {
 			? "ベンチに、週刊誌が\nふせたまま　のこっている。"
 			: "ベンチに、週刊誌が\nふせてある。",
 	);
+};
+
+// ── 夜の 寄り道「終わらない 洗濯」（STORY.md §5.4。待った 先は laundry_ura） ──
+// 深夜、わすれものの 箱に レコード「夜泣き」（結婚・子ども。STORY.md §4.5）。聞いた あと、4ばんが
+// まわっている うちに 出口を ふむと、出るか 待つかを えらばせる。待つと、同じ 店の まま 時間だけ ずれる。
+
+/** かわかない 店の 数を ぜんぶ もどす（待つとき・つかまったとき・出たとき。laundry_ura）。 */
+export const kawakuReset = (s: Story): void => {
+	s.set("seen_kawaku_n", 0);
+	s.set("seen_kawaku_owari", false);
+	s.set("seen_kawaku_akete", false);
+};
+
+/** 深夜の 出口。待ったら true（laundry_ura へ）。出るなら false（ふつうに すみれ町へ）。 */
+const kawakuMatsu = async (s: Story): Promise<boolean> => {
+	if (s.flag("tod") !== "shinya" || !s.has("rec_k")) return false;
+	if (s.flag("seen_kawaku_kaeri")) return false;
+	await s.narrate("4ばんは、まだ\nまわっている。");
+	const i = await s.choose(["＞＞1 出る", "＞＞2 かわくまで　待つ"], {
+		cancel: 0,
+	});
+	if (i !== 1) return false;
+	kawakuReset(s);
+	s.set("seen_kawaku_n", 1);
+	await s.narrate("ベンチに　すわって、\n4ばんの　表示を　見ていた。");
+	// 静寂：曲が 消えて、乾燥機の 音だけ のこる
+	s.bgm(null);
+	await s.fadeOut(900, "#0a0c14");
+	await s.wait(2400);
+	await s.warp("laundry_ura", 9, 7, "up", { fade: false });
+	await s.fadeIn(900);
+	s.se("hum", { volume: 0.4 });
+	await s.wait(1400);
+	await s.narrate("……『のこり　18分』。");
+	await s.wait(1200);
+	await s.narrate("乾燥機の　音だけ。");
+	return true;
 };
 
 export const laundry: MapDef = {
@@ -229,6 +270,7 @@ export const laundry: MapDef = {
 			exit: "down",
 			through: true,
 			run: async (s) => {
+				if (await kawakuMatsu(s)) return;
 				await s.warp("sumire", 27, 3, "down", { se: "door" });
 			},
 		},
@@ -295,6 +337,18 @@ export const laundry: MapDef = {
 			7,
 			"pub:sprites/mob_obachan.png",
 			async (s) => {
+				// 夜の 寄り道の 物証（laundry_ura の ちいさな くつした）。説明は しない
+				if (s.has("chiisai_kutsushita") && !s.flag("seen_laundry_chiisai")) {
+					s.set("seen_laundry_chiisai");
+					await s.narrate("おばちゃんが、キリコの\n手の　くつしたを　見た。");
+					await s.say(null, "あら、ちっちゃい。\nわすれもの？", {
+						name: "店のおばちゃん",
+					});
+					await s.say(null, "……あら、ぬくい。\nいま　出したみたいね", {
+						name: "店のおばちゃん",
+					});
+					return;
+				}
 				// 朝のそうじ。1回目＝週刊誌（seen_laundry_zasshi）、2回目＝くつした（seen_kutsushita_hako）
 				const n = numFlag(s, "seen_laundry_obachan");
 				if (n < 2) s.set("seen_laundry_obachan", n + 1);
@@ -433,6 +487,11 @@ export const laundry: MapDef = {
 			run: async (s) => {
 				const t = s.flag("tod");
 				if (t === "shinya") {
+					// 夜の 寄り道から もどった あと（余波）
+					if (s.flag("seen_kawaku_kaeri")) {
+						await s.narrate("4ばんは　とまって、\nドアが　あいている。");
+						return;
+					}
 					if (s.flag("seen_kansouki_shinya")) {
 						await s.narrate("ドラムの　なかで、タオルが\nおちては　あがる。");
 						return;
@@ -604,6 +663,15 @@ export const laundry: MapDef = {
 				const t = s.flag("tod");
 				const hako = !!s.flag("seen_kutsushita_hako");
 				await s.narrate("『わすれもの』の　箱。");
+				// 深夜、ハンカチの となりに レコード「夜泣き」（夜の 寄り道「終わらない 洗濯」の 入口）
+				if (t === "shinya" && !s.has("rec_k")) {
+					await s.narrate("ハンカチの　となりに、\n黒い　レコード。");
+					s.se("item");
+					s.give("rec_k");
+					await s.record("rec_k");
+					await s.say("kiriko", "（……18分、ンゴ）");
+					return;
+				}
 				if (t === "asa") {
 					if (hako) {
 						await s.narrate(

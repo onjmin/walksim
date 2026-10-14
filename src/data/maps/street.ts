@@ -350,6 +350,13 @@ const mado = async (s: Story): Promise<void> => {
 		await s.narrate("竿の　ケースと、\nクーラーボックスの　かげ。");
 		await s.say("kiriko", "（……『夜釣り』の　声\nンゴ）");
 	}
+	// 結婚・子ども（夜の 寄り道「終わらない 洗濯」の レコード「夜泣き」。STORY.md §5.4）。
+	// 寄り道では ガラスの むこうで 泣き声が していた。その 子は、家で あやされている
+	if (s.has("rec_k")) {
+		await s.narrate("べつの　窓で、赤ちゃんが\n泣いて、すぐ　やんだ。");
+		await s.narrate("だれかが、ちいさな　声で\nうたっている。");
+		await s.say("kiriko", "（……『夜泣き』の　声\nンゴ）");
+	}
 	// ⑪ 辞めた 人（早番・04:10）：夕方の 会釈の 人。夜明けに うみべで すれ違う
 	await s.narrate("……ひとつ、あかりが　消えた。");
 	await s.narrate("玄関の　あかり。カギの\n音が　ひとつ。");

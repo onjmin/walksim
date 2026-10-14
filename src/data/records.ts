@@ -58,6 +58,22 @@ export const records: Record<string, RecordDef> = {
 			"ガード、これで　四つめや。\n……一つしか　ない　はずやのに",
 		],
 	},
+	// コインランドリーの わすれものの 箱（夜の 寄り道「終わらない 洗濯」。STORY.md §5.4）：結婚・子ども
+	// （2 の 最後の レス「嫁に　見つかった」）。泣き声で 切れる（data/maps/laundry.ts の wasuremono）。
+	// 声の 主の 子は 無事で、真の 筋の 窓の 場面で その 人が 家で あやしている
+	rec_k: {
+		id: "rec_k",
+		title: "夜泣き",
+		voice: rei,
+		date: "2032/09/14(火) 01:26",
+		lines: [
+			"うちの　乾燥機、こわれてな。\n夜中の　コインランドリーや",
+			"子どもの　服、ちっさいなあ。\n……４ばん、のこり　１８分",
+			"はり紙に　書いとる。乾燥中は\n店を　はなれないで　ください、て",
+			"……のこり　１８分。\nさっきも　１８分　やったな",
+			"……外で、泣いとる。\nうちの　子の　声や",
+		],
+	},
 };
 
 // 本作のアイテムは全部 key: true（使えない・減らない）。レコードは records と同じ id で登録する。
@@ -80,6 +96,19 @@ export const items: Record<string, ItemDef> = {
 		desc: "去った　おんJ民の、今夜の　声。\nメニューの「レコード」で　聞ける。",
 		key: true,
 	},
+	rec_k: {
+		id: "rec_k",
+		name: "レコード「夜泣き」",
+		desc: "去った　おんJ民の、今夜の　声。\nメニューの「レコード」で　聞ける。",
+		key: true,
+	},
+	// かわかない 店の 4ばんで ひろう（laundry_ura の yonban）。朝、店の おばちゃんが 見る（laundry）
+	chiisai_kutsushita: {
+		id: "chiisai_kutsushita",
+		name: "ちいさなくつした",
+		desc: "コインランドリーの　４ばんで\nひろった。かたほうだけ。",
+		key: true,
+	},
 	// 路地の むこうの 電柱の 下で ひろう（norikae_ura の fuda）。朝、のりかえのみちの 床屋が 見る
 	ura_fuda: {
 		id: "ura_fuda",
@@ -97,4 +126,4 @@ export const items: Record<string, ItemDef> = {
 };
 
 /** 持っている レコードの id（メニュー・まとめカード・窓の 場面が 使う）。 */
-export const ALL_RECORDS = ["rec_q", "rec_e", "rec_t"] as const;
+export const ALL_RECORDS = ["rec_q", "rec_e", "rec_t", "rec_k"] as const;

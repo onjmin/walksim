@@ -11,6 +11,7 @@ import { kawara } from "./maps/kawara";
 import { koen } from "./maps/koen";
 import { kokudo } from "./maps/kokudo";
 import { laundry } from "./maps/laundry";
+import { laundryUra } from "./maps/laundry_ura";
 import { norikae } from "./maps/norikae";
 import { norikaeUra } from "./maps/norikae_ura";
 import { okujo } from "./maps/okujo";
@@ -46,6 +47,7 @@ export const data: GameData = {
 		zakkyo10,
 		okujo,
 		laundry,
+		laundry_ura: laundryUra,
 		tonarimachi,
 		senro,
 		norikae,
