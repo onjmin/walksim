@@ -7,29 +7,33 @@
 // 東の はしを ぬけると 西の はしに、西の はしを ぬけると 東の はしに 出る（ひとまわり＝一周）。
 //
 // ルールは 1つ：電柱の 札の 矢印に したがう（レコード「夜釣り」の『札の　矢印に　ついていけば　いい』）。
-// 矢印と ちがう はしへ ぬけようと すると、えらばせて、行けば まよう（mayou。理由は 言わない）。
+// 先客（STORY.md §5.4「やられ役は 先客」）：竿を かついで 矢印の さきを 歩く 人（レコード「夜釣り」の 声の 主）。
+// 背中だけ 見せる。キリコは つかまらない。矢印と ちがう はしへ ぬけようと すると、確かめずに、先客が
+// 追いこして そちらへ 行く（身代わり。migawariMayou）。ハードカットで もとの 電柱の 下に 立っていて、
+// 足もとに クーラーボックスと 竿。一回きり（seen_ura_kaeri で 門が しまる）。
 //   周  札の 矢印                 床屋の ポール        ガード
-//   0   道の さき（東）           まわっている         しずか
-//   1   道の さき・札が もう一枚  また まわっている    クーラーボックス
+//   0   道の さき（東）           まわっている         しずか（竿の 背中が さきを 歩く）
+//   1   道の さき・札が もう一枚  また まわっている    竿の 人が クーラーボックスに すわって 休む
 //   2   きた ほう（西）・針金     しまが 下へ          （とおらない）
-//   3   柱の 札＝わきの 細道      とまっている         貨物の 音・釣りざお
+//   3   柱の 札＝わきの 細道      とまっている         貨物の 音・札の 前で 竿の 人が 立ちどまる
 //
 // 恐怖の 3要素（春日武彦『恐怖の正体』）:
 //   危機感      もどれない 門（2周目から 南京錠）・近づく 貨物の 音・線路の 土手の やぶれ目
 //   不条理感    同じ 床屋に 何度も 出会う・2枚目の 札・針金なのに ぎゃくを むいた 矢印
-//   視野狭窄    のこされた クーラーボックスと 釣りざお。レコードの 声は「じゃ、いってくる」と ふつうに 終わったのに、
-//               その 人は どこへ 行ったか
+//   視野狭窄    自分が 矢印を まちがえれば、前を 歩く 人が 連れて いかれる かもしれない
 //               （答えは ここでは 出さない。真の 筋の 窓の 場面で、その 人が 竿を かついで 出かける）
 //
 // 段と回収:
 //   周       seen_ura_shuu（数）・見た 矢印 seen_ura_yaji（数。どの 周の 矢印を 見たか）
 //   床屋     seen_ura_toko（数。その 周で 見たか）／ガード seen_ura_guard（数）
+//   先客     seen_ura_senkyaku（0周目の 札で 背中を 見た）
 //   札       ura_fuda（アイテム。1周目）→ 朝 norikae の 床屋「うちの　字だ」
-//   帰り     seen_ura_kaeri → norikae の 路地の 門に 南京錠・釣り糸
-//   まよった seen_ura_mayotta（数）
+//   帰り     seen_ura_kaeri（先客が 先に やぶれ目を くぐる）→ norikae の 路地の 門に 南京錠・釣り糸
+//   身代わり seen_ura_migawari（senkyaku.ts）→ norikae の 電柱の 下。窓の 場面で その 窓だけ 遅れて 灯る
 
 import type { MapDef, Story } from "../../engine/defs";
 import { numFlag } from "../nostalgia";
+import { migawari } from "../senkyaku";
 import { tiles, uraReset } from "./norikae";
 
 type Yaji = "right" | "left" | "down";
@@ -41,23 +45,22 @@ const YAJI: Yaji[] = ["right", "right", "left", "down"];
 const yaji = (s: Story): Yaji => YAJI[Math.min(numFlag(s, "seen_ura_yaji"), 3)];
 
 /**
- * まよった（矢印と ちがう はしへ ぬけた）。暗転して、もとの のりかえのみちの 電柱の 下で
- * 目が さめる。なにが あったかは 書かない。
+ * 矢印と ちがう はしへ 行こうと した。確かめずに、先客（竿の 人）が 追いこして そちらへ 行く（身代わり）。
+ * その 先は 見せず、ハードカットで もとの のりかえのみちの 電柱の 下に 立っている。
  */
-const mayou = async (s: Story): Promise<void> => {
+const migawariMayou = async (s: Story): Promise<void> => {
+	await s.narrate("うしろから、竿を　かついだ\nだれかが　追いこしていった。");
+	await s.narrate("矢印と　ちがう　ほうへ。");
 	uraReset(s);
-	s.set("seen_ura_mayotta", numFlag(s, "seen_ura_mayotta") + 1);
-	// 静寂（STORY.md §5.4）：その 瞬間は 見せず、音も なく 切って、あとの 場面へ とぶ
-	s.bgm(null);
-	await s.fadeOut(0);
-	await s.wait(2600);
+	await migawari(s, "rec_t");
 	await s.warp("norikae", 8, 10, "left", { fade: false });
 	// 町の 曲は、ここを 出るまで 戻さない（warp が @tod を 鳴らしなおすので すぐ 止める）
 	s.bgm(null);
 	await s.fadeIn(0);
 	await s.wait(1800);
-	await s.narrate("……電柱に　もたれて、\nすわりこんでいた。");
+	await s.narrate("……電柱の　下に、\n立っていた。");
 	await s.wait(1200);
+	await s.narrate("足もとに、クーラーボックスと\n釣りざおが　のこっている。");
 	await s.narrate("札が、風で　くるりと\nまわった。");
 };
 
@@ -75,7 +78,7 @@ const higashi =
 			await isshuu(s, 1, y, "right");
 			return;
 		}
-		await chigau(s, "l");
+		await chigau(s);
 	};
 
 /** 西の はし（(0,4)(0,5)）。 */
@@ -86,20 +89,13 @@ const nishi =
 			await isshuu(s, 29, y, "left");
 			return;
 		}
-		await chigau(s, "r");
+		await chigau(s);
 	};
 
-/** 矢印と ちがう ほうへ ぬけようと した（山。行けば まよう）。back は もどる 一歩。 */
-const chigau = async (s: Story, back: string): Promise<void> => {
+/** 矢印と ちがう ほうへ ぬけようと した（山）。確かめの 選択肢は 出さず、先客が 身代わりに なる。 */
+const chigau = async (s: Story): Promise<void> => {
 	await s.narrate("札の　矢印は、\nこっちを　さしていない。");
-	const i = await s.choose(["＞＞1 このまま　行く", "＞＞2 やめておく"], {
-		cancel: 1,
-	});
-	if (i === 0) {
-		await mayou(s);
-		return;
-	}
-	await s.move("player", back);
+	await migawariMayou(s);
 };
 
 /** 電柱の 札の 前を とおる・調べる（周ごとに 一度。調べたら いまの 矢印を くりかえす）。 */
@@ -115,6 +111,7 @@ const fuda = async (s: Story, talk: boolean): Promise<void> => {
 		s.set("seen_ura_yaji", 2);
 		await s.narrate("札の　矢印が、\nきた　ほうを　さしている。");
 		await s.narrate("ひもは、針金で\nとめてある。");
+		await s.narrate("竿の　背中が、\nきた　ほうへ　歩いていく。");
 		return;
 	}
 	s.set("seen_ura_yaji", n);
@@ -126,6 +123,12 @@ const fuda = async (s: Story, talk: boolean): Promise<void> => {
 		return;
 	}
 	await s.narrate("『のりかえ　つきみ駅　→』\n矢印は、道の　さき。");
+	// 先客（竿の 人）の 背中。顔は 描かない
+	if (n === 0 && !s.flag("seen_ura_senkyaku")) {
+		s.set("seen_ura_senkyaku");
+		await s.wait(600);
+		await s.narrate("道の　さきを、竿を　かついだ\nだれかが　歩いていく。");
+	}
 };
 
 /** 床屋の 前を とおる（周ごとに 一度）。 */
@@ -149,8 +152,11 @@ const guard = async (s: Story): Promise<void> => {
 		return;
 	}
 	if (n === 1) {
-		await s.narrate("ガードの　下に、\nクーラーボックス。");
-		await s.narrate("ふたが　あいている。\n中は、とけかけた　氷だけ。");
+		// 先客が 休んでいる（背中だけ）
+		await s.narrate(
+			"ガードの　下で、竿の　人が\nクーラーボックスに　すわっている。",
+		);
+		await s.narrate("氷の　ゆれる　音。\nこっちは　見ない。");
 		return;
 	}
 	if (n === 2) return;
@@ -159,7 +165,7 @@ const guard = async (s: Story): Promise<void> => {
 	await s.wait(900);
 	await s.narrate("……ゴトン、ゴトン。\nとおくから、ながい　音。");
 	await s.narrate("柱に、同じ　札。\n矢印は、わきの　細道。");
-	await s.narrate("柱に、釣りざおが\n立てかけてある。");
+	await s.narrate("札の　まえで、竿の　人が\n立ちどまっている。");
 };
 
 /** ガードの わきの 細道（3周目の 矢印の さき。線路の 土手の やぶれ目から もどる）。 */
@@ -175,7 +181,9 @@ const hosomichi = async (s: Story): Promise<void> => {
 		await s.move("player", "u");
 		return;
 	}
-	await s.narrate("やぶれ目を　くぐった。");
+	// 守りきった：先客が 先に くぐる
+	await s.narrate("竿の　人が、先に\nやぶれ目を　くぐった。");
+	await s.narrate("あとから、くぐった。");
 	await s.narrate("砂利。\nレールが、鳴っている。");
 	s.se("train", { volume: 0.9 });
 	await s.wait(1500);
@@ -193,7 +201,9 @@ const hosomichi = async (s: Story): Promise<void> => {
 	// 一息：蛍光灯の 音が 先に もどり、ことばは 遅れて ひとことだけ
 	s.se("hum", { volume: 0.5 });
 	await s.narrate("……ガードの　下に、\n立っていた。");
-	await s.wait(1800);
+	await s.wait(1200);
+	await s.narrate("駅の　ほうへ、竿を　かついだ\n背中が　小さく　なっていく。");
+	await s.wait(1200);
 	await s.say("kiriko", "……ひとつ、ンゴ");
 };
 
