@@ -296,6 +296,10 @@ export const yoruClock = (s: Story, off = 0): string => {
 export const shinyaStep = (s: Story): number =>
 	OUTDOOR_DAILY.filter((m) => arrived(s, m, "shinya")).length;
 
+/** shinyaStep の GameState 版（when 用。street の madoReady）。 */
+export const shinyaStepSt = (st: GameState): number =>
+	OUTDOOR_DAILY.filter((m) => !!st.flags[`done:${m}:arrive_shinya`]).length;
+
 /**
  * 深夜の町の時計（"2:05"〜"3:55"。shinyaStep ごとに11分進む）。off は時計ごとのずれ。
  * 夜は止まらない（夢オチ・時間停止にしない。2026-10-04）。部屋のかべの時計だけは電池ぎれで 2:00 のまま。

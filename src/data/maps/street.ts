@@ -13,7 +13,7 @@
 //           時計は 7時ごろ（ここに着いて 7:02。地区を回るたびに4分進む＝asaClock）
 //
 // 物語（STORY.md §5.5）：夕方の 地の文で「キリコが 外の 町で 暮らしはじめた」ことを はっきり 言う。
-// 深夜の バス停で レコード「早番」（rec_q。辞めた 人）。rec_q を 拾うと、
+// 深夜の バス停で レコード「早番」（rec_q。辞めた 人）。rec_q と 寄り道の レコード 2枚（madoReady）で、
 // 深夜の この 通りで「窓」の 場面（転：窓の あかりと 物音を 見て、窓が ぜんぶ あかるく なるまで いる）
 // → 夜明け（tod="asa"・ending_ready）→ うみべへ（結は umi.ts）。
 //
@@ -53,10 +53,12 @@ import {
 	natsuOwari,
 	numFlag,
 	shinyaClock,
+	shinyaStepSt,
 	yoruAkubi,
 	yoruClock,
 	yuClock,
 } from "../nostalgia";
+import { YORIMICHI_RECORDS } from "../records";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
@@ -312,12 +314,22 @@ const tenshuAsa = async (s: Story): Promise<void> => {
 	});
 };
 
-// ── 転：窓（STORY.md §5.5・§5.97）。rec_q で 開く ──
-// 2026-10-04 怪異側（板の 名残）を 消して 作りなおし中。それまでの 仮の 条件として、早番の レコード 1枚で 開く。
+// ── 転：窓（STORY.md §5.5・§5.97）。早番＋寄り道の レコード 2枚で 開く ──
+// 寄り道（STORY.md §5.4）の 全部では なく 2枚。あとから 寄り道を 足しても 真の 筋は 変わらない。
+// 寄り道を 見つけられない 人の ために、深夜の 地区を MADO_SHINYA_STEP 回 まわっても 開く（夜が 明けない ことが ないように）。
 
-/** 窓の 場面を 見られるか（深夜・早番の レコード・まだ 見ていない）。 */
-export const madoReady = (st: GameState): boolean =>
-	st.flags.tod === "shinya" && !st.flags.seen_mado && (st.items.rec_q ?? 0) > 0;
+/** 寄り道を 見つけられなくても 窓が 開く、深夜に まわった 地区の 数（11地区の うち。時計で 3:33）。 */
+const MADO_SHINYA_STEP = 8;
+
+/** 窓の 場面を 見られるか（深夜・早番・寄り道の レコード 2枚 か 夜ふけ・まだ 見ていない）。 */
+export const madoReady = (st: GameState): boolean => {
+	if (st.flags.tod !== "shinya" || st.flags.seen_mado) return false;
+	if (!((st.items.rec_q ?? 0) > 0)) return false;
+	const yorimichi = YORIMICHI_RECORDS.filter(
+		(id) => (st.items[id] ?? 0) > 0,
+	).length;
+	return yorimichi >= 2 || shinyaStepSt(st) >= MADO_SHINYA_STEP;
+};
 
 const mado = async (s: Story): Promise<void> => {
 	s.set("seen_mado");
@@ -708,7 +720,7 @@ export const street: MapDef = {
 				await s.say("kiriko", "……いってらっしゃいンゴ");
 			},
 		},
-		// ── 転：窓（深夜。早番の レコードで。エンディングは umi.ts） ──
+		// ── 転：窓（深夜。早番＋寄り道の レコード 2枚で。エンディングは umi.ts） ──
 		{
 			id: "mado_ev",
 			x: 5,

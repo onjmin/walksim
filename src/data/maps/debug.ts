@@ -25,7 +25,8 @@ const AWAKE: Flags = {
 };
 /** 窓の 場面（転）の 直前：バス停の「早番」。 */
 const MADO: Flags = { ...AWAKE, got_rec_q: true };
-const KEYS_MADO: Items = { rec_q: 1 };
+// 窓の 場面は 早番＋寄り道の レコード 2枚で 開く（street の madoReady）
+const KEYS_MADO: Items = { rec_q: 1, rec_e: 1, rec_t: 1 };
 
 type Checkpoint = {
 	id: string;

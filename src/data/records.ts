@@ -3,7 +3,7 @@
 // （書きこみとは かぎらない。rec_q の 主は ネットを 辞めていて、もう 書きこまない）。
 // 去り方は 1枚に 1つ（良し悪しを つけない。亡くなった 人は 入れない）。
 // 中身は 実在スレの 引用ではなく 創作。朗読は レイの 機械音声（rei）。1要素＝メッセージ窓1枚・全角22字×2行まで。
-// rec_q は まちのどおりの バス停（真の 筋）。転（まちのどおりの 窓）は rec_q で 開く（data/maps/street.ts の madoReady）。
+// rec_q は まちのどおりの バス停（真の 筋）。転（まちのどおりの 窓）は rec_q と 寄り道の レコード 2枚で 開く（data/maps/street.ts の madoReady）。
 // 夜の 寄り道（STORY.md §5.4）の レコードは、その 寄り道の 入口に おちている（rec_e・rec_t）。
 // rec_q の 1行目「……今日も　早番や」は、夜明けの うみべで 本人の 声で 聞く（umi.ts の yoake_arrive）。
 
@@ -153,6 +153,9 @@ export const items: Record<string, ItemDef> = {
 		key: true,
 	},
 };
+
+/** 夜の 寄り道の レコード（STORY.md §5.4）。2枚 そろうと 窓の 場面が 開く（street の madoReady）。 */
+export const YORIMICHI_RECORDS = ["rec_e", "rec_t", "rec_k", "rec_s"] as const;
 
 /** 持っている レコードの id（メニュー・まとめカード・窓の 場面が 使う）。 */
 export const ALL_RECORDS = [
