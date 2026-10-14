@@ -156,7 +156,7 @@ const bench = async (s: Story): Promise<void> => {
 // えらばせる。待つと、同じ 店の まま 時間だけ ずれる。ほかの 寄り道と ちがい、入口に レコードは ない
 // （レコード「夜泣き」は 中で、泣き声を 聞いた あとに 拾う。laundry_ura の wasuremono）。
 
-/** かわかない 店の 数を ぜんぶ もどす（待つとき・つかまったとき・出たとき。laundry_ura）。 */
+/** かわかない 店の 数を ぜんぶ もどす（待つとき・身代わりの とき・出たとき。laundry_ura）。 */
 export const kawakuReset = (s: Story): void => {
 	s.set("seen_kawaku_n", 0);
 	s.set("seen_kawaku_owari", false);
