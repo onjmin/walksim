@@ -56,7 +56,7 @@
 // seen_suupaa_okusan 数     立て: suupaa okusan                                                         読み: suupaa okusan（numFlag）・danchi kaimono_yu（yu）
 // seen_suupaa_wagon  数     立て: suupaa wagon                                                          読み: suupaa wagon（numFlag）
 // ── 地区をまたぐ新しいフラグ（2026-10-04・下の「町をまたぐ筋」⑪〜㉛と強めた筋） ──
-// seen_eshaku_st     真     立て: street eshaku（yu・作業着の人の会釈）                                 読み: umi yoake_arrive（asa）
+// seen_eshaku_st     真     立て: street eshaku（yu・作業着の人の会釈）                                 読み: street eshaku（段の 進み）
 // seen_denki_kaishu  真     立て: apart door_room（shinya・warp の前に一度）                            読み: 同じ（一度だけ）→ room pc（shinya）へ
 // seen_koen_kasa     真     立て: koen wasuregasa（yu・yoru・shinya。『3の2　さとう』）                 読み: koen wasuregasa（asa）・street kodomo_asa_a（asa）
 // got_hari           真     立て: tonarimachi record_oyaji（＞＞1 ひとつ買う）                          読み: room phono・nikkiKey
@@ -571,7 +571,7 @@ export const POEM: Record<PoemKey, string> = {
 // ⑧ ガチャ: suupaa gacha_kid（seen_gacha_kid）→ street kodomo_asa_a（seen_gacha_asa）
 // ⑨ あいあいがさ: kokudo hodokyo_rakugaki（seen_aiai_hodo）・yamamichi bench（seen_aiai_yama）→ 朝のベンチ
 // ⑩ なくなる町（控えめ）: danchi annaizu（seen_annaizu2）→ taiso_jichan／ekimae urichi（seen_urichi2）→ old_sign／kokudo の灯らない自販機と缶
-// ⑪ 早番の人: street eshaku（seen_eshaku_st）→ umi yoake_arrive（asa）
+// ⑪ 早番の人: street eshaku（seen_eshaku_st → seen_eshaku_kutsu）→ umi yoake_arrive（asa。くつひもを 見た 人だけ 坂で 同じ しぐさ）
 // ⑫ つけっぱなしのモニター: kawara taigan_view（seen_taigan_shinya）→ apart door_room（shinya・seen_denki_kaishu）→ room pc（shinya）
 // ⑬ わすれがさ: koen wasuregasa（seen_koen_kasa）→ koen wasuregasa（asa）・street kodomo_asa_a（asa）
 // ⑭ 蓄音機の針: tonarimachi kotto_phono（seen_kotto_phono）→ record_oyaji（seen_hari_mise・got_hari）→ room phono（seen_hari_kaeta）→ nikkiKey・kirokuLines

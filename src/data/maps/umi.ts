@@ -388,13 +388,14 @@ export const umi: MapDef = {
 					name: "ジョギングの人",
 					noPortrait: true,
 				});
-				await s.narrate("……夜に、レコードで\n聞いた　声だった。");
-				// ⑪ street eshaku（yu）の 作業着の 人を 見た 人だけ（2回目の くつひもまで 見た 人は そっちを）
-				if (s.flag("seen_eshaku_kutsu"))
-					await s.narrate("夕方、くつひもを\nむすびなおしていた　人だ。");
-				else if (s.flag("seen_eshaku_st"))
-					await s.narrate("夕方、まちのどおりで\n会釈を　くれた　人だ。");
+				// レコードの 1行目と 同じ ことば。「夜に 聞いた 声だ」とは 書かない（気づくのは 遊ぶ 人。間だけ おく）
+				await s.wait(900);
 				await s.say("kiriko", "……おはようンゴ");
+				// ⑪ street eshaku（yu）で くつひもを 見た 人だけ、夕方と 同じ しぐさを 見る（だれかは 言わない）
+				if (s.flag("seen_eshaku_kutsu"))
+					await s.narrate(
+						"坂の　とちゅうで　かがんで、\nくつひもを　むすびなおした。",
+					);
 				await s.narrate("会釈だけして、\n坂を　のぼっていった。");
 				await s.narrate("とおくの　駅の　ベンチに、\nだれか　すわっている。");
 			},
@@ -410,9 +411,7 @@ export const umi: MapDef = {
 				await s.narrate("スマホの　画面に、\n保守村の　スレ。");
 				await s.say("nanj", "おう。……早いな");
 				await s.say("kiriko", "……やきうンゴ");
-				await s.narrate(
-					"保守村で　いちばん　長く\n保守していた、名無しの　おんJ民。",
-				);
+				// やきうが だれかは ここで 説明しない（宵の 部屋の スレで 先に 言う。room.ts）
 				await s.say("nanj", "外で　見とる　言うたやろ");
 				await s.narrate("キリコは、となりに\nすわった。");
 				// eki_bench の らくがきを 見た 人だけ

@@ -21,7 +21,7 @@ export const records: Record<string, RecordDef> = {
 		id: "rec_q",
 		title: "早番",
 		voice: rei,
-		date: "2032/09/14(火) 04:10",
+		date: "2032/09/14(火) 01:50",
 		lines: [
 			"……今日も　早番や",
 			"ネット？　とっくに　やめたで",
