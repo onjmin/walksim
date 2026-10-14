@@ -6,25 +6,29 @@
 // 見た目は いつもの 10階（囲碁サロンの 前の ホール）と 同じ。ちがうのは 音と 灯りだけ：
 //   蛍光灯は ついているのに 鳴っていない・窓の 外の 町に 灯りが ひとつも ない・湯のみの 湯気。
 //
+// 先客（STORY.md §5.4「やられ役は 先客」）：囲碁サロンの くらがりに、実況の 人（レコード「実況」の 声の 主）。
+// 顔は 描かない（スマホの あかりと 小声だけ）。キリコは つかまらない。
+//
 // 恐怖の 3要素（春日武彦『恐怖の正体』）:
 //   危機感      階段室の 足音（ここで 何かを 調べる たびに 一段 ちかづく。ashiStep）。
-//               ノブが まわるまでに エレベーターへ もどらないと、つかまる（zakkyo の tsukamaru）
+//               ノブが まわるまでに エレベーターへ もどらないと、先客が 扉を あけに いく（身代わり。zakkyo の migawariHall）
 //   不条理感    月曜で 休みの 囲碁サロンに うちかけの 石と 湯気。窓の 町に 灯りが ない
-//   視野狭窄    実況の 人の スマホ（最後の 書きこみ『５階』）。レコードの 声の 人は どう なったか
+//   視野狭窄    自分が ぐずぐず した せいで、先客が 連れて いかれる かもしれない
 //               （答えは ここでは 出さない。真の 筋の 窓の 場面で、その 人の 窓に 灯りが ある）
 //
 // 段と回収:
 //   窓       seen_ijou_mado（数）1 灯りが ない → 2 とおくに 一つ → 3 さっきより ちかい
-//   スマホ   seen_ijou_sumaho → street mado（実況の 窓）
+//   先客     seen_ijou_senkyaku（サロンで 見た）
 //   碁石     goishi（アイテム）→ 朝 okujo の 管理人さん「月曜は　お休みなんだけどね」
 //   足音     seen_ijou_ashi（この 階に いる あいだの 数。着くたびに 0 に もどす）
-//   帰り     seen_ijou_kaeri → zakkyo の 1階（蛍光灯が 鳴る・表示が ひとりでに あがる）
+//   帰り     seen_ijou_kaeri（先客と いっしょに 1階へ）→ zakkyo の 1階（蛍光灯が 鳴る・表示が ひとりでに あがる）
+//   身代わり seen_ijou_migawari（senkyaku.ts）→ zakkyo の 1階の ホール・窓の 場面で その 窓だけ 遅れて 灯る
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
 import { numFlag } from "../nostalgia";
 import { APART, home, ROOM } from "../tiles";
 import { STN } from "../tiles-station";
-import { tsukamaru } from "./zakkyo";
+import { migawariHall } from "./zakkyo";
 
 /** 足音が 一段 ちかづく。ノブが まわったら true（つかまる）。 */
 const ashiStep = async (s: Story): Promise<boolean> => {
@@ -43,7 +47,14 @@ const ashiStep = async (s: Story): Promise<boolean> => {
 		s.se("stairs", { volume: 0.6, pan: 0.6 });
 		await s.wait(900);
 		await s.narrate("階段室の　ノブが、\nゆっくり　まわった――");
-		await tsukamaru(s);
+		// 先客が 扉の ほうへ 立つ（身代わり）。その 先は 見せない
+		await s.narrate("サロンの　くらがりで、\nだれかが　立ちあがった。");
+		await s.say(null, "……だれか、おるん？", {
+			name: "？？？",
+			noPortrait: true,
+			noVoice: true,
+		});
+		await migawariHall(s, "１０階");
 		return true;
 	}
 	return false;
@@ -79,6 +90,20 @@ const salon = shiraberu(async (s) => {
 	await s.narrate("『囲碁サロン』の　とびらが、\nあいている。");
 	await s.narrate("碁盤の　上に、\nうちかけの　石。");
 	await s.narrate("湯のみから、\n湯気が　たっている。");
+	// 先客（実況の 人）。顔は 描かない。実況を 小声で つづけている
+	if (!s.flag("seen_ijou_senkyaku")) {
+		s.set("seen_ijou_senkyaku");
+		await s.wait(800);
+		await s.narrate("碁盤の　むこうの　くらがりに、\nだれか　すわっている。");
+		await s.narrate("スマホの　あかりが、\nあごの　下だけ　てらしている。");
+		await s.say(null, "……１０階。\n……ふつうの　１０階や", {
+			name: "？？？",
+			noPortrait: true,
+			noVoice: true,
+		});
+	} else {
+		await s.narrate("くらがりで、スマホの\nあかりが　ゆれている。");
+	}
 	if (!s.has("goishi")) {
 		await s.narrate("ゆかに、白い　石が\nひとつ　おちていた。");
 		s.se("item");
@@ -87,18 +112,6 @@ const salon = shiraberu(async (s) => {
 	}
 	// 2度目から：だれも いないのに 一手 すすんでいる（説明は しない）
 	await s.narrate("……盤の　石が、\nひとつ　ふえている。");
-});
-
-const sumaho = shiraberu(async (s) => {
-	if (!s.flag("seen_ijou_sumaho")) {
-		s.set("seen_ijou_sumaho");
-		await s.narrate("ゆかに、スマホが\nおちている。画面が　ついている。");
-		await s.narrate("実況の　スレ。\nさいごの　書きこみは　『５階』。");
-		// レコードの 声と むすぶのは 遊ぶ 人に まかせる（キリコに 言わせない）
-		await s.narrate("そのあとには、\nなにも　ない。");
-		return;
-	}
-	await s.narrate("画面は　『５階』の　まま。\n電池の　のこりが　へっていく。");
 });
 
 const kaidan = async (s: Story): Promise<void> => {
@@ -116,7 +129,10 @@ const elevator = async (s: Story): Promise<void> => {
 	});
 	if (i !== 0) return;
 	s.se("door", { volume: 0.6 });
-	await s.narrate("のりこんで、１を　おした。");
+	// 先客も いっしょに 乗る（守りきった）。サロンで 見ていなくても ついてくる
+	await s.narrate("サロンの　くらがりから、\nだれかが　ついてきた。");
+	await s.narrate("スマホの　あかり。\nかごの　すみに　立つ。");
+	await s.narrate("１を　おした。");
 	s.se("hum", { volume: 0.3 });
 	await s.narrate("９……８……７……６……");
 	await s.wait(600);
@@ -131,7 +147,11 @@ const elevator = async (s: Story): Promise<void> => {
 	await s.warp("zakkyo", 11, 3, "down", { se: "door" });
 	// 一息：蛍光灯の 音が もどる。説明せず、少し 間を おいて ひとことだけ
 	s.se("hum", { volume: 0.5 });
-	await s.wait(1800);
+	await s.wait(1200);
+	await s.narrate(
+		"いっしょに　おりた　だれかは、\nだまって　ビルを　出ていった。",
+	);
+	await s.wait(1200);
 	await s.say("kiriko", "……鳴ってるンゴ");
 };
 
@@ -162,7 +182,7 @@ const rows = [
 	" HHHHHHHHHHHHHHH ", // y1
 	" hWhhWhGhhhEhhSh ", // y2  窓 (2,2)(5,2)・囲碁サロン (7,2)・エレベーター (11,2)・階段室 (14,2)
 	" ............... ", // y3  着地 (11,3)
-	" ..b............ ", // y4  長いす (3,4)・スマホ (10,4)
+	" ..b............ ", // y4  長いす (3,4)
 	" ............... ", // y5
 	"                 ", // y6
 ];
@@ -199,14 +219,6 @@ export const zakkyo10: MapDef = {
 		{ id: "salon", x: 7, y: 2, trigger: "talk", run: salon },
 		{ id: "elevator", x: 11, y: 2, trigger: "talk", run: elevator },
 		{ id: "kaidan", x: 14, y: 2, trigger: "talk", run: kaidan },
-		{
-			id: "sumaho",
-			x: 10,
-			y: 4,
-			trigger: "talk",
-			through: false,
-			run: sumaho,
-		},
 		{
 			id: "isu",
 			x: 3,

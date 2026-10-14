@@ -61,6 +61,7 @@ import {
 	yuClock,
 } from "../nostalgia";
 import { YORIMICHI_RECORDS } from "../records";
+import { isMigawari } from "../senkyaku";
 import { SPR } from "../sprites";
 import { DOOR, JP, TOWN, WALL, WIN } from "../tiles";
 
@@ -348,7 +349,11 @@ const mado = async (s: Story): Promise<void> => {
 	await s.narrate("机の　スタンドの\nしろい　あかり。");
 	// 就職（夜の 寄り道「線路ぞいの 無人駅」の レコード「終電」。STORY.md §5.4）。
 	// 寄り道では ベンチに ネクタイが のこっていた。その 人は、自分の 部屋に 帰っている
-	if (s.has("rec_s")) {
+	// 身代わり（STORY.md §5.4「やられ役は 先客」）に なった 人の 窓は 暗い まま。夜明けに 遅れて 灯る（下の osoku）
+	if (s.has("rec_s") && isMigawari(s, "rec_s")) {
+		await s.wait(400);
+		await s.narrate("二階の　窓は、\nくらい　まま。");
+	} else if (s.has("rec_s")) {
 		await s.wait(400);
 		await s.narrate(
 			"二階で、スーツの　かげが\nたおれこむように　横に　なった。",
@@ -358,13 +363,18 @@ const mado = async (s: Story): Promise<void> => {
 	await s.narrate("カーテンに、画面の　あおが\nまたたいている。");
 	// 別の 掲示板へ 行った 人（夜の 寄り道「エレベーター」の レコード「実況」。STORY.md §5.4）。
 	// 寄り道では 声が『５階』で 切れていた。その 人は、ここで ふつうに 実況している
-	if (s.has("rec_e")) {
+	if (s.has("rec_e") && isMigawari(s, "rec_e")) {
+		await s.narrate("どこかの　カーテンの\nすきまは、くらい　まま。");
+	} else if (s.has("rec_e")) {
 		await s.narrate("どこかで、だれかが\nひとりで　ふきだした。");
 		await s.narrate("早口で　キーを　たたく　音。");
 	}
 	// 結婚・子ども（夜の 寄り道「終わらない 洗濯」の レコード「夜泣き」。STORY.md §5.4）。
 	// 寄り道では ガラスの むこうで 泣き声が していた。その 子は、家で あやされている
-	if (s.has("rec_k")) {
+	if (s.has("rec_k") && isMigawari(s, "rec_k")) {
+		await s.wait(600);
+		await s.narrate("ベビーカーの　ある　玄関の\n窓は、くらい。");
+	} else if (s.has("rec_k")) {
 		await s.wait(600);
 		await s.narrate("赤ちゃんの　泣き声。\n……すぐ　やんだ。");
 		await s.narrate("ちいさな　うたが、\nきれぎれに　きこえる。");
@@ -377,7 +387,10 @@ const mado = async (s: Story): Promise<void> => {
 	);
 	// 飽きた 人（夜の 寄り道「駅と 駅の あいだ」の レコード「夜釣り」。STORY.md §5.4）。
 	// 寄り道では 竿と クーラーボックスだけが のこっていた。その 人は、始発の 釣りに 出かける
-	if (s.has("rec_t")) {
+	if (s.has("rec_t") && isMigawari(s, "rec_t")) {
+		await s.wait(400);
+		await s.narrate("通りの　さきの　玄関は、\nしまった　まま。");
+	} else if (s.has("rec_t")) {
 		await s.wait(400);
 		await s.narrate("通りの　さきで、玄関が\nそっと　あいた。");
 		await s.narrate("竿の　ケースと、\nクーラーボックスの　かげ。");
@@ -409,6 +422,18 @@ const mado = async (s: Story): Promise<void> => {
 	await s.narrate("とおくで、カラスが\n鳴いた。");
 	await s.narrate("目ざましが　鳴るたび、\nだれかが　先に　書いていた。");
 	await s.narrate("空の　はしっこが、\nしろく　なってきた。");
+	// 身代わりに なった 人も、遅れて 帰ってくる（誰も 死なない。STORY.md §5.4）
+	const osoku = YORIMICHI_RECORDS.filter(
+		(id) => s.has(id) > 0 && isMigawari(s, id),
+	).length;
+	if (osoku > 0) {
+		await s.wait(900);
+		await s.narrate(
+			osoku === 1
+				? "……くらかった　窓に、\n遅れて　あかりが　ついた。"
+				: "……くらかった　窓に、遅れて\nひとつずつ　あかりが　ついた。",
+		);
+	}
 	// 朝の スレの 住民の 声（カメオ音源）を ここで 読み込む（ボイス OFF なら 何もしない）
 	if (settings.voice) {
 		const ready = prepareCameoVoices();

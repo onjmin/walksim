@@ -31,6 +31,7 @@
 
 import type { MapDef, Story, TileDef } from "../../engine/defs";
 import { arrived, numFlag, strFlag, yoruClock } from "../nostalgia";
+import { migawari } from "../senkyaku";
 import { APART, home, SHOP } from "../tiles";
 import { STN } from "../tiles-station";
 
@@ -123,31 +124,36 @@ const noboru = async (s: Story): Promise<void> => {
 
 // ── 夜の 寄り道「エレベーター」（STORY.md §5.4。深夜・レコード「実況」を 聞いたあと） ──
 // 4→2→6→2→10→5 と おす。5階で だれかが 乗ってくる（見せない。かごが しずむ・香水）。
-// １を おすと かごは 上へ。ふり向く・こたえると つかまる（tsukamaru）。だまっていると
-// もう一つの 10階（zakkyo10）に 着く。どの 階でも「やめておく」で おりられる。
+// １を おすと かごは 上へ。だまっていると もう一つの 10階（zakkyo10）に 着く。
+// どの 階でも「やめておく」で おりられる。
+// 先客（STORY.md §5.4「やられ役は 先客」）：レコードの 声の 主（実況の 人）が、もう一つの 10階の
+// 囲碁サロンに まだ いる。キリコは つかまらない。5階で ふり向く・こたえると、先客が 身代わりに なり
+// （migawariHall）、キリコは 1階の ホールに 立っていて、足もとに 先客の スマホ。一回きり（ijouAkanai）。
 // 恐怖の 3要素：危機感＝せまい かご・止まらない かご／不条理感＝１で 上へ・ふえた スリッパ／
-// 視野狭窄＝レコードの 声が『５階』で 切れている（その 先を 遊ぶ 人が 最悪へ つなぐ）。
+// 視野狭窄＝自分が ふり向いた せいで、だれかが 連れて いかれた かもしれない（答えは 窓の 場面）。
+
+/** 手順を もう ためせない（先客と 帰った・身代わりが 出た。どちらも seen_ijou_kaeri）。 */
+const ijouAkanai = (s: Story): boolean => !!s.flag("seen_ijou_kaeri");
 
 /**
- * つかまった（ルールを やぶった・10階の 足音に おいつかれた）。暗転して 1階の ホールで
- * 目が さめる。なにが あったかは 書かない。seen_ijou_tsukamatta（数）。
+ * 身代わり（5階で ふり向いた・こたえた／10階で 足音に おいつかれた）。ハードカットで 1階の ホールへ。
+ * キリコは 立っている（つかまらない）。足もとに 先客の スマホ。さいごの 書きこみは kai。
  */
-export const tsukamaru = async (s: Story): Promise<void> => {
+export const migawariHall = async (s: Story, kai: string): Promise<void> => {
 	s.set("seen_ijou_ashi", 0);
-	s.set("seen_ijou_tsukamatta", numFlag(s, "seen_ijou_tsukamatta") + 1);
-	// 静寂（STORY.md §5.4）：その 瞬間は 見せず、音も なく 切って、あとの 場面へ とぶ
-	s.bgm(null);
-	await s.fadeOut(0);
-	await s.wait(2600);
+	await migawari(s, "rec_e");
 	await s.warp("zakkyo", 8, 4, "down", { fade: false });
 	// 町の 曲は、ホールを 出るまで 戻さない（warp が @tod を 鳴らしなおすので すぐ 止める）
 	s.bgm(null);
 	await s.fadeIn(0);
 	await s.wait(1800);
 	s.se("hum", { volume: 0.4 });
-	await s.narrate("……ホールの　ゆかに、\nすわりこんでいた。");
+	await s.narrate("……１階の　ホールに、\n立っていた。");
 	await s.wait(1200);
-	await s.narrate("エレベーターの　表示は\n『５』。");
+	await s.narrate("足もとに、スマホが\nおちている。画面が　ついている。");
+	await s.narrate(`実況の　スレ。\nさいごの　書きこみは　『${kai}』。`);
+	await s.wait(900);
+	await s.narrate("そのあとには、\nなにも　ない。");
 };
 
 /** 手順の 階ごとの 一言（とびらが ひらいて 見える もの）。 */
@@ -160,7 +166,7 @@ const IJOU_KAI: { f: (typeof ZAKKYO_BUTTONS)[number]; line: string }[] = [
 	{ f: "5", line: "とびらが　ひらいた。\nだれも　いない。" },
 ];
 
-/** 手順を ためす。10階（zakkyo10）へ 着いたか、つかまったら true。やめたら false。 */
+/** 手順を ためす。10階（zakkyo10）へ 着いたか、身代わりが 出たら true。やめたら false。 */
 const ijou = async (s: Story): Promise<boolean> => {
 	for (const k of IJOU_KAI) {
 		const i = await s.choose(
@@ -202,7 +208,8 @@ const ijou = async (s: Story): Promise<boolean> => {
 		},
 	);
 	if (furimuku === 0) {
-		await tsukamaru(s);
+		// ふり向いた 瞬間は 見せない（静寂）。連れて いかれるのは 先客
+		await migawariHall(s, "５階");
 		return true;
 	}
 	await s.narrate("７……８……");
@@ -217,7 +224,7 @@ const ijou = async (s: Story): Promise<boolean> => {
 	});
 	if (kotaeru === 0) {
 		await s.say("kiriko", "……い、１階――");
-		await tsukamaru(s);
+		await migawariHall(s, "５階");
 		return true;
 	}
 	await s.narrate("９……");
@@ -291,7 +298,7 @@ const elevator = async (s: Story): Promise<void> => {
 		);
 		if (i === 1) {
 			// 深夜、レコード「実況」を 聞いたあとは 手順を ためせる
-			if (s.flag("tod") === "shinya" && s.has("rec_e")) {
+			if (s.flag("tod") === "shinya" && s.has("rec_e") && !ijouAkanai(s)) {
 				if (await ijou(s)) return;
 				continue;
 			}
