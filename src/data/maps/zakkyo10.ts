@@ -30,7 +30,7 @@ import { APART, home, ROOM } from "../tiles";
 import { STN } from "../tiles-station";
 import { migawariHall } from "./zakkyo";
 
-/** 足音が 一段 ちかづく。ノブが まわったら true（つかまる）。 */
+/** 足音が 一段 ちかづく。ノブが まわったら true（先客が 身代わり）。 */
 const ashiStep = async (s: Story): Promise<boolean> => {
 	const n = numFlag(s, "seen_ijou_ashi") + 1;
 	s.set("seen_ijou_ashi", n);
@@ -60,7 +60,7 @@ const ashiStep = async (s: Story): Promise<boolean> => {
 	return false;
 };
 
-/** 調べる もの（足音が 先に ちかづき、つかまったら 中身は 出さない）。 */
+/** 調べる もの（足音が 先に ちかづき、身代わりが 出たら 中身は 出さない）。 */
 const shiraberu =
 	(body: (s: Story) => Promise<void>) =>
 	async (s: Story): Promise<void> => {

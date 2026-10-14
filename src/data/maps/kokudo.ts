@@ -262,6 +262,24 @@ const gasman = async (s: Story): Promise<void> => {
  */
 const gasmanAsa = async (s: Story): Promise<void> => {
 	// 人だけ いない こくどう（kokudo_ura）から もどった 人に 一度だけ。説明は しない
+	// 身代わりが 出た 夜は、その 人が 帰ってきた 話（誰も 死なない。STORY.md §5.4）
+	if (s.flag("seen_jikuu_migawari") && !s.flag("seen_gasman_jikuu")) {
+		s.set("seen_gasman_jikuu");
+		await s.say(
+			null,
+			"ゆうべ　明け方、ファミレスの\n前で　すわりこんでた　人が　いてさ",
+			{
+				name: "スタンドの店員",
+			},
+		);
+		await s.say(null, "ぼんやりしてたけど、\n歩いて　帰ってったよ", {
+			name: "スタンドの店員",
+		});
+		await s.say(null, "……あそこ、もう\nつぶれてるのにね", {
+			name: "スタンドの店員",
+		});
+		return;
+	}
 	if (s.flag("seen_jikuu_kaeri") && !s.flag("seen_gasman_jikuu")) {
 		s.set("seen_gasman_jikuu");
 		await s.say(null, "ゆうべ　夜中、うちの　あかりが\nぜんぶ　ついてたって", {
@@ -319,7 +337,7 @@ const gasmanAsa = async (s: Story): Promise<void> => {
 // 深夜、歩道橋の 北の 階段を おりると、灯りが ぜんぶ ついて 人だけ いない こくどうに 出る。
 // レコードは 無い（目録を 持たない 話。STORY.md §5.4 の 決めたこと 2）。もどるまで、深夜は 毎回 ここへ 出る。
 
-/** 人だけ いない こくどうの 数を ぜんぶ もどす（おりるとき・つかまったとき・もどったとき。kokudo_ura）。 */
+/** 人だけ いない こくどうの 数を ぜんぶ もどす（おりるとき・身代わりの とき・もどったとき。kokudo_ura）。 */
 export const jikuuReset = (s: Story): void => {
 	s.set("seen_jikuu_n", 0);
 	s.set("seen_jikuu_kaere", false);

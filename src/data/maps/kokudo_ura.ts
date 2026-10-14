@@ -6,24 +6,30 @@
 // ながれ、テーブルの コーヒーに 湯気が たち、国道の 信号も スタンドも 動いている。人だけ いない。
 //
 // ルールは 1つ：作業着の 男に「帰れ」と 言われたら、すぐ 帰る（ほかの ものを 調べない）。
-// 言われた あとに 何かを 調べると、つかまる（tsukamaru）。
+// 先客（STORY.md §5.4「やられ役は 先客」）：ファミレスの 窓ぎわの 席で コーヒーを かきまぜている だれか
+// （目録 なし。顔は 描かない）。キリコは つかまらない。「帰れ」の あとに 何かを 調べると、男は
+// キリコでは なく その 席を 見る（身代わり。migawariSeki）。ハードカットで 歩道橋の 下に 立っている。
+// 一回きり（seen_jikuu_kaeri で 階段が もとに もどる）。朝 スタンドの 店員の 証言で、その 人は 帰ってくる。
 //
 // 恐怖の 3要素（春日武彦『恐怖の正体』）:
 //   危機感      町の はしが くずれる 音が 近づき、街灯が はしから 消えていく
 //   不条理感    いつもの 町に、電気も 店も 動いているのに 人だけ いない
-//   視野狭窄    男は なぜ 怒っているのか。帰れなかったら どう なるのか（答えは 出さない。男の 姿は
-//               スタンドの 店員と 同じ 作業着で、朝の 店員は ゆうべの スタンドの 灯りの 話だけ する）
+//   視野狭窄    男は なぜ 怒っているのか。自分が ぐずぐず したら、窓ぎわの 人は どう なるのか（答えは 出さない。
+//               男の 姿は スタンドの 店員と 同じ 作業着。朝の 店員は ゆうべの 灯りか、ファミレスの 前の 人の 話を する）
 //
 // 段と回収（seen_jikuu_n＝ここで 何かを 調べた 数。調べる たびに 一段 すすむ。jikuuStep）:
 //   1 着く → 2 信号が 青、車は 来ない → 3 くずれる 音 → 4 西の 街灯が 消える
-//   → 5 作業着の 男「帰れ」（seen_jikuu_kaere）→ 6 それでも 調べたら つかまる
-//   帰り     seen_jikuu_kaeri → kokudo の ファミレスの 戸の すきまに コーヒーの におい
+//   → 5 作業着の 男「帰れ」（seen_jikuu_kaere）→ 6 それでも 調べたら 身代わり
+//   先客     seen_jikuu_senkyaku（窓ぎわの 席を 見た）
+//   帰り     seen_jikuu_kaeri（先客も 席を 立つ）→ kokudo の ファミレスの 戸の すきまに コーヒーの におい
 //            → 朝 スタンドの 店員「ゆうべ、うちの　あかりが　ぜんぶ　ついてたって」
-//   つかまった seen_jikuu_mayotta（数）→ kokudo の 歩道橋の 下で 目が さめる
+//   身代わり seen_jikuu_migawari（senkyaku.ts）→ kokudo の 歩道橋の 下
+//            → 朝 スタンドの 店員「ファミレスの　前で、すわりこんでた　人が　いて」
 
 import type { MapDef, Story } from "../../engine/defs";
 import { npc } from "../helpers";
 import { numFlag } from "../nostalgia";
+import { migawari } from "../senkyaku";
 import { JP } from "../tiles";
 import { jikuuReset, rows, tiles } from "./kokudo";
 
@@ -31,29 +37,26 @@ const SAGYOUGI = "pub:sprites/mob_worker.png";
 const OTOKO = "作業着の人";
 
 /**
- * 「帰れ」の あとに 調べた。暗転して、日常の こくどうの 歩道橋の 下で 目が さめる。
- * なにが あったかは 書かない。
+ * 「帰れ」の あとに 調べた。男は キリコでは なく、窓ぎわの 先客を 見る（身代わり）。
+ * その 先は 見せず、ハードカットで 日常の こくどうの 歩道橋の 下に 立っている。
  */
-const tsukamaru = async (s: Story): Promise<void> => {
+const migawariSeki = async (s: Story): Promise<void> => {
 	jikuuReset(s);
-	s.set("seen_jikuu_mayotta", numFlag(s, "seen_jikuu_mayotta") + 1);
-	await s.narrate("男が、こちらを\n見ていた。");
-	// 静寂（STORY.md §5.4）：その 瞬間は 見せず、音も なく 切って、あとの 場面へ とぶ
-	s.bgm(null);
-	await s.fadeOut(0);
-	await s.wait(2600);
+	await s.narrate("男は、キリコを　見なかった。");
+	await s.narrate("ファミレスの　窓ぎわの\n席を、見ていた。");
+	await migawari(s, "jikuu");
 	await s.warp("kokudo", 24, 10, "down", { fade: false });
 	await s.fadeIn(0);
 	await s.wait(1800);
-	await s.narrate("……歩道橋の　下に、\nすわりこんでいた。");
+	await s.narrate("……歩道橋の　下に、\n立っていた。");
 	await s.wait(1200);
 	await s.narrate("国道は、しんと　している。");
 };
 
-/** 調べる たびに 一段 すすむ（調べた もの の あとに 一行）。「帰れ」の あとは つかまる。 */
+/** 調べる たびに 一段 すすむ（調べた もの の あとに 一行）。「帰れ」の あとは 身代わり。 */
 const jikuuStep = async (s: Story): Promise<void> => {
 	if (s.flag("seen_jikuu_kaere")) {
-		await tsukamaru(s);
+		await migawariSeki(s);
 		return;
 	}
 	const n = numFlag(s, "seen_jikuu_n") + 1;
@@ -90,7 +93,7 @@ const shiraberu =
 	(body: (s: Story) => Promise<void>) =>
 	async (s: Story): Promise<void> => {
 		if (s.flag("seen_jikuu_kaere")) {
-			await tsukamaru(s);
+			await migawariSeki(s);
 			return;
 		}
 		await body(s);
@@ -101,9 +104,14 @@ const shiraberu =
 const kaidan = async (s: Story): Promise<void> => {
 	const kaere = !!s.flag("seen_jikuu_kaere");
 	jikuuReset(s);
-	if (kaere) s.set("seen_jikuu_kaeri");
+	if (kaere) {
+		s.set("seen_jikuu_kaeri");
+		// 守りきった：先客も 席を 立つ
+		await s.narrate("ファミレスの　窓ぎわで、\nだれかが　席を　立った。");
+	}
 	await s.warp("kokudo", 28, 2, "up", { se: "stairs" });
 	if (!kaere) return;
+	await s.narrate("階段の　下を、だれかが\n反対がわへ　歩いていった。");
 	// 一息：トラックの 音が 先に もどり、ことばは 遅れて ひとことだけ
 	await s.wait(1200);
 	s.se("train", { pan: -0.4, volume: 0.6 });
@@ -176,6 +184,16 @@ export const kokudoUra: MapDef = {
 			trigger: "talk",
 			run: shiraberu(async (s) => {
 				await s.narrate("テーブルに、湯気の　たつ\nコーヒーが　ならんでいる。");
+				// 先客（顔は 描かない）。人だけ いない 町に、ひとりだけ
+				if (!s.flag("seen_jikuu_senkyaku")) {
+					s.set("seen_jikuu_senkyaku");
+					await s.wait(800);
+					await s.narrate("窓ぎわの　席に、\nだれか　すわっている。");
+					s.se("tick", { volume: 0.3 });
+					await s.narrate("スプーンで、コーヒーを\nかきまぜる　音。");
+				} else {
+					await s.narrate("窓ぎわの　だれかは、\nまだ　かきまぜている。");
+				}
 			}),
 		},
 		{
