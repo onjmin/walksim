@@ -72,8 +72,7 @@ const mado = shiraberu(async (s) => {
 		await s.narrate("……いちばん　とおくに、\n灯りが　ひとつ　ある。");
 		return;
 	}
-	await s.narrate("灯りが、さっきより\nちかい　気が　する。");
-	await s.say("kiriko", "（……気の　せいンゴ）");
+	await s.narrate("灯りが、さっきより\nちかい。");
 });
 
 const salon = shiraberu(async (s) => {
@@ -86,7 +85,8 @@ const salon = shiraberu(async (s) => {
 		s.give("goishi");
 		return;
 	}
-	await s.say("kiriko", "（……だれも　いないンゴ）");
+	// 2度目から：だれも いないのに 一手 すすんでいる（説明は しない）
+	await s.narrate("……盤の　石が、\nひとつ　ふえている。");
 });
 
 const sumaho = shiraberu(async (s) => {
@@ -94,8 +94,8 @@ const sumaho = shiraberu(async (s) => {
 		s.set("seen_ijou_sumaho");
 		await s.narrate("ゆかに、スマホが\nおちている。画面が　ついている。");
 		await s.narrate("実況の　スレ。\nさいごの　書きこみは　『５階』。");
+		// レコードの 声と むすぶのは 遊ぶ 人に まかせる（キリコに 言わせない）
 		await s.narrate("そのあとには、\nなにも　ない。");
-		await s.say("kiriko", "（……レコードの　人ンゴ）");
 		return;
 	}
 	await s.narrate("画面は　『５階』の　まま。\n電池の　のこりが　へっていく。");
