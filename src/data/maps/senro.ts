@@ -323,6 +323,50 @@ const blockBei = async (s: Story): Promise<void> => {
 	await s.narrate("電車を　まつ人の、\nこしかけ　らしい。");
 };
 
+// ── 夜の 寄り道「線路ぞいの 無人駅」（STORY.md §5.4。歩いた 先は senro_eki） ──
+// 深夜、あぜ道の おわりに レコード「終電」（就職。STORY.md §4.5）。聞いた あと、まくら木の よこを
+// 西へ 歩くと 地図に ない 駅に 着く。もどったあとは、まくら木に ネクタイが ひっかかっている。
+
+/** 無人駅の 数を ぜんぶ もどす（歩きだすとき・つかまったとき・もどったとき。senro_eki）。 */
+export const ekiReset = (s: Story): void => {
+	s.set("seen_eki_n", 0);
+	s.set("seen_eki_owari", false);
+};
+
+/** 深夜の あぜ道の おわり（michi_owari の あと）。 */
+const ekiShinya = async (s: Story): Promise<void> => {
+	// もどってきた あと（余波）
+	if (s.flag("seen_eki_kaeri")) {
+		await s.narrate("まくら木に、ネクタイが\n一本　ひっかかっている。");
+		return;
+	}
+	if (!s.has("rec_s")) {
+		await s.narrate("足もとに、黒い\nレコードが　おちている。");
+		s.se("item");
+		s.give("rec_s");
+		await s.record("rec_s");
+		await s.say("kiriko", "（……灯り、ンゴ）");
+		return;
+	}
+	const i = await s.choose(["＞＞1 線路ぞいを　あるく", "＞＞2 やめておく"], {
+		cancel: 1,
+	});
+	if (i !== 0) return;
+	ekiReset(s);
+	s.set("seen_eki_n", 1);
+	await s.narrate("砂利を　ふんで、\nまくら木の　よこを　西へ。");
+	// 静寂：町の 曲が 消える
+	s.bgm(null);
+	await s.fadeOut(900);
+	await s.wait(2400);
+	await s.warp("senro_eki", 17, 4, "left", { fade: false });
+	await s.fadeIn(900);
+	await s.wait(1400);
+	await s.narrate("……ホーム。");
+	await s.wait(1000);
+	await s.narrate("無人駅。灯りが\nひとつだけ　ついている。");
+};
+
 export const senro: MapDef = {
 	id: "senro",
 	// ジオラマ表示の箱。上段＝線路と線路の道／下段＝家のうらと細道
@@ -1038,6 +1082,7 @@ export const senro: MapDef = {
 						(!s.flag("seen_senro_hosen") || shinyaStep(s) < 5)
 					)
 						await s.narrate("アーケードの　あかりは、\nもう　ひとつだけ。");
+					await ekiShinya(s);
 					return;
 				}
 				if (t === "yoru") {
@@ -1651,6 +1696,16 @@ export const senro: MapDef = {
 			8,
 			FAN,
 			async (s) => {
+				// 無人駅で ひろった 切符（senro_eki の 物証。説明は しない）
+				if (s.has("kouken") && !s.flag("seen_senro_kouken")) {
+					s.set("seen_senro_kouken");
+					await s.narrate("カメラの　人が、キリコの\n手の　切符を　見た。");
+					await s.say(null, "……硬券だ。\nめずらしいね", { name: "カメラの人" });
+					await s.say(null, "でも　この線に、そんな\n駅……あったかな", {
+						name: "カメラの人",
+					});
+					return;
+				}
 				if (!s.flag("seen_senro_tetsu_asa")) {
 					s.set("seen_senro_tetsu_asa");
 					if (s.flag("seen_senro_tetsu2")) {

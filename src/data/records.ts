@@ -74,6 +74,22 @@ export const records: Record<string, RecordDef> = {
 			"……外で、泣いとる。\nうちの　子の　声や",
 		],
 	},
+	// せんろぞいのみちの あぜ道の おわり（夜の 寄り道「線路ぞいの 無人駅」。STORY.md §5.4）：就職
+	// （2 の 最後の レス「来月から　社会人や」）。灯りが 遠ざかって 切れる（data/maps/senro.ts の ekiShinya）。
+	// 声の 主は 無事で、真の 筋の 窓の 場面で 自分の 部屋に 帰っている
+	rec_s: {
+		id: "rec_s",
+		title: "終電",
+		voice: rei,
+		date: "2032/09/14(火) 00:58",
+		lines: [
+			"終電、寝すごした。\n……どこや、ここ",
+			"無人駅や。駅名は……\nいや、読まんとこ",
+			"時刻表、ぜんぶ　同じ　時間や。\n２５時１０分",
+			"線路の　むこうに、灯り。\n……歩いて　いけるやろか",
+			"……灯り、さっきより\nとおなっとる",
+		],
+	},
 };
 
 // 本作のアイテムは全部 key: true（使えない・減らない）。レコードは records と同じ id で登録する。
@@ -102,6 +118,19 @@ export const items: Record<string, ItemDef> = {
 		desc: "去った　おんJ民の、今夜の　声。\nメニューの「レコード」で　聞ける。",
 		key: true,
 	},
+	rec_s: {
+		id: "rec_s",
+		name: "レコード「終電」",
+		desc: "去った　おんJ民の、今夜の　声。\nメニューの「レコード」で　聞ける。",
+		key: true,
+	},
+	// 地図に ない 駅の ホームの 灯りの 下で ひろう（senro_eki の akari）。朝、せんろぞいの カメラの人が 見る
+	kouken: {
+		id: "kouken",
+		name: "かたい切符",
+		desc: "地図に　ない　駅で　ひろった。\n駅名の　ところが、にじんでいる。",
+		key: true,
+	},
 	// かわかない 店の 4ばんで ひろう（laundry_ura の yonban）。朝、店の おばちゃんが 見る（laundry）
 	chiisai_kutsushita: {
 		id: "chiisai_kutsushita",
@@ -126,4 +155,10 @@ export const items: Record<string, ItemDef> = {
 };
 
 /** 持っている レコードの id（メニュー・まとめカード・窓の 場面が 使う）。 */
-export const ALL_RECORDS = ["rec_q", "rec_e", "rec_t", "rec_k"] as const;
+export const ALL_RECORDS = [
+	"rec_q",
+	"rec_e",
+	"rec_t",
+	"rec_k",
+	"rec_s",
+] as const;

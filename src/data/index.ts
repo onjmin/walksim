@@ -17,6 +17,7 @@ import { norikaeUra } from "./maps/norikae_ura";
 import { okujo } from "./maps/okujo";
 import { room } from "./maps/room";
 import { senro } from "./maps/senro";
+import { senroEki } from "./maps/senro_eki";
 import { street } from "./maps/street";
 import { sumire } from "./maps/sumire";
 import { suupaa } from "./maps/suupaa";
@@ -50,6 +51,7 @@ export const data: GameData = {
 		laundry_ura: laundryUra,
 		tonarimachi,
 		senro,
+		senro_eki: senroEki,
 		norikae,
 		norikae_ura: norikaeUra,
 		yamamichi,

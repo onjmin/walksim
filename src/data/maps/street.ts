@@ -357,6 +357,15 @@ const mado = async (s: Story): Promise<void> => {
 		await s.narrate("だれかが、ちいさな　声で\nうたっている。");
 		await s.say("kiriko", "（……『夜泣き』の　声\nンゴ）");
 	}
+	// 就職（夜の 寄り道「線路ぞいの 無人駅」の レコード「終電」。STORY.md §5.4）。
+	// 寄り道では ベンチに ネクタイが のこっていた。その 人は、自分の 部屋に 帰っている
+	if (s.has("rec_s")) {
+		await s.narrate(
+			"べつの　窓で、スーツの　かげが\nたおれこむように　横に　なった。",
+		);
+		await s.narrate("ネクタイは、して\nいなかった。");
+		await s.say("kiriko", "（……『終電』の　声\nンゴ）");
+	}
 	// ⑪ 辞めた 人（早番・04:10）：夕方の 会釈の 人。夜明けに うみべで すれ違う
 	await s.narrate("……ひとつ、あかりが　消えた。");
 	await s.narrate("玄関の　あかり。カギの\n音が　ひとつ。");

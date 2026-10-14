@@ -11,7 +11,7 @@
 //
 // 恐怖の 3要素（春日武彦『恐怖の正体』）:
 //   危機感      乾燥機の 熱で 店が あつく なり、息が くるしく なる（出たいのに 出られない）
-//   不条理感    『のこり　18分』が へらない・時計の 秒針が うごかない
+//   不条理感    『のこり　18分』が へらない（ほかは 日常の 店の まま。時計も ふつうに 読める）
 //   視野狭窄    ガラスの むこうの 人影と、赤ちゃんの 泣き声。レコードの 声は「うちの　子の　声や」で 切れる
 //               （答えは ここでは 出さない。真の 筋の 窓の 場面で、その 人が 自分の 家で 子を あやしている）
 //
@@ -23,7 +23,7 @@
 //   つかまった      seen_kawaku_mayotta（数）→ laundry の ベンチの まえで 目が さめる
 
 import type { MapDef, Story } from "../../engine/defs";
-import { numFlag } from "../nostalgia";
+import { numFlag, shinyaClock } from "../nostalgia";
 import { kawakuReset, rows, tiles } from "./laundry";
 
 /**
@@ -215,7 +215,7 @@ export const laundryUra: MapDef = {
 			y: 2,
 			trigger: "talk",
 			run: shiraberu(async (s) => {
-				await s.narrate("かべの時計。\n秒針が、うごいていない。");
+				await s.narrate(`かべの時計。――${shinyaClock(s)}。`);
 			}),
 		},
 		{
