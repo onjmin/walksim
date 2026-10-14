@@ -328,7 +328,7 @@ const blockBei = async (s: Story): Promise<void> => {
 // 深夜、あぜ道の おわりに レコード「終電」（就職。STORY.md §4.5）。聞いた あと、まくら木の よこを
 // 西へ 歩くと 地図に ない 駅に 着く。もどったあとは、まくら木に ネクタイが ひっかかっている。
 
-/** 無人駅の 数を ぜんぶ もどす（歩きだすとき・つかまったとき・もどったとき。senro_eki）。 */
+/** 無人駅の 数を ぜんぶ もどす（歩きだすとき・身代わりの とき・もどったとき。senro_eki）。 */
 export const ekiReset = (s: Story): void => {
 	s.set("seen_eki_n", 0);
 	s.set("seen_eki_owari", false);
